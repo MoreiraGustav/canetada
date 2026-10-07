@@ -1,0 +1,412 @@
+import type { GameEvent } from '@/types';
+
+/** Oportunidades (GDD §4.4 — frequência moderada). */
+export const OPPORTUNITY_EVENTS: GameEvent[] = [
+  {
+    id: 'alta-commodities',
+    category: 'opportunity',
+    title: 'Boom das Commodities',
+    icon: '📦',
+    description:
+      'A demanda da Ásia leva soja, minério e petróleo ao maior preço em uma década. A arrecadação dispara e o real se valoriza. Como usar a bonança?',
+    frequency: 'moderate',
+    cooldown: 18,
+    triggers: [
+      { condition: { kind: 'relation', country: 'china', comparator: 'gt', value: 75 }, multiplier: 1.5 },
+    ],
+    options: [
+      {
+        id: 'fundo-soberano',
+        label: 'Guardar o dinheiro extra num fundo de reserva',
+        description: 'Fortalece as contas, mas a população não sente o benefício agora.',
+        impact: {
+          tradeBalance: 8,
+          exchangeRate: -0.2,
+          gdpGrowth: 0.3,
+          primaryBalance: 0.2,
+          sectors: { market: 5 },
+        },
+        delayed: [{ impact: { debt: -0.8 }, delay: 1, duration: 6, label: 'Fundo de reserva' }],
+        headline: 'Governo cria fundo de reserva com receitas extras das commodities',
+        flags: ['boom-commodities'],
+      },
+      {
+        id: 'ampliar-sociais',
+        label: 'Ampliar programas sociais com a receita extra',
+        description: 'Reduz a pobreza, mas cria gasto fixo com receita passageira.',
+        impact: {
+          tradeBalance: 8,
+          exchangeRate: -0.2,
+          gdpGrowth: 0.4,
+          approval: 3,
+          poverty: -0.4,
+          primaryBalance: -0.1,
+          sectors: { lowerClass: 4, market: -3 },
+        },
+        headline: 'Receita das commodities financia ampliação de programas sociais',
+        flags: ['boom-commodities'],
+      },
+      {
+        id: 'desonerar-industria',
+        label: 'Cortar impostos da indústria',
+        description: 'Ajuda a indústria a competir, mas só beneficia empresas.',
+        impact: {
+          tradeBalance: 7,
+          exchangeRate: -0.15,
+          gdpGrowth: 0.4,
+          primaryBalance: -0.05,
+          sectors: { business: 5, lowerClass: -1 },
+        },
+        headline: 'Com bonança das commodities, governo reduz tributos da indústria',
+        flags: ['boom-commodities'],
+      },
+    ],
+  },
+  {
+    id: 'margem-equatorial',
+    category: 'opportunity',
+    title: 'Grande Descoberta de Petróleo no Norte',
+    icon: '🛢️',
+    description:
+      'A Petrobras acha bilhões de barris de petróleo no mar perto da Foz do Amazonas. Mercado e governadores comemoram; ambientalistas temem danos à costa.',
+    frequency: 'moderate',
+    oneTime: true,
+    minTurn: 4,
+    options: [
+      {
+        id: 'explorar-rapido',
+        label: 'Acelerar a licença e a exploração',
+        description: 'Gera investimento e empregos, mas causa forte reação ambiental.',
+        impact: {
+          prestige: -2,
+          relations: { 'uniao-europeia': -3 },
+          sectors: { environmentalists: -10, business: 5, market: 4 },
+        },
+        delayed: [
+          { impact: { foreignInvestment: 6, gdpGrowth: 0.3, co2Emissions: 30 }, delay: 2, duration: 8, label: 'Petróleo na Foz do Amazonas' },
+        ],
+        headline: 'Governo acelera licença para explorar petróleo na Foz do Amazonas',
+        risk: {
+          chance: 0.15,
+          impact: { approval: -2, prestige: -3, sectors: { environmentalists: -6 }, relations: { 'uniao-europeia': -4 } },
+          headline: 'Vazamento de óleo em poço na Foz do Amazonas atinge manguezais',
+        },
+      },
+      {
+        id: 'licenciamento-rigoroso',
+        label: 'Explorar com regras ambientais rígidas',
+        description: 'Equilibra lucro e proteção, mas os ganhos demoram a chegar.',
+        impact: {
+          sectors: { environmentalists: -3, business: 2 },
+        },
+        delayed: [
+          { impact: { foreignInvestment: 3, gdpGrowth: 0.15, co2Emissions: 15 }, delay: 4, duration: 8, label: 'Exploração com proteção ambiental' },
+        ],
+        headline: 'Petróleo na Foz do Amazonas terá licenciamento rigoroso, anuncia governo',
+      },
+      {
+        id: 'area-protegida',
+        label: 'Transformar a região em área protegida',
+        description: 'Reforça a liderança climática, mas abre mão de muita receita futura.',
+        impact: {
+          prestige: 3,
+          relations: { 'uniao-europeia': 4 },
+          sectors: { environmentalists: 8, business: -5, market: -3 },
+        },
+        headline: 'Brasil abre mão de petróleo na Foz do Amazonas e cria área protegida',
+      },
+    ],
+  },
+  {
+    id: 'investimento-chines',
+    category: 'opportunity',
+    title: 'China Oferece Investimentos',
+    icon: '🇨🇳',
+    description:
+      'A China oferece bilhões de dólares para ferrovias, portos e redes de energia, incluindo uma ferrovia até o Pacífico. Os EUA acompanham com preocupação.',
+    frequency: 'moderate',
+    cooldown: 18,
+    requires: [{ kind: 'relation', country: 'china', comparator: 'gt', value: 55 }],
+    triggers: [
+      { condition: { kind: 'relation', country: 'china', comparator: 'gt', value: 75 }, multiplier: 3 },
+      { condition: { kind: 'flag', flag: 'alinhamento-china', present: true }, multiplier: 2 },
+    ],
+    options: [
+      {
+        id: 'aceitar-pacote',
+        label: 'Aceitar o pacote inteiro',
+        description: 'Acelera obras, mas aumenta a dependência da China e irrita os EUA.',
+        impact: {
+          foreignInvestment: 8,
+          relations: { china: 6, eua: -5 },
+          sectors: { business: 4, agribusiness: 3 },
+        },
+        delayed: [{ impact: { infrastructureKm: 800, potentialGrowth: 0.05 }, delay: 2, duration: 10, label: 'Obras com capital chinês' }],
+        headline: 'Brasil fecha acordo bilionário com a China para ferrovias e portos',
+      },
+      {
+        id: 'conteudo-local',
+        label: 'Aceitar se usar empresas e mão de obra daqui',
+        description: 'Gera mais empregos no Brasil, mas o valor cai e a negociação demora.',
+        impact: {
+          foreignInvestment: 4,
+          unemployment: -0.1,
+          relations: { china: 2 },
+          sectors: { business: 2, lowerClass: 2 },
+        },
+        delayed: [{ impact: { infrastructureKm: 500, potentialGrowth: 0.03 }, delay: 3, duration: 10, label: 'Obras chinesas com mão de obra local' }],
+        headline: 'Acordo com a China exige empresas e trabalhadores brasileiros nas obras',
+      },
+      {
+        id: 'recusar-pacote',
+        label: 'Recusar o pacote',
+        description: 'Agrada os EUA e a ala soberanista, mas o país perde investimento.',
+        impact: {
+          relations: { eua: 4, china: -6 },
+          sectors: { military: 2, business: -3 },
+        },
+        headline: 'Governo recusa pacote chinês e prioriza parceiros ocidentais',
+      },
+    ],
+  },
+  {
+    id: 'hidrogenio-verde-europa',
+    category: 'opportunity',
+    title: 'Europa Propõe Parceria Verde',
+    icon: '🇪🇺',
+    description:
+      'A União Europeia quer financiar e comprar hidrogênio verde, um combustível limpo, produzido no Nordeste. Em troca, exige metas climáticas firmes.',
+    frequency: 'moderate',
+    oneTime: true,
+    requires: [{ kind: 'relation', country: 'uniao-europeia', comparator: 'gt', value: 55 }],
+    triggers: [
+      { condition: { kind: 'relation', country: 'uniao-europeia', comparator: 'gt', value: 70 }, multiplier: 3 },
+      { condition: { kind: 'flag', flag: 'fiscalizacao-amazonia-reforcada', present: true }, multiplier: 2 },
+      { condition: { kind: 'indicator', indicator: 'deforestation', comparator: 'lt', value: 5000 }, multiplier: 2 },
+    ],
+    options: [
+      {
+        id: 'aceitar-parceria',
+        label: 'Aceitar com metas climáticas obrigatórias',
+        description: 'Atrai investimento e energia limpa, mas impõe regras ao agro.',
+        impact: {
+          foreignInvestment: 5,
+          prestige: 2,
+          relations: { 'uniao-europeia': 5 },
+          sectors: { environmentalists: 5, agribusiness: -2, business: 3 },
+        },
+        delayed: [{ impact: { renewableEnergy: 2, co2Emissions: -30, unemployment: -0.1 }, delay: 3, duration: 10, label: 'Polos de hidrogênio verde' }],
+        headline: 'Brasil e UE assinam parceria bilionária em hidrogênio verde',
+      },
+      {
+        id: 'parceria-sem-metas',
+        label: 'Negociar sem as exigências ambientais',
+        description: 'Mantém a autonomia ambiental, mas o pacote encolhe.',
+        impact: {
+          foreignInvestment: 2,
+          relations: { 'uniao-europeia': 1 },
+          sectors: { agribusiness: 2 },
+        },
+        delayed: [{ impact: { renewableEnergy: 0.8 }, delay: 3, duration: 8, label: 'Projetos de hidrogênio verde' }],
+        headline: 'Parceria com UE em hidrogênio verde sai menor que o previsto',
+      },
+      {
+        id: 'recusar-europa',
+        label: 'Recusar a proposta',
+        description: 'Evita compromissos externos, mas perde uma indústria do futuro.',
+        impact: {
+          relations: { 'uniao-europeia': -4 },
+          prestige: -1,
+          sectors: { environmentalists: -4 },
+        },
+        headline: 'Governo recusa parceria europeia em hidrogênio verde',
+      },
+    ],
+  },
+  {
+    id: 'safra-recorde',
+    category: 'opportunity',
+    title: 'Safra Recorde de Grãos',
+    icon: '🌾',
+    description:
+      'O país deve colher uma safra recorde de soja e milho. As exportações crescem, mas portos e rodovias já operam no limite.',
+    frequency: 'moderate',
+    months: [2, 3, 4, 5],
+    cooldown: 12,
+    options: [
+      {
+        id: 'investir-logistica',
+        label: 'Antecipar obras em estradas e portos',
+        description: 'Reduz gargalos e frete no médio prazo, com custo moderado.',
+        impact: {
+          gdpGrowth: 0.3,
+          tradeBalance: 4,
+          debt: 0.2,
+          sectors: { agribusiness: 6 },
+        },
+        delayed: [{ impact: { infrastructureKm: 300, potentialGrowth: 0.02 }, delay: 2, duration: 8, label: 'Rotas de escoamento da safra' }],
+        headline: 'Com safra recorde, governo antecipa obras em corredores logísticos',
+      },
+      {
+        id: 'estoques-reguladores',
+        label: 'Recompor estoques públicos de alimentos',
+        description: 'Segura o preço da comida no futuro, mas desagrada produtores.',
+        impact: {
+          gdpGrowth: 0.25,
+          tradeBalance: 2,
+          inflation: -0.2,
+          debt: 0.1,
+          sectors: { agribusiness: 2, lowerClass: 2 },
+        },
+        headline: 'Governo volta a formar estoques de alimentos com safra recorde',
+      },
+      {
+        id: 'deixar-mercado',
+        label: 'Deixar o mercado conduzir as exportações',
+        description: 'Exporta mais sem custo ao Tesouro, mas os gargalos continuam.',
+        impact: {
+          gdpGrowth: 0.3,
+          tradeBalance: 5,
+          sectors: { agribusiness: 3, market: 2 },
+        },
+        headline: 'Safra recorde impulsiona exportações, mas filas em portos crescem',
+      },
+    ],
+  },
+  {
+    id: 'datacenters-ia',
+    category: 'opportunity',
+    title: 'Big Techs Querem Datacenters no País',
+    icon: '🖥️',
+    description:
+      'Gigantes da tecnologia querem instalar grandes datacenters de inteligência artificial, atraídas pela energia limpa. Em troca, pedem isenção de impostos.',
+    frequency: 'moderate',
+    oneTime: true,
+    minTurn: 3,
+    options: [
+      {
+        id: 'isencoes-amplas',
+        label: 'Dar isenções amplas para atrair os projetos',
+        description: 'Atrai bilhões rápido, mas perde receita e pesa na rede elétrica.',
+        impact: {
+          foreignInvestment: 6,
+          primaryBalance: -0.05,
+          waterReserves: -2,
+          relations: { eua: 3 },
+          sectors: { business: 5, market: 3 },
+        },
+        delayed: [{ impact: { digitalConnectivity: 1, potentialGrowth: 0.04 }, delay: 2, duration: 8, label: 'Datacenters de IA' }],
+        headline: 'Governo aprova isenções e atrai datacenters bilionários de IA',
+      },
+      {
+        id: 'exigir-renovavel',
+        label: 'Exigir energia limpa própria e tecnologia',
+        description: 'Garante ganhos ao país, mas o investimento é menor e mais lento.',
+        impact: {
+          foreignInvestment: 3,
+          sectors: { environmentalists: 3, business: 2 },
+        },
+        delayed: [{ impact: { renewableEnergy: 0.8, potentialGrowth: 0.03, digitalConnectivity: 0.5 }, delay: 3, duration: 8, label: 'Datacenters com energia própria' }],
+        headline: 'Datacenters terão de gerar a própria energia limpa, define governo',
+      },
+      {
+        id: 'recusar-isencoes',
+        label: 'Recusar isenções especiais',
+        description: 'Preserva a arrecadação, mas os projetos devem ir para Chile e México.',
+        impact: {
+          relations: { eua: -1 },
+          sectors: { business: -3, market: -2 },
+        },
+        headline: 'Sem incentivos, big techs devem instalar datacenters em países vizinhos',
+      },
+    ],
+  },
+  {
+    id: 'candidatura-pan-2031',
+    category: 'opportunity',
+    title: 'Convite para Sediar o Pan de 2031',
+    icon: '🏅',
+    description:
+      'O Brasil é convidado a se candidatar aos Jogos Pan-Americanos de 2031. O evento projeta o país, mas os gastos da Copa e da Olimpíada ainda são lembrados.',
+    frequency: 'moderate',
+    oneTime: true,
+    minTurn: 6,
+    options: [
+      {
+        id: 'candidatura-federal',
+        label: 'Candidatar-se com garantias federais',
+        description: 'Projeta o país e gera obras, mas prende dinheiro público por anos.',
+        impact: {
+          prestige: 4,
+          approval: 1,
+          debt: 0.4,
+          sectors: { middleClass: 2, market: -2 },
+        },
+        delayed: [{ impact: { infrastructureKm: 200, gdpGrowth: 0.1 }, delay: 3, duration: 8, label: 'Obras do Pan-Americano' }],
+        headline: 'Brasil apresenta candidatura para sediar o Pan de 2031',
+        risk: {
+          chance: 0.3,
+          impact: { debt: 0.3, sectors: { middleClass: -2 } },
+          headline: 'Custo das obras do Pan estoura previsão e TCU cobra explicações',
+        },
+      },
+      {
+        id: 'candidatura-privada',
+        label: 'Apoiar candidatura paga por empresas',
+        description: 'Ganho de imagem menor, sem pesar no orçamento federal.',
+        impact: {
+          prestige: 2,
+          sectors: { business: 2 },
+        },
+        headline: 'Candidatura do Brasil ao Pan será bancada pela iniciativa privada',
+      },
+      {
+        id: 'declinar-convite',
+        label: 'Recusar o convite',
+        description: 'Prioriza o essencial, mas frustra o esporte e o turismo.',
+        impact: {
+          prestige: -1,
+          sectors: { middleClass: -1, market: 1 },
+        },
+        headline: 'Governo desiste de sediar o Pan e diz priorizar saúde e educação',
+      },
+    ],
+  },
+  {
+    id: 'fabrica-de-chips',
+    category: 'opportunity',
+    title: 'Fábrica de Chips em Disputa',
+    icon: '💾',
+    description:
+      'Uma fabricante asiática de chips escolhe entre Brasil e México para sua primeira fábrica na região. A empresa pede incentivos bilionários.',
+    frequency: 'rare',
+    oneTime: true,
+    minTurn: 12,
+    triggers: [{ condition: { kind: 'flag', flag: 'reforma-tributaria-aprovada', present: true }, multiplier: 1.5 }],
+    options: [
+      {
+        id: 'incentivos-fiscais-chips',
+        label: 'Oferecer incentivos fiscais generosos',
+        description: 'Atrai a fábrica e empregos qualificados, mas custa bilhões em impostos.',
+        impact: { primaryBalance: -0.15, foreignInvestment: 6, sectors: { business: 4, environmentalists: 2, market: -3 } },
+        delayed: [{ impact: { potentialGrowth: 0.08, unemployment: -0.1 }, delay: 3, duration: 12, label: 'Fábrica de chips' }],
+        headline: 'Brasil vence o México e terá a primeira fábrica de chips avançados da região',
+      },
+      {
+        id: 'credito-e-infraestrutura-chips',
+        label: 'Oferecer crédito público e infraestrutura',
+        description: 'Custa menos, mas a empresa reduz o projeto a uma linha de montagem.',
+        impact: { debt: 0.2, foreignInvestment: 2, sectors: { business: 2 } },
+        delayed: [{ impact: { potentialGrowth: 0.03 }, delay: 3, duration: 12, label: 'Linha de montagem de chips' }],
+        headline: 'Fabricante de chips aceita crédito público, mas reduz o tamanho da fábrica',
+      },
+      {
+        id: 'recusar-subsidios-chips',
+        label: 'Recusar subsídios e deixar a fábrica ir',
+        description: 'Poupa o caixa, mas o país perde uma chance de salto tecnológico.',
+        impact: { prestige: -1, sectors: { market: 4, business: -4, environmentalists: -3 } },
+        headline: 'Sem incentivos, fábrica de chips vai para o México',
+      },
+    ],
+  },
+];
