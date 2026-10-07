@@ -8,8 +8,8 @@ interface SummaryRelationDeltasProps {
 }
 
 const RELATION_DELTA_DECIMALS = 1;
-/** Variações menores que isto aparecem como "0,0" e são omitidas. */
-const MIN_VISIBLE_DELTA = 0.05;
+/** Variações menores que 1 ponto são ruído mensal (deriva diplomática) e são omitidas. */
+const MIN_VISIBLE_DELTA = 1;
 
 /** Relações diplomáticas que mudaram no mês (somente as não nulas). */
 export const SummaryRelationDeltas = ({ relationDeltas, countries }: SummaryRelationDeltasProps) => {

@@ -40,7 +40,7 @@ export const Tooltip = ({ content, children, side = 'top', className = '' }: Too
       onBlur={() => setOpen(false)}
       onClick={() => setOpen((value) => !value)}
     >
-      <span aria-describedby={open ? id : undefined} className="inline-flex">
+      <span aria-describedby={open ? id : undefined} className="inline-flex w-full">
         {children}
       </span>
       {open && (
