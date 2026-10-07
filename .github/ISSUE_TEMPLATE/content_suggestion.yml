@@ -1,0 +1,35 @@
+name: 🗳️ Sugestão de conteúdo
+description: Ideia de decisão, evento, fato do mês, candidato ou esquema
+labels: [conteúdo]
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Tipo
+      options:
+        - Decisão de ministério
+        - Evento (crise, desastre, escândalo, oportunidade…)
+        - Fato do mês
+        - Ação da agenda presidencial
+        - Esquema de corrupção
+        - Candidato ou partido
+        - Outro
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: A ideia
+      description: Qual é a situação e qual dilema ela cria para o presidente?
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Opções e consequências
+      description: Quais escolhas o jogador teria? O que cada uma custa e o que ganha? (toda opção precisa de trade-off)
+  - type: textarea
+    id: sources
+    attributes:
+      label: Base na realidade
+      description: Fatos, dados ou notícias que inspiram a ideia (opcional, mas ajuda muito).

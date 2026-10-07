@@ -1,0 +1,32 @@
+name: 🐞 Bug
+description: Algo não funciona como deveria
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: O que aconteceu?
+      description: Descreva o problema e o que você esperava que acontecesse.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Como reproduzir
+      description: Passo a passo (modo de jogo, dificuldade, candidato, mês em que ocorreu).
+      placeholder: |
+        1. Novo jogo no modo Padrão, dificuldade Normal
+        2. Candidato Extrema Esquerda
+        3. No mês 5, ao editar medida provisória…
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Navegador e dispositivo
+      placeholder: Chrome 140 no Windows / Safari no iPhone
+  - type: textarea
+    id: extra
+    attributes:
+      label: Prints ou erros do console
+      description: Se possível, cole erros do console do navegador (F12) ou anexe um print.

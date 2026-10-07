@@ -2,6 +2,19 @@
   "name": "canetada",
   "private": true,
   "version": "0.1.0",
+  "description": "Canetada — simulador presidencial do Brasil, 100% no navegador.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MoreiraGustav/canetada.git"
+  },
+  "homepage": "https://github.com/MoreiraGustav/canetada#readme",
+  "bugs": {
+    "url": "https://github.com/MoreiraGustav/canetada/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

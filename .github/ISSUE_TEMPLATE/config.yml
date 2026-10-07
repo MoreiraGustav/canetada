@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🔒 Vulnerabilidade de segurança
+    url: https://github.com/MoreiraGustav/canetada/security/advisories/new
+    about: Relate em privado, não em issue pública.
+  - name: 📖 Guia de contribuição
+    url: https://github.com/MoreiraGustav/canetada/blob/main/CONTRIBUTING.md
+    about: Como rodar o projeto, adicionar conteúdo e abrir PRs.

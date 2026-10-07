@@ -1,0 +1,21 @@
+name: ✨ Nova funcionalidade
+description: Ideia de sistema, mecânica ou melhoria de interface
+labels: [melhoria]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Qual problema ou desejo isso resolve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposta
+      description: Como funcionaria no jogo? Se for uma mecânica nova, como ela se encaixa no turno mensal?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas

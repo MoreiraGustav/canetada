@@ -1,0 +1,27 @@
+name: ⚖️ Feedback de balanceamento
+description: Algo está impossível, fácil demais ou irreal
+labels: [balanceamento]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: O que parece desbalanceado?
+      placeholder: Ex.: impossível baixar a dívida pública mesmo fazendo superávit
+    validations:
+      required: true
+  - type: textarea
+    id: playstyle
+    attributes:
+      label: Como você jogou
+      description: Modo, dificuldade, candidato e estratégia (ex.: só opções austeras, sempre negociando…).
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Resultado
+      description: Números do fim da partida (aprovação, inflação, dívida, base no Congresso, pontuação…).
+  - type: textarea
+    id: expected
+    attributes:
+      label: O que seria mais realista ou divertido?
