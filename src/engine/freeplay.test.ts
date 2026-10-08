@@ -7,13 +7,21 @@ import { selectEvent } from './events';
 import { getExposedRisks, getRiskChance, isRiskPending, resolvePostTermRisks, stepLatentRisks } from './latentRisks';
 import { stepNewsBlips } from './newsBlips';
 import { rollOutcomeRisk } from './outcomes';
-import { applyPresidentialAction, canTakePresidentialAction, getActionCooldownLeft, isPresidentialActionAvailable } from './presidentialActions';
+import {
+  AGENDA_SLOT,
+  applyPresidentialAction,
+  canTakePresidentialAction,
+  getActionCooldownLeft,
+  isPresidentialActionAvailable,
+  PROGRAM_SLOT,
+} from './presidentialActions';
 import { calculateScore } from './scoring';
 
 const NORMAL = DIFFICULTY_CONFIGS.normal;
 const NO_SCALING = { positive: 1, negative: 1 };
 const [RISK] = FIXTURE_CONTENT.latentRisks;
 const [ACTION] = FIXTURE_CONTENT.presidentialActions;
+const [PROGRAM] = FIXTURE_CONTENT.programs;
 
 const withFlags = (state: SimulationState, flags: Record<string, number>): SimulationState => ({ ...state, flags: { ...state.flags, ...flags } });
 
@@ -162,5 +170,23 @@ describe('agenda presidencial', () => {
     const b = applyPresidentialAction(state, ACTION, NORMAL);
     expect(a).toEqual(b);
     expect(a.state.seed).not.toBe(state.seed);
+  });
+});
+
+describe('programas de governo', () => {
+  it('têm vaga mensal própria, independente da agenda presidencial', () => {
+    const state = withApproval(createFixtureState(), 40);
+    const afterAgenda = applyPresidentialAction(state, ACTION, NORMAL, AGENDA_SLOT).state;
+    expect(isPresidentialActionAvailable(afterAgenda, PROGRAM, PROGRAM_SLOT)).toBe(true);
+    const afterProgram = applyPresidentialAction(afterAgenda, PROGRAM, NORMAL, PROGRAM_SLOT);
+    expect(canTakePresidentialAction(afterProgram.state, PROGRAM_SLOT)).toBe(false);
+    expect(getActionCooldownLeft({ ...afterProgram.state, turn: state.turn + 1 }, PROGRAM, PROGRAM_SLOT)).toBe(PROGRAM.cooldown - 1);
+    expect(afterProgram.news[0].category).toBe('decision');
+  });
+
+  it('agendam os benefícios como efeitos graduais', () => {
+    const state = withApproval(createFixtureState(), 40);
+    const result = applyPresidentialAction(state, PROGRAM, NORMAL, PROGRAM_SLOT);
+    expect(result.state.activeEffects.some((effect) => effect.sourceId === `programa:${PROGRAM.id}`)).toBe(true);
   });
 });

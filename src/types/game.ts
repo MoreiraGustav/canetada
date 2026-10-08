@@ -4,7 +4,7 @@ import type { CongressState, CpiTopic, VoteRecord } from './congress';
 import type { Decision, DecisionChoice } from './decisions';
 import type { Bloc, Country, CountryId, DiplomaticAction, Relations } from './diplomacy';
 import type { GameEvent } from './events';
-import type { LatentRisk, NewsBlip, PresidentialAction } from './freeplay';
+import type { GovernmentProgram, LatentRisk, NewsBlip, PresidentialAction } from './freeplay';
 import type { GoalDefinition, GoalProgress } from './goals';
 import type { ActiveEffect } from './impact';
 import type { GameMetrics, IndicatorDeltas, SectorAffinity, SectorApproval, SectorKey } from './metrics';
@@ -139,6 +139,8 @@ export interface GameContent {
   newsBlips: NewsBlip[];
   /** Agenda presidencial (ação livre, uma por mês). */
   presidentialActions: PresidentialAction[];
+  /** Programas de governo (iniciativa de política pública, um por mês). */
+  programs: GovernmentProgram[];
 }
 
 export interface NewGameParams {

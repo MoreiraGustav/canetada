@@ -19,6 +19,7 @@ import type {
   MinistryId,
   MinistryInfo,
   Party,
+  GovernmentProgram,
   PresidentialAction,
 } from '@/types';
 import { indexById } from '@/utils/math';
@@ -34,6 +35,7 @@ const BACKGROUNDS_BY_ID = indexById(GAME_CONTENT.backgrounds);
 const QUESTIONS_BY_ID = indexById(GAME_CONTENT.campaignQuestions);
 const DIPLOMATIC_ACTIONS_BY_ID = indexById(GAME_CONTENT.diplomaticActions);
 const PRESIDENTIAL_ACTIONS_BY_ID = indexById(GAME_CONTENT.presidentialActions);
+const PROGRAMS_BY_ID = indexById(GAME_CONTENT.programs);
 
 /** ID do país → nome (para dicas de impacto). */
 export const COUNTRY_NAMES: Readonly<Record<string, string>> = Object.fromEntries(
@@ -49,6 +51,7 @@ export const getCountries = (): readonly Country[] => GAME_CONTENT.countries;
 export const getBlocs = (): readonly Bloc[] => GAME_CONTENT.blocs;
 export const getDiplomaticActions = (): readonly DiplomaticAction[] => GAME_CONTENT.diplomaticActions;
 export const getPresidentialActions = (): readonly PresidentialAction[] => GAME_CONTENT.presidentialActions;
+export const getPrograms = (): readonly GovernmentProgram[] => GAME_CONTENT.programs;
 
 export const getDecision = (id: string): Decision | undefined => DECISIONS_BY_ID[id];
 export const getEvent = (id: string): GameEvent | undefined => EVENTS_BY_ID[id];
@@ -61,6 +64,7 @@ export const getBackground = (id: string): BackgroundDefinition | undefined => B
 export const getCampaignQuestion = (id: string): CampaignQuestion | undefined => QUESTIONS_BY_ID[id];
 export const getDiplomaticAction = (id: string): DiplomaticAction | undefined => DIPLOMATIC_ACTIONS_BY_ID[id];
 export const getPresidentialAction = (id: string): PresidentialAction | undefined => PRESIDENTIAL_ACTIONS_BY_ID[id];
+export const getProgram = (id: string): GovernmentProgram | undefined => PROGRAMS_BY_ID[id];
 export const getMinistry = (id: MinistryId): MinistryInfo => MINISTRY_INFO[id];
 export const getEventCategory = (event: GameEvent): EventCategoryInfo => EVENT_CATEGORY_INFO[event.category];
 

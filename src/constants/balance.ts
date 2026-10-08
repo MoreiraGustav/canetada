@@ -126,6 +126,13 @@ export const DECISION_RECYCLE_TURNS = 20;
 export const SEEN_DECISION_WEIGHT = 0.3;
 export const SEEN_EVENT_WEIGHT = 0.4;
 
+/**
+ * Pauta guiada pelo jogador: decisões com alguma opção que ajuda uma meta do
+ * mandato ou promessa pendente pesam mais no sorteio, e a primeira decisão do
+ * mês sai desse grupo sempre que houver uma elegível.
+ */
+export const ALIGNED_DECISION_WEIGHT = 2.5;
+
 /** Fatos do mês: probabilidade de sair exatamente 1 ou 2 notícias avulsas (o resto: nenhuma). */
 export const BLIPS = {
   oneChance: 0.5,

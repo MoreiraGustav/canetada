@@ -30,6 +30,8 @@ export interface GameStoreActions {
   performDiplomaticAction: (actionId: string, countryId: CountryId) => void;
   /** Agenda presidencial: uma ação livre por mês (respeitando o cooldown de cada uma). */
   performPresidentialAction: (actionId: string) => void;
+  /** Programa de governo: um lançamento por mês (respeitando o cooldown de cada programa). */
+  launchProgram: (programId: string) => void;
   /** Carrega o save do localStorage; retorna false se não houver. */
   continueSavedGame: () => boolean;
   /** Apaga o save e volta ao menu. */

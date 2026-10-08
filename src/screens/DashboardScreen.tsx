@@ -1,6 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import {
   useAllDecisionsChosen,
+  useCanLaunchProgram,
   useCongressView,
   useGoalViews,
   useIndicatorViews,
@@ -37,6 +38,7 @@ export const DashboardScreen = () => {
   const decisions = useTurnDecisions();
   const { negotiationHints } = useCongressView();
   const allChosen = useAllDecisionsChosen();
+  const programPending = useCanLaunchProgram();
   const goals = useGoalViews();
   const promises = usePromiseViews();
   const { goToMenu, chooseDecisionOption, toggleNegotiation, confirmDecisions } = useGameStore(
@@ -77,7 +79,7 @@ export const DashboardScreen = () => {
           <DashboardTabs />
         </div>
       </div>
-      <TurnAdvanceBar enabled={allChosen} dateLabel={turnInfo.dateShort} onAdvance={confirmDecisions} />
+      <TurnAdvanceBar enabled={allChosen} dateLabel={turnInfo.dateShort} programPending={programPending} onAdvance={confirmDecisions} />
     </PageContainer>
   );
 };

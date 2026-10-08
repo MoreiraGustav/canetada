@@ -8,7 +8,7 @@ import type { CpiState, ImpeachmentState, PoliticalStatus, VoteRecord } from './
 import type { Decision, DecisionChoice, DecisionOption, MinistryInfo } from './decisions';
 import type { Country } from './diplomacy';
 import type { EventCategoryInfo, EventOption, GameEvent } from './events';
-import type { PresidentialAction } from './freeplay';
+import type { GovernmentProgram, PresidentialAction } from './freeplay';
 import type { GoalDefinition, GoalProgress } from './goals';
 import type { ImpactHint } from './impact';
 import type { IndicatorInfo, IndicatorKey, SectorKey } from './metrics';
@@ -40,6 +40,26 @@ export interface SectorView {
   sensitivity: string;
 }
 
+/** Meta ou promessa afetada por uma escolha, pronta para um selo. */
+export interface AlignmentTag {
+  id: string;
+  /** Título da meta ou texto da promessa. */
+  label: string;
+  icon: string;
+}
+
+/** Como uma escolha conversa com o que o jogador quer governar. */
+export interface ChoiceAlignmentView {
+  /** Metas do mandato que a escolha ajuda. */
+  helps: AlignmentTag[];
+  /** Metas do mandato que a escolha atrapalha. */
+  hurts: AlignmentTag[];
+  /** Promessas de campanha pendentes que a escolha ajuda a cumprir. */
+  promisesHelped: AlignmentTag[];
+  /** Promessas de campanha pendentes que a escolha atrapalha. */
+  promisesHurt: AlignmentTag[];
+}
+
 export interface DecisionOptionView {
   option: DecisionOption;
   /** Dicas qualitativas (imediato + gradual). */
@@ -51,6 +71,7 @@ export interface DecisionOptionView {
   negotiatedVoteChance: number | null;
   /** Chance (0–1) de um desfecho diferente do planejado (null se não há risco). */
   riskChance: number | null;
+  alignment: ChoiceAlignmentView;
 }
 
 export interface DecisionView {
@@ -66,6 +87,7 @@ export interface EventOptionView {
   hasDelayedEffects: boolean;
   /** Chance (0–1) de um desfecho diferente do planejado (null se não há risco). */
   riskChance: number | null;
+  alignment: ChoiceAlignmentView;
 }
 
 /** Ação da agenda presidencial pronta para a UI. */
@@ -77,6 +99,13 @@ export interface PresidentialActionView {
   cooldownLeft: number;
   hints: ImpactHint[];
   riskChance: number | null;
+  alignment: ChoiceAlignmentView;
+}
+
+/** Programa de governo pronto para a UI. */
+export interface ProgramView extends PresidentialActionView {
+  action: GovernmentProgram;
+  ministry: MinistryInfo;
 }
 
 export interface EventView {

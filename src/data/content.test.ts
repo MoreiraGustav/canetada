@@ -4,17 +4,20 @@
  */
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_MODIFIERS } from '@/constants/balance';
-import { GOALS_TO_SELECT, MAX_DECISIONS_PER_TURN } from '@/constants/game';
+import { GOALS_TO_SELECT, MAX_DECISIONS_PER_TURN, MINISTRY_INFO } from '@/constants/game';
 import { INDICATOR_INFO, METRIC_KEYS } from '@/constants/metrics';
 import { SECTOR_KEYS } from '@/constants/sectors';
 import { findNonFiniteNumbers, findOutOfBounds, runRandomGame } from '@/engine/__fixtures__/simulate';
+import { getChoiceAlignment } from '@/engine/alignment';
 import { buildPlayerCandidate, calculateElectionResult, createInitialState, selectCampaignQuestions } from '@/engine/election';
 import { createRng, randomInt, shuffle } from '@/engine/random';
-import type { AbilityId, BackgroundId, Condition, Impact, OutcomeRisk, SimulationState } from '@/types';
+import type { AbilityId, BackgroundId, ChoiceEffects, Condition, Impact, OutcomeRisk, SimulationState } from '@/types';
 import { getTurnFromDate } from '@/utils/calendar';
 import { GAME_CONTENT } from '@/data';
 
 const C = GAME_CONTENT;
+/** Iniciativas livres: agenda presidencial + programas de governo (mesmo formato). */
+const INITIATIVES = [...C.presidentialActions, ...C.programs];
 
 /** Flags definidas pelo próprio engine (docs/SPEC.md). */
 const ENGINE_FLAGS = ['negociacao-recente', 'cpi-instalada', 'impeachment-aberto', 'presidente-afastado'];
@@ -45,7 +48,7 @@ interface Labeled<T> {
 const collectRisks = (): Array<Labeled<OutcomeRisk>> => [
   ...C.decisions.flatMap((d) => d.options.flatMap((o) => (o.risk ? [{ where: `decisão ${d.id}/${o.id}`, value: o.risk }] : []))),
   ...C.events.flatMap((e) => e.options.flatMap((o) => (o.risk ? [{ where: `evento ${e.id}/${o.id}`, value: o.risk }] : []))),
-  ...C.presidentialActions.flatMap((a) => (a.risk ? [{ where: `agenda ${a.id}`, value: a.risk }] : [])),
+  ...INITIATIVES.flatMap((a) => (a.risk ? [{ where: `agenda ${a.id}`, value: a.risk }] : [])),
 ];
 
 const collectImpacts = (): Array<Labeled<Impact>> => [
@@ -83,7 +86,7 @@ const collectImpacts = (): Array<Labeled<Impact>> => [
     ...(action.delayed ?? []).map((entry) => ({ where: `ação ${action.id} (delayed)`, value: entry.impact })),
   ]),
   ...collectRisks().map(({ where, value }) => ({ where: `${where} (risk)`, value: value.impact })),
-  ...C.presidentialActions.flatMap((action) => [
+  ...INITIATIVES.flatMap((action) => [
     { where: `agenda ${action.id}`, value: action.impact },
     ...(action.delayed ?? []).map((entry) => ({ where: `agenda ${action.id} (delayed)`, value: entry.impact })),
   ]),
@@ -101,7 +104,7 @@ const collectConditions = (): Array<Labeled<Condition>> => [
     question.options.flatMap((option) => (option.promise?.conditions ?? []).map((value) => ({ where: `promessa ${option.promise?.id}`, value }))),
   ),
   ...C.newsBlips.flatMap((blip) => (blip.conditions ?? []).map((value) => ({ where: `fato ${blip.id}`, value }))),
-  ...C.presidentialActions.flatMap((action) => (action.conditions ?? []).map((value) => ({ where: `agenda ${action.id}`, value }))),
+  ...INITIATIVES.flatMap((action) => (action.conditions ?? []).map((value) => ({ where: `agenda ${action.id}`, value }))),
   ...C.latentRisks.flatMap((risk) => [
     { where: `risco latente ${risk.id} (origem)`, value: { kind: 'flag', flag: risk.sourceFlag, present: true } as Condition },
     ...(risk.modifiers ?? []).map((modifier) => ({
@@ -116,12 +119,16 @@ const setFlags = (): Set<string> =>
     ...C.decisions.flatMap((decision) => decision.options.flatMap((option) => option.flags ?? [])),
     ...C.events.flatMap((event) => event.options.flatMap((option) => option.flags ?? [])),
     ...collectRisks().flatMap(({ value }) => value.flags ?? []),
-    ...C.presidentialActions.flatMap((action) => action.flags ?? []),
+    ...INITIATIVES.flatMap((action) => action.flags ?? []),
     ...C.newsBlips.flatMap((blip) => blip.flags ?? []),
     ...C.latentRisks.flatMap((risk) => [risk.exposedFlag, ...(risk.exposureFlags ?? [])]),
   ]);
 
 const COUNTRY_IDS = new Set<string>(C.countries.map((country) => country.id));
+
+/** A escolha aproxima a meta do alvo (para quem a escolheu). */
+const helpsGoal = (goalId: string, effects: ChoiceEffects): boolean =>
+  getChoiceAlignment({ goals: [{ goalId, baseline: 0, targetValue: 0, progress: 0, achieved: false }], promises: [] }, C.goals, effects).helpsGoals.length > 0;
 const IMPACT_KEYS = new Set<string>(Object.keys(INDICATOR_INFO));
 
 const invalidImpactKeys = (impact: Impact): string[] => {
@@ -251,9 +258,9 @@ describe('GAME_CONTENT — jogo livre', () => {
   it('textos de riscos, agenda, fatos do mês e riscos latentes dentro dos limites', () => {
     expect([
       ...tooLong(collectRisks().map(({ where, value }) => [`${where}.risk.headline`, value.headline]), TEXT_LIMITS.headline),
-      ...tooLong(C.presidentialActions.map((a) => [`${a.id}.name`, a.name]), TEXT_LIMITS.title),
-      ...tooLong(C.presidentialActions.map((a) => [`${a.id}.description`, a.description]), TEXT_LIMITS.optionDescription),
-      ...tooLong(C.presidentialActions.map((a) => [`${a.id}.headline`, a.headline]), TEXT_LIMITS.headline),
+      ...tooLong(INITIATIVES.map((a) => [`${a.id}.name`, a.name]), TEXT_LIMITS.title),
+      ...tooLong(INITIATIVES.map((a) => [`${a.id}.description`, a.description]), TEXT_LIMITS.optionDescription),
+      ...tooLong(INITIATIVES.map((a) => [`${a.id}.headline`, a.headline]), TEXT_LIMITS.headline),
       ...tooLong(C.newsBlips.map((b) => [`${b.id}.headline`, b.headline]), TEXT_LIMITS.headline),
       ...tooLong(C.latentRisks.map((r) => [`${r.id}.headline`, r.headline]), TEXT_LIMITS.headline),
       ...tooLong(C.latentRisks.map((r) => [`${r.id}.label`, r.label]), TEXT_LIMITS.title),
@@ -263,12 +270,12 @@ describe('GAME_CONTENT — jogo livre', () => {
   it('chances de risco entre 0 e 1 e cooldowns positivos', () => {
     const badRisks = collectRisks().filter(({ value }) => !(value.chance > 0 && value.chance < 1)).map(({ where }) => where);
     const badLatent = C.latentRisks.filter((r) => !(r.monthlyChance > 0 && r.maxChance <= 1 && r.postTermChance >= 0 && r.postTermChance <= 1)).map((r) => r.id);
-    const badActions = C.presidentialActions.filter((a) => !(a.cooldown >= 1)).map((a) => a.id);
+    const badActions = INITIATIVES.filter((a) => !(a.cooldown >= 1)).map((a) => a.id);
     expect([...badRisks, ...badLatent, ...badActions]).toEqual([]);
   });
 
   it('IDs únicos em agenda, fatos do mês e riscos latentes', () => {
-    expect(duplicates([...C.presidentialActions.map((a) => a.id), ...C.newsBlips.map((b) => b.id), ...C.latentRisks.map((r) => r.id)])).toEqual([]);
+    expect(duplicates([...INITIATIVES.map((a) => a.id), ...C.newsBlips.map((b) => b.id), ...C.latentRisks.map((r) => r.id)])).toEqual([]);
   });
 
   it('todo esquema exposto tem evento de desdobramento que lê a flag de exposição', () => {
@@ -354,6 +361,21 @@ describe('GAME_CONTENT — referências', () => {
 
   it('metas usam métricas válidas e alvos positivos', () => {
     expect(C.goals.filter((goal) => !METRIC_KEYS.includes(goal.metric) || !(goal.target > 0)).map((goal) => goal.id)).toEqual([]);
+  });
+
+  it('toda meta tem ao menos dois programas de governo que a ajudam (o jogador nunca fica sem como persegui-la)', () => {
+    const helpers = (goalId: string): number => C.programs.filter((program) => helpsGoal(goalId, program)).length;
+    expect(C.goals.filter((goal) => helpers(goal.id) < 2).map((goal) => goal.id)).toEqual([]);
+  });
+
+  it('toda meta tem decisões ministeriais que a ajudam', () => {
+    const helpers = (goalId: string): number =>
+      C.decisions.filter((decision) => decision.options.some((option) => helpsGoal(goalId, option))).length;
+    expect(C.goals.filter((goal) => helpers(goal.id) < 3).map((goal) => goal.id)).toEqual([]);
+  });
+
+  it('programas pertencem a ministérios existentes', () => {
+    expect(C.programs.filter((program) => !(program.ministry in MINISTRY_INFO)).map((program) => program.id)).toEqual([]);
   });
 
   it('há pelo menos uma pergunta de campanha obrigatória', () => {

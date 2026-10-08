@@ -22,6 +22,8 @@ import type {
 import { formatTurnLong } from '@/utils/calendar';
 import { mergeImpacts, summarizeImpact } from '@/utils/impactHints';
 import { POLITICAL_STATUS_LABELS } from '@/utils/labels';
+import { useAlignmentContext } from './alignmentSelectors';
+import type { AlignmentContext } from './alignmentSelectors';
 import { COUNTRY_NAMES, getAbility, getBackground, getDecision, getEvent, getEventCategory, getMinistry, getParty } from './content';
 import { pickSimulationSlice } from './gameData';
 import { assembleSimulationState } from './simulationBridge';
@@ -69,9 +71,11 @@ export const useVoteChance = (type: LegislativeType, negotiate: boolean): number
 const buildOptionView = (
   option: DecisionOption,
   chanceFor: (type: LegislativeType, negotiate: boolean) => number,
+  alignment: AlignmentContext,
 ): DecisionOptionView => ({
   option,
-  hints: summarizeImpact(totalImpact(option.impact, option.delayed), COUNTRY_NAMES),
+  hints: summarizeImpact(totalImpact(option.impact, option.delayed), COUNTRY_NAMES, alignment.goalKeys),
+  alignment: alignment.describe(option),
   hasDelayedEffects: (option.delayed?.length ?? 0) > 0,
   voteChance: option.legislative ? chanceFor(option.legislative, false) : null,
   negotiatedVoteChance: option.legislative ? chanceFor(option.legislative, true) : null,
@@ -84,6 +88,7 @@ export const useTurnDecisions = (): DecisionView[] => {
   const support = useCongressStore((state) => state.support);
   const approval = useMetricsStore((state) => state.approval);
   const { voteChanceBonus, provisionalMeasure } = useMonthVote();
+  const alignment = useAlignmentContext();
   return useMemo(() => {
     const chanceFor = (type: LegislativeType, negotiate: boolean): number =>
       calculateVoteChance({ type, support, approval, negotiate, voteChanceBonus, provisionalMeasure });
@@ -94,20 +99,21 @@ export const useTurnDecisions = (): DecisionView[] => {
         {
           decision,
           ministry: getMinistry(decision.ministry),
-          options: decision.options.map((option) => buildOptionView(option, chanceFor)),
+          options: decision.options.map((option) => buildOptionView(option, chanceFor, alignment)),
           choice: choices[id] ?? null,
         },
       ];
     });
-  }, [ids, choices, support, approval, voteChanceBonus, provisionalMeasure]);
+  }, [ids, choices, support, approval, voteChanceBonus, provisionalMeasure, alignment]);
 };
 
 export const useAllDecisionsChosen = (): boolean =>
   useGameStore((state) => state.turnDecisionIds.every((id) => state.choices[id] !== undefined));
 
-const buildEventOptionView = (option: EventOption): EventView['options'][number] => ({
+const buildEventOptionView = (option: EventOption, alignment: AlignmentContext): EventView['options'][number] => ({
   option,
-  hints: summarizeImpact(totalImpact(option.impact, option.delayed), COUNTRY_NAMES),
+  hints: summarizeImpact(totalImpact(option.impact, option.delayed), COUNTRY_NAMES, alignment.goalKeys),
+  alignment: alignment.describe(option),
   hasDelayedEffects: (option.delayed?.length ?? 0) > 0,
   riskChance: option.risk?.chance ?? null,
 });
@@ -115,16 +121,17 @@ const buildEventOptionView = (option: EventOption): EventView['options'][number]
 /** Evento do mês em resolução (null fora da fase de evento). */
 export const useCurrentEvent = (): EventView | null => {
   const { eventId, turn } = useGameStore(useShallow((state) => ({ eventId: state.currentEventId, turn: state.turn })));
+  const alignment = useAlignmentContext();
   return useMemo(() => {
     const event = eventId ? getEvent(eventId) : undefined;
     if (!event) return null;
     return {
       event,
       category: getEventCategory(event),
-      options: event.options.map(buildEventOptionView),
+      options: event.options.map((option) => buildEventOptionView(option, alignment)),
       dateLabel: formatTurnLong(turn),
     };
-  }, [eventId, turn]);
+  }, [eventId, turn, alignment]);
 };
 
 /** Situação do Congresso e estado político (estável, crise, CPI, impeachment). */

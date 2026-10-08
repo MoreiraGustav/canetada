@@ -522,6 +522,19 @@ export const FIXTURE_CONTENT: GameContent = {
       risk: { chance: 0.5, impact: { approval: -2 }, headline: 'Pronunciamento vira panelaço' },
     },
   ],
+  programs: [
+    {
+      id: 'fx-obras',
+      ministry: 'infraestrutura',
+      name: 'Obras de teste',
+      icon: '🛣️',
+      description: 'Constrói estradas.',
+      impact: { debt: 0.4 },
+      delayed: [{ impact: { infrastructureKm: 400 }, delay: 0, duration: 4, label: 'Obras de teste' }],
+      cooldown: 6,
+      headline: 'Governo lança obras de teste',
+    },
+  ],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────

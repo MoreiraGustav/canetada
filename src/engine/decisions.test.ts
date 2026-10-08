@@ -3,6 +3,7 @@ import { DEBT_IMPACT_SCALE, DECISION_RECYCLE_TURNS, DIFFICULTY_CONFIGS } from '@
 import { MAX_DECISIONS_PER_TURN, MIN_DECISIONS_PER_TURN } from '@/constants/game';
 import type { DecisionOption, SimulationState } from '@/types';
 import { createFixtureState, findDecision, FIXTURE_CONTENT, fixedRng, FLAG_PARK_CREATED, FLAG_PEC_APPROVED, withApproval, withSupport } from './__fixtures__/content';
+import { getChoiceAlignment, isAlignedChoice } from './alignment';
 import { calculateVoteChance } from './congress';
 import { applyDecisionChoice, isDecisionEligible, selectTurnDecisions } from './decisions';
 
@@ -160,5 +161,21 @@ describe('applyDecisionChoice — opção legislativa', () => {
     const noHeadline: DecisionOption = { ...send, failureHeadline: undefined, failureImpact: undefined };
     const result = applyDecisionChoice(base(6), pec, noHeadline, false, ALWAYS_REJECT, NORMAL);
     expect(result.news[0].headline).toContain(pec.title);
+  });
+});
+
+describe('selectTurnDecisions — pauta guiada pelas metas', () => {
+  it('a primeira decisão do mês ajuda uma meta ou promessa pendente do jogador', () => {
+    const state = { ...base(5), ...createFixtureState({ goalIds: ['fx-meta-ideb'] }), turn: 5 };
+    SEEDS.forEach((seed) => {
+      const [first] = selectTurnDecisions({ ...state, seed }, DECISIONS, FIXTURE_CONTENT.goals).decisionIds;
+      const decision = findDecision(FIXTURE_CONTENT, first);
+      expect(decision.options.some((entry) => isAlignedChoice(getChoiceAlignment(state, FIXTURE_CONTENT.goals, entry)))).toBe(true);
+    });
+  });
+
+  it('sem metas informadas, mantém o sorteio original', () => {
+    const state = { ...base(5), seed: 4242 };
+    expect(selectTurnDecisions(state, DECISIONS, []).decisionIds).toEqual(selectTurnDecisions(state, DECISIONS).decisionIds);
   });
 });

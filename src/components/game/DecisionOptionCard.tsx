@@ -1,3 +1,4 @@
+import { ChoiceAlignmentBadges } from './ChoiceAlignmentBadges';
 import { DecisionVoteRequirement } from './DecisionVoteRequirement';
 import { ImpactHintList } from './ImpactHintList';
 import { OutcomeRiskBadge } from './OutcomeRiskBadge';
@@ -36,6 +37,7 @@ export const DecisionOptionCard = ({ view, marker, selected, onSelect }: Decisio
         <span className="font-serif text-base font-semibold leading-snug text-ink">{option.label}</span>
       </span>
       <span className="font-serif text-sm leading-snug text-ink-soft">{option.description}</span>
+      <ChoiceAlignmentBadges alignment={view.alignment} />
       <ImpactHintList hints={view.hints} hasDelayedEffects={view.hasDelayedEffects} />
       <OutcomeRiskBadge chance={view.riskChance} className="self-start" />
       {option.legislative && voteChance !== null && <DecisionVoteRequirement type={option.legislative} chance={voteChance} />}

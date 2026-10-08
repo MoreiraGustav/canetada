@@ -15,6 +15,7 @@ import { LEGACY_TIERS } from './legacy';
 import { NEWS_BLIPS } from './newsBlips';
 import { PARTIES } from './parties';
 import { PRESIDENTIAL_ACTIONS } from './presidentialActions';
+import { PROGRAMS } from './programs';
 
 /** Registro central de todo o conteúdo do jogo (data-driven). */
 export const GAME_CONTENT: GameContent = {
@@ -35,4 +36,5 @@ export const GAME_CONTENT: GameContent = {
   latentRisks: LATENT_RISKS,
   newsBlips: NEWS_BLIPS,
   presidentialActions: PRESIDENTIAL_ACTIONS,
+  programs: PROGRAMS,
 };

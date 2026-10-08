@@ -45,7 +45,8 @@ export const GoalsScreen = () => {
         <section>
           <p className="mb-4 font-serif text-ink-soft">
             Escolha <strong className="text-ink">{GOALS_TO_SELECT} metas</strong>. Elas guiarão a avaliação do seu legado ao fim do
-            mandato.
+            mandato. Todo mês você poderá lançar um <strong className="text-ink">🏗️ programa de governo</strong> para persegui-las, e a
+            pauta dos ministérios trará decisões ligadas a elas.
             {modeConfig.goalScale < FULL_SCALE &&
               ` Os critérios abaixo valem para o Mandato Completo; no modo ${modeConfig.label}, será exigido ${Math.round(modeConfig.goalScale * PERCENT)}% do avanço.`}
           </p>

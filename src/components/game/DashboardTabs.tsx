@@ -7,11 +7,13 @@ import { CongressPanel } from './CongressPanel';
 import { DiplomacyPanel } from './DiplomacyPanel';
 import { HistoryChartPanel } from './HistoryChartPanel';
 import { PresidentialAgendaPanel } from './PresidentialAgendaPanel';
+import { ProgramsPanel } from './ProgramsPanel';
 import { SecondaryIndicatorsPanel } from './SecondaryIndicatorsPanel';
 
-type DashboardTabId = 'agenda' | 'congress' | 'diplomacy' | 'indicators' | 'charts' | 'effects';
+type DashboardTabId = 'programs' | 'agenda' | 'congress' | 'diplomacy' | 'indicators' | 'charts' | 'effects';
 
 const TAB_ITEMS: ReadonlyArray<{ id: DashboardTabId; label: string; icon: string }> = [
+  { id: 'programs', label: 'Programas', icon: '🏗️' },
   { id: 'agenda', label: 'Agenda', icon: '🗓️' },
   { id: 'congress', label: 'Congresso', icon: '⚖️' },
   { id: 'diplomacy', label: 'Diplomacia', icon: '🌍' },
@@ -22,6 +24,7 @@ const TAB_ITEMS: ReadonlyArray<{ id: DashboardTabId; label: string; icon: string
 
 /** Painel de cada aba (lookup por ID; só a aba ativa assina as stores). */
 const TAB_PANELS: Record<DashboardTabId, ComponentType> = {
+  programs: ProgramsPanel,
   agenda: PresidentialAgendaPanel,
   congress: CongressPanel,
   diplomacy: DiplomacyPanel,
@@ -30,9 +33,9 @@ const TAB_PANELS: Record<DashboardTabId, ComponentType> = {
   effects: ActiveEffectsPanel,
 };
 
-/** Área secundária do painel: agenda presidencial, Congresso, diplomacia, indicadores, gráficos e efeitos. */
+/** Área secundária do painel: programas de governo, agenda presidencial, Congresso, diplomacia, indicadores, gráficos e efeitos. */
 export const DashboardTabs = () => {
-  const [active, setActive] = useState<DashboardTabId>('agenda');
+  const [active, setActive] = useState<DashboardTabId>('programs');
   const Panel = TAB_PANELS[active];
   return (
     <section aria-label="Painéis do governo">

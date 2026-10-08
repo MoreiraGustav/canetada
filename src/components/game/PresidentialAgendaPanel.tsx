@@ -2,7 +2,7 @@ import { useCanTakePresidentialAction, usePresidentialActionViews } from '@/stor
 import { useGameStore } from '@/stores/useGameStore';
 import { PresidentialActionCard } from './PresidentialActionCard';
 
-/** Agenda presidencial: uma iniciativa livre por mês, à escolha do jogador. */
+/** Agenda presidencial: um gesto político por mês, à escolha do jogador (programas ficam em aba própria). */
 export const PresidentialAgendaPanel = () => {
   const views = usePresidentialActionViews();
   const canTake = useCanTakePresidentialAction();
@@ -11,7 +11,7 @@ export const PresidentialAgendaPanel = () => {
     <div>
       <p className="mb-3 font-serif text-sm leading-relaxed text-ink-soft">
         {canTake
-          ? 'Opcional: escolha uma iniciativa própria para este mês. Cada uma tem um preço — e algumas podem sair do roteiro.'
+          ? 'Opcional: um gesto político por mês para ganhar apoio ou popularidade. Cada um tem um preço — e alguns podem sair do roteiro.'
           : 'A agenda deste mês já foi cumprida. Volte no próximo mês.'}
       </p>
       <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">

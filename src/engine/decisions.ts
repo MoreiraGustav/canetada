@@ -1,4 +1,4 @@
-import { DECISION_RECYCLE_TURNS, DEFAULT_DECISION_COOLDOWN, SEEN_DECISION_WEIGHT } from '@/constants/balance';
+import { ALIGNED_DECISION_WEIGHT, DECISION_RECYCLE_TURNS, DEFAULT_DECISION_COOLDOWN, SEEN_DECISION_WEIGHT } from '@/constants/balance';
 import { MAX_DECISIONS_PER_TURN, MAX_VOTE_RECORDS, MIN_DECISIONS_PER_TURN } from '@/constants/game';
 import type {
   Decision,
@@ -6,6 +6,7 @@ import type {
   DecisionResult,
   DecisionSelection,
   DifficultyConfig,
+  GoalDefinition,
   MinistryId,
   NewsItem,
   Rng,
@@ -14,6 +15,7 @@ import type {
   VoteRecord,
 } from '@/types';
 import { getTurnDate } from '@/utils/calendar';
+import { getChoiceAlignment, isAlignedChoice } from './alignment';
 import { evaluateConditions } from './conditions';
 import { calculateVoteChance, FLAG_RECENT_NEGOTIATION, getNegotiationCost, getVoteBonus, hasProvisionalMeasure } from './congress';
 import { applyImpact, imprintPolicyMemory, scaleImpactByPolarity, scheduleDelayedImpacts, setFlags, toneFromImpact } from './impacts';
@@ -46,19 +48,31 @@ export const isDecisionEligible = (state: SimulationState, decision: Decision): 
   );
 };
 
-/** Peso de sorteio: `weight` × novidade (não-repetíveis já vistas pesam menos). */
-const drawWeight = (decision: Decision, history: Record<string, number>): number => {
+/** Alguma opção da decisão ajuda uma meta do mandato ou promessa pendente. */
+const isAlignedDecision = (state: SimulationState, decision: Decision, goals: readonly GoalDefinition[]): boolean =>
+  decision.options.some((option) => isAlignedChoice(getChoiceAlignment(state, goals, option)));
+
+interface DrawCandidate {
+  decision: Decision;
+  aligned: boolean;
+}
+
+/** Peso de sorteio: `weight` × novidade (não-repetíveis já vistas pesam menos) × alinhamento com metas/promessas. */
+const drawWeight = ({ decision, aligned }: DrawCandidate, history: Record<string, number>): number => {
   const seen = !decision.repeatable && history[decision.id] !== undefined;
-  return (decision.weight ?? DEFAULT_DECISION_WEIGHT) * (seen ? SEEN_DECISION_WEIGHT : 1);
+  return (decision.weight ?? DEFAULT_DECISION_WEIGHT) * (seen ? SEEN_DECISION_WEIGHT : 1) * (aligned ? ALIGNED_DECISION_WEIGHT : 1);
 };
 
-const drawDecisions = (rng: Rng, pool: readonly Decision[], history: Record<string, number>): Decision[] => {
+/** A primeira decisão sai do grupo alinhado (se houver); as demais, do pool todo. */
+const drawDecisions = (rng: Rng, pool: readonly DrawCandidate[], history: Record<string, number>): Decision[] => {
   const target = randomInt(rng, MIN_DECISIONS_PER_TURN, MAX_DECISIONS_PER_TURN);
   const picked: Decision[] = [];
   const usedMinistries = new Set<MinistryId>();
   while (picked.length < target) {
-    const remaining = pool.filter((decision) => !usedMinistries.has(decision.ministry));
-    const choice = pickWeighted(rng, remaining.map((decision) => ({ item: decision, weight: drawWeight(decision, history) })));
+    const open = pool.filter((candidate) => !usedMinistries.has(candidate.decision.ministry));
+    const aligned = open.filter((candidate) => candidate.aligned);
+    const remaining = picked.length === 0 && aligned.length > 0 ? aligned : open;
+    const choice = pickWeighted(rng, remaining.map((candidate) => ({ item: candidate.decision, weight: drawWeight(candidate, history) })));
     if (!choice) break;
     picked.push(choice);
     usedMinistries.add(choice.ministry);
@@ -66,9 +80,18 @@ const drawDecisions = (rng: Rng, pool: readonly Decision[], history: Record<stri
   return picked;
 };
 
-/** Sorteia de 3 a 5 decisões elegíveis (no máximo 1 por ministério), ponderadas por `weight` e novidade. */
-export const selectTurnDecisions = (state: SimulationState, decisions: readonly Decision[]): DecisionSelection => {
-  const pool = decisions.filter((decision) => isDecisionEligible(state, decision));
+/**
+ * Sorteia de 3 a 4 decisões elegíveis (no máximo 1 por ministério), ponderadas por `weight`,
+ * novidade e alinhamento com as metas (`goals`) e promessas pendentes do jogador.
+ */
+export const selectTurnDecisions = (
+  state: SimulationState,
+  decisions: readonly Decision[],
+  goals: readonly GoalDefinition[] = [],
+): DecisionSelection => {
+  const pool = decisions
+    .filter((decision) => isDecisionEligible(state, decision))
+    .map((decision) => ({ decision, aligned: isAlignedDecision(state, decision, goals) }));
   const { result: picked, seed } = withStateRng(state, (rng) => drawDecisions(rng, pool, state.decisionHistory));
   const decisionHistory = { ...state.decisionHistory, ...Object.fromEntries(picked.map((decision) => [decision.id, state.turn])) };
   return { state: { ...state, decisionHistory, seed }, decisionIds: picked.map((decision) => decision.id) };

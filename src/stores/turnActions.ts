@@ -10,16 +10,17 @@ import {
   isPresidentialActionAvailable,
   prepareTurn,
   processTurn,
+  PROGRAM_SLOT,
 } from '@/engine';
-import type { CountryId, DecisionChoice, GameData, NewsItem, Relations, TurnEventChoice } from '@/types';
-import { getCountry, getDiplomaticAction, getPresidentialAction } from './content';
+import type { CountryId, DecisionChoice, GameData, InitiativeSlot, NewsItem, PresidentialAction, Relations, TurnEventChoice } from '@/types';
+import { getCountry, getDiplomaticAction, getPresidentialAction, getProgram } from './content';
 import { pickSimulationSlice } from './gameData';
 import type { GameStoreActions, GameStoreApi } from './gameStoreTypes';
 import { assembleSimulationState, distributeSimulationState, recordSnapshot } from './simulationBridge';
 
 type TurnActions = Pick<
   GameStoreActions,
-  'chooseDecisionOption' | 'toggleNegotiation' | 'confirmDecisions' | 'resolveEvent' | 'performDiplomaticAction' | 'performPresidentialAction'
+  'chooseDecisionOption' | 'toggleNegotiation' | 'confirmDecisions' | 'resolveEvent' | 'performDiplomaticAction' | 'performPresidentialAction' | 'launchProgram'
 >;
 
 const collectChoices = (data: GameData): DecisionChoice[] =>
@@ -83,12 +84,12 @@ const performDiplomaticAction = (api: GameStoreApi, actionId: string, countryId:
   api.commit({ ...distributeSimulationState(result.state), newsArchive: prependNews(game.newsArchive, [result.news]) });
 };
 
-const performPresidentialAction = (api: GameStoreApi, actionId: string): void => {
+/** Iniciativa livre do mês (agenda ou programa), se a vaga e o cooldown permitirem. */
+const performInitiative = (api: GameStoreApi, action: PresidentialAction | undefined, slot?: InitiativeSlot): void => {
   const game = api.get();
-  const action = getPresidentialAction(actionId);
   const state = assembleSimulationState(pickSimulationSlice(game));
-  if (game.phase !== 'turn' || !action || !isPresidentialActionAvailable(state, action)) return;
-  const result = applyPresidentialAction(state, action, getDifficultyConfig(state.difficulty));
+  if (game.phase !== 'turn' || !action || !isPresidentialActionAvailable(state, action, slot)) return;
+  const result = applyPresidentialAction(state, action, getDifficultyConfig(state.difficulty), slot);
   api.commit({ ...distributeSimulationState(result.state), newsArchive: prependNews(game.newsArchive, result.news) });
 };
 
@@ -111,5 +112,6 @@ export const createTurnActions = (api: GameStoreApi): TurnActions => ({
     runTurn(api, { eventId: currentEventId, optionId });
   },
   performDiplomaticAction: (actionId, countryId) => performDiplomaticAction(api, actionId, countryId),
-  performPresidentialAction: (actionId) => performPresidentialAction(api, actionId),
+  performPresidentialAction: (actionId) => performInitiative(api, getPresidentialAction(actionId)),
+  launchProgram: (programId) => performInitiative(api, getProgram(programId), PROGRAM_SLOT),
 });

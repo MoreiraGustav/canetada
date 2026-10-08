@@ -1,4 +1,5 @@
 import type { Condition } from './conditions';
+import type { MinistryId } from './decisions';
 import type { DelayedImpact, Impact, OutcomeRisk } from './impact';
 import type { NewsCategory, NewsTone } from './news';
 
@@ -80,3 +81,17 @@ export interface PresidentialAction {
   headline: string;
   flags?: string[];
 }
+
+/**
+ * Programa de governo: política pública que o jogador lança por iniciativa
+ * própria (no máximo um por mês). O custo (contas, setores, ideologia) é
+ * imediato; os benefícios chegam como efeitos graduais. As metas e promessas
+ * que cada programa ajuda são derivadas dos seus impactos (engine/alignment).
+ */
+export interface GovernmentProgram extends PresidentialAction {
+  /** Ministério responsável (ícone e rótulo na UI). */
+  ministry: MinistryId;
+}
+
+/** Vaga mensal de uma iniciativa livre: agenda presidencial ou programa de governo. */
+export type InitiativeSlot = 'acao-presidencial' | 'programa';

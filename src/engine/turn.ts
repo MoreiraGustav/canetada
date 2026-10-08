@@ -149,7 +149,7 @@ export const processTurn = (input: TurnInput): TurnResult => {
 export const advanceTurn = (state: SimulationState): SimulationState => ({ ...state, turn: state.turn + 1 });
 
 export const prepareTurn = (state: SimulationState, content: GameContent): { state: SimulationState; decisionIds: string[] } =>
-  selectTurnDecisions(state, content.decisions);
+  selectTurnDecisions(state, content.decisions, content.goals);
 
 export const drawEvent = (state: SimulationState, content: GameContent): { state: SimulationState; eventId: string | null } =>
   selectEvent(state, content.events, getDifficultyConfig(state.difficulty));

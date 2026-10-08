@@ -1,3 +1,4 @@
+import type { DelayedImpact, Impact } from './impact';
 import type { MetricKey } from './metrics';
 
 /**
@@ -35,4 +36,19 @@ export interface GoalProgress {
   /** Progresso 0–100 do baseline até o alvo. */
   progress: number;
   achieved: boolean;
+}
+
+/** Efeitos de uma escolha relevantes para o alinhamento com metas e promessas. */
+export interface ChoiceEffects {
+  impact: Impact;
+  delayed?: readonly DelayedImpact[];
+  flags?: readonly string[];
+}
+
+/** Metas do mandato e promessas pendentes que uma escolha ajuda ou atrapalha (IDs). */
+export interface ChoiceAlignment {
+  helpsGoals: string[];
+  hurtsGoals: string[];
+  helpsPromises: string[];
+  hurtsPromises: string[];
 }
