@@ -14,7 +14,7 @@ export const GOALS: GoalDefinition[] = [
     metric: 'infrastructureKm',
     direction: 'increase',
     targetType: 'absolute',
-    target: 5000,
+    target: 8000,
   },
   {
     id: 'educacao-para-todos',
@@ -25,7 +25,7 @@ export const GOALS: GoalDefinition[] = [
     metric: 'ideb',
     direction: 'increase',
     targetType: 'absolute',
-    target: 5.8,
+    target: 6,
   },
   {
     id: 'brasil-verde',
@@ -81,7 +81,7 @@ export const GOALS: GoalDefinition[] = [
     metric: 'prestige',
     direction: 'increase',
     targetType: 'absolute',
-    target: 80,
+    target: 85,
   },
   {
     id: 'justica-social',
@@ -98,12 +98,12 @@ export const GOALS: GoalDefinition[] = [
     id: 'seguranca',
     title: 'Segurança',
     icon: '🔒',
-    description: 'Reduzir em um quarto a taxa de homicídios no país.',
+    description: 'Reduzir em 30% a taxa de homicídios no país.',
     criteria: 'Taxa de homicídios de {target} ou menos',
     metric: 'homicideRate',
     direction: 'decrease',
     targetType: 'relative',
-    target: 25,
+    target: 30,
   },
   {
     id: 'moradia-digna',

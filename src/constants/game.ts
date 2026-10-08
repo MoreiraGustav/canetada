@@ -31,7 +31,7 @@ export const GAME_MODES: Record<GameMode, GameModeConfig> = {
     turns: 12,
     description: 'Um ano de governo. Ideal para conhecer o jogo.',
     duration: '~20–30 min',
-    goalScale: 0.4,
+    goalScale: 0.33,
   },
   standard: {
     id: 'standard',
@@ -40,7 +40,7 @@ export const GAME_MODES: Record<GameMode, GameModeConfig> = {
     turns: 24,
     description: 'Dois anos de governo. Experiência equilibrada.',
     duration: '~45–60 min',
-    goalScale: 0.65,
+    goalScale: 0.6,
   },
   full: {
     id: 'full',
