@@ -1,17 +1,17 @@
 import { DecisionNegotiationToggle } from './DecisionNegotiationToggle';
-import type { DecisionOptionView, ImpactHint } from '@/types';
+import type { DecisionOptionView, NegotiationView } from '@/types';
 import { formatChance } from '@/utils/format';
 
 interface DecisionDecidedRowProps {
   chosen: DecisionOptionView;
   negotiating: boolean;
-  negotiationHints: readonly ImpactHint[];
+  negotiation: NegotiationView;
   onEdit: () => void;
   onToggleNegotiation: () => void;
 }
 
 /** Decisão já tomada, recolhida em uma linha (mantém a negociação visível se depender do Congresso). */
-export const DecisionDecidedRow = ({ chosen, negotiating, negotiationHints, onEdit, onToggleNegotiation }: DecisionDecidedRowProps) => {
+export const DecisionDecidedRow = ({ chosen, negotiating, negotiation, onEdit, onToggleNegotiation }: DecisionDecidedRowProps) => {
   const { option, voteChance, negotiatedVoteChance } = chosen;
   return (
     <div className="mt-3 border border-ink bg-paper">
@@ -39,7 +39,7 @@ export const DecisionDecidedRow = ({ chosen, negotiating, negotiationHints, onEd
         <DecisionNegotiationToggle
           active={negotiating}
           negotiatedChance={negotiatedVoteChance}
-          costHints={negotiationHints}
+          cost={negotiation}
           onToggle={onToggleNegotiation}
         />
       )}

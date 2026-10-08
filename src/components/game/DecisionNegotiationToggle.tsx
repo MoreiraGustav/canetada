@@ -1,18 +1,19 @@
+import { ChoiceAlignmentBadges } from './ChoiceAlignmentBadges';
 import { ImpactHintList } from './ImpactHintList';
-import type { ImpactHint } from '@/types';
+import type { NegotiationView } from '@/types';
 import { formatChance } from '@/utils/format';
 
 interface DecisionNegotiationToggleProps {
   active: boolean;
   /** Chance de aprovação negociando (0–1). */
   negotiatedChance: number;
-  /** Custo político da negociação (dicas qualitativas). */
-  costHints: readonly ImpactHint[];
+  /** Custo político da negociação (dicas e efeito sobre metas/promessas). */
+  cost: NegotiationView;
   onToggle: () => void;
 }
 
 /** Interruptor "Negociar cargos e emendas" de uma opção que depende do Congresso. */
-export const DecisionNegotiationToggle = ({ active, negotiatedChance, costHints, onToggle }: DecisionNegotiationToggleProps) => (
+export const DecisionNegotiationToggle = ({ active, negotiatedChance, cost, onToggle }: DecisionNegotiationToggleProps) => (
   <div className={`border-t border-dashed border-rule px-3 py-2.5 ${active ? 'bg-ochre-light/50' : 'bg-paper-dark/60'}`}>
     <button
       type="button"
@@ -36,7 +37,8 @@ export const DecisionNegotiationToggle = ({ active, negotiatedChance, costHints,
     </button>
     <div className="mt-2 flex flex-wrap items-center gap-2">
       <span className="font-sans text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Custo político:</span>
-      <ImpactHintList hints={costHints} />
+      <ImpactHintList hints={cost.hints} />
     </div>
+    <ChoiceAlignmentBadges alignment={cost.alignment} className="mt-1.5" />
   </div>
 );

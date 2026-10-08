@@ -9,9 +9,10 @@ import { INDICATOR_INFO, METRIC_KEYS } from '@/constants/metrics';
 import { SECTOR_KEYS } from '@/constants/sectors';
 import { findNonFiniteNumbers, findOutOfBounds, runRandomGame } from '@/engine/__fixtures__/simulate';
 import { getChoiceAlignment } from '@/engine/alignment';
+import { FLAG_RECENT_NEGOTIATION } from '@/engine/congress';
 import { buildPlayerCandidate, calculateElectionResult, createInitialState, selectCampaignQuestions } from '@/engine/election';
 import { createRng, randomInt, shuffle } from '@/engine/random';
-import type { AbilityId, BackgroundId, ChoiceEffects, Condition, Impact, OutcomeRisk, SimulationState } from '@/types';
+import type { AbilityId, BackgroundId, ChoiceEffects, Condition, Impact, OutcomeRisk, PlayerPromise, SimulationState } from '@/types';
 import { getTurnFromDate } from '@/utils/calendar';
 import { GAME_CONTENT } from '@/data';
 
@@ -372,6 +373,16 @@ describe('GAME_CONTENT — referências', () => {
     const helpers = (goalId: string): number =>
       C.decisions.filter((decision) => decision.options.some((option) => helpsGoal(goalId, option))).length;
     expect(C.goals.filter((goal) => helpers(goal.id) < 3).map((goal) => goal.id)).toEqual([]);
+  });
+
+  it('negociar votos e o jantar com o centrão contrariam a promessa "sem barganha"', () => {
+    const definition = C.campaignQuestions.flatMap((q) => q.options).find((o) => o.promise?.id === 'promessa-sem-barganha')?.promise;
+    if (!definition) throw new Error('promessa-sem-barganha não encontrada');
+    const promise: PlayerPromise = { ...definition, deadlineTurn: 48, status: 'pending', resolvedTurn: null };
+    const hurts = (effects: ChoiceEffects): string[] => getChoiceAlignment({ goals: [], promises: [promise] }, C.goals, effects).hurtsPromises;
+    expect(hurts({ impact: {}, flags: [FLAG_RECENT_NEGOTIATION] })).toEqual([promise.id]);
+    const dinner = INITIATIVES.find((action) => action.id === 'jantar-bancada-centrao');
+    expect(dinner && hurts(dinner)).toEqual([promise.id]);
   });
 
   it('programas pertencem a ministérios existentes', () => {

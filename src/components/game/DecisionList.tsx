@@ -1,17 +1,17 @@
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { DecisionCard } from './DecisionCard';
 import { ImpactLegend } from './ImpactLegend';
-import type { DecisionView, ImpactHint } from '@/types';
+import type { DecisionView, NegotiationView } from '@/types';
 
 interface DecisionListProps {
   decisions: readonly DecisionView[];
-  negotiationHints: readonly ImpactHint[];
+  negotiation: NegotiationView;
   onChoose: (decisionId: string, optionId: string) => void;
   onToggleNegotiation: (decisionId: string) => void;
 }
 
 /** Pauta do mês: decisões ministeriais pendentes com contador de progresso. */
-export const DecisionList = ({ decisions, negotiationHints, onChoose, onToggleNegotiation }: DecisionListProps) => {
+export const DecisionList = ({ decisions, negotiation, onChoose, onToggleNegotiation }: DecisionListProps) => {
   const decidedCount = decisions.filter((view) => view.choice !== null).length;
   const counter =
     decisions.length > 0 ? (
@@ -36,7 +36,7 @@ export const DecisionList = ({ decisions, negotiationHints, onChoose, onToggleNe
               <DecisionCard
                 view={view}
                 index={index + 1}
-                negotiationHints={negotiationHints}
+                negotiation={negotiation}
                 onChoose={onChoose}
                 onToggleNegotiation={onToggleNegotiation}
               />

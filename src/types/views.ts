@@ -141,6 +141,12 @@ export interface RelationView {
   delta: number | null;
 }
 
+/** Custo de negociar cargos e emendas e como isso conversa com as promessas do jogador. */
+export interface NegotiationView {
+  hints: ImpactHint[];
+  alignment: ChoiceAlignmentView;
+}
+
 export interface CongressView {
   support: number;
   status: PoliticalStatus;
@@ -153,7 +159,7 @@ export interface CongressView {
   recentVotes: VoteRecord[];
   ordinaryChance: number;
   pecChance: number;
-  negotiationHints: ImpactHint[];
+  negotiation: NegotiationView;
   cpisSurvived: number;
   impeachmentsSurvived: number;
 }

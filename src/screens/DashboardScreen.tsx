@@ -36,7 +36,7 @@ export const DashboardScreen = () => {
   );
   const news = useNewsArchive(NEWS_SHOWN);
   const decisions = useTurnDecisions();
-  const { negotiationHints } = useCongressView();
+  const { negotiation } = useCongressView();
   const allChosen = useAllDecisionsChosen();
   const programPending = useCanLaunchProgram();
   const goals = useGoalViews();
@@ -71,7 +71,7 @@ export const DashboardScreen = () => {
           <NewsFeed items={news} />
           <DecisionList
             decisions={decisions}
-            negotiationHints={negotiationHints}
+            negotiation={negotiation}
             onChoose={chooseDecisionOption}
             onToggleNegotiation={toggleNegotiation}
           />

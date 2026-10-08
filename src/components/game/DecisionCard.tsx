@@ -3,13 +3,13 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { DecisionDecidedRow } from './DecisionDecidedRow';
 import { DecisionOptionCard } from './DecisionOptionCard';
-import type { DecisionView, ImpactHint } from '@/types';
+import type { DecisionView, NegotiationView } from '@/types';
 
 interface DecisionCardProps {
   view: DecisionView;
   /** Posição na lista (1-based), exibida como número da pauta. */
   index: number;
-  negotiationHints: readonly ImpactHint[];
+  negotiation: NegotiationView;
   onChoose: (decisionId: string, optionId: string) => void;
   onToggleNegotiation: (decisionId: string) => void;
 }
@@ -17,7 +17,7 @@ interface DecisionCardProps {
 const OPTION_MARKERS = 'ABCDEFGH';
 
 /** Dilema de um ministério: opções selecionáveis; depois de decidido, recolhe em uma linha. */
-export const DecisionCard = ({ view, index, negotiationHints, onChoose, onToggleNegotiation }: DecisionCardProps) => {
+export const DecisionCard = ({ view, index, negotiation, onChoose, onToggleNegotiation }: DecisionCardProps) => {
   const { decision, ministry, choice } = view;
   const [editing, setEditing] = useState(false);
   const chosen = choice ? view.options.find((optionView) => optionView.option.id === choice.optionId) : undefined;
@@ -47,7 +47,7 @@ export const DecisionCard = ({ view, index, negotiationHints, onChoose, onToggle
         <DecisionDecidedRow
           chosen={chosen}
           negotiating={choice?.negotiate ?? false}
-          negotiationHints={negotiationHints}
+          negotiation={negotiation}
           onEdit={() => setEditing(true)}
           onToggleNegotiation={() => onToggleNegotiation(decision.id)}
         />

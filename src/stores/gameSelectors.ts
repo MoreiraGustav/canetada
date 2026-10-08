@@ -3,7 +3,7 @@
  */
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { calculateVoteChance, getNegotiationCost, getPoliticalStatus, getVoteBonus, hasProvisionalMeasure, scaleImpact } from '@/engine';
+import { calculateVoteChance, FLAG_RECENT_NEGOTIATION, getNegotiationCost, getPoliticalStatus, getVoteBonus, hasProvisionalMeasure, scaleImpact } from '@/engine';
 import { DEFAULT_MODIFIERS } from '@/constants/balance';
 import type {
   ActiveEffectView,
@@ -150,6 +150,7 @@ export const useCongressView = (): CongressView => {
   const turn = useGameStore((state) => state.turn);
   const modifiers = useModifiers();
   const { voteChanceBonus, provisionalMeasure } = useMonthVote();
+  const alignment = useAlignmentContext();
   return useMemo(() => {
     const status = getPoliticalStatus(assembleSimulationState(pickSimulationSlice(useGameStore.getState())));
     const chance = (type: LegislativeType): number =>
@@ -165,11 +166,15 @@ export const useCongressView = (): CongressView => {
       recentVotes: congress.votes.slice(-RECENT_VOTES_SHOWN).reverse(),
       ordinaryChance: chance('ordinary'),
       pecChance: chance('pec'),
-      negotiationHints: summarizeImpact(getNegotiationCost(modifiers), COUNTRY_NAMES),
+      negotiation: {
+        hints: summarizeImpact(getNegotiationCost(modifiers), COUNTRY_NAMES, alignment.goalKeys),
+        // Negociar marca a flag de barganha recente (quebra a promessa "sem barganha").
+        alignment: alignment.describe({ impact: getNegotiationCost(modifiers), flags: [FLAG_RECENT_NEGOTIATION] }),
+      },
       cpisSurvived: congress.cpisSurvived,
       impeachmentsSurvived: congress.impeachmentsSurvived,
     };
-  }, [congress, approval, turn, modifiers, voteChanceBonus, provisionalMeasure]);
+  }, [congress, approval, turn, modifiers, voteChanceBonus, provisionalMeasure, alignment]);
 };
 
 /** Efeitos graduais em andamento ou agendados. */

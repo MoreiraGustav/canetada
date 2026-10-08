@@ -2,7 +2,7 @@
 export { getChoiceAlignment, isAlignedChoice, totalImpactDelta } from './alignment';
 export { calculateApproval } from './approval';
 export { evaluateCondition, evaluateConditions, getIndicatorValue, isFlagActive } from './conditions';
-export { calculateVoteChance, getNegotiationCost, getPoliticalStatus, getVoteBonus, hasProvisionalMeasure, isImpeached, stepCongress } from './congress';
+export { calculateVoteChance, FLAG_RECENT_NEGOTIATION, getNegotiationCost, getPoliticalStatus, getVoteBonus, hasProvisionalMeasure, isImpeached, stepCongress } from './congress';
 export { applyDecisionChoice, isDecisionEligible, selectTurnDecisions } from './decisions';
 export { getDifficultyConfig } from './difficulty';
 export { applyDiplomaticAction, canPerformDiplomaticAction, stepDiplomacy } from './diplomacy';
