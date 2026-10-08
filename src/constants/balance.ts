@@ -296,7 +296,7 @@ export const SOCIAL = {
   waterMean: 65,
   waterSeasonalAmplitude: 15,
   waterPeakMonth: 3,
-  waterSpeed: 0.15,
+  waterSpeed: 0.5,
   waterNoise: 1.5,
   /** Tendências mensais estruturais. */
   digitalTrend: 0.03,

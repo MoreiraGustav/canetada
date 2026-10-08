@@ -175,9 +175,9 @@ export const NATURAL_DISASTER_EVENTS: GameEvent[] = [
       'Os reservatórios das hidrelétricas estão no menor nível em 20 anos. Há risco de falta de energia nos horários de pico e cidades já têm rodízio de água.',
     frequency: 'moderate',
     cooldown: 12,
-    requires: [{ kind: 'indicator', indicator: 'waterReserves', comparator: 'lt', value: 50 }],
+    requires: [{ kind: 'indicator', indicator: 'waterReserves', comparator: 'lt', value: 55 }],
     triggers: [
-      { condition: { kind: 'indicator', indicator: 'waterReserves', comparator: 'lt', value: 35 }, multiplier: 4 },
+      { condition: { kind: 'indicator', indicator: 'waterReserves', comparator: 'lt', value: 50 }, multiplier: 4 },
     ],
     options: [
       {
