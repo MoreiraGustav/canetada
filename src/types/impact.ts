@@ -62,6 +62,8 @@ export interface ImpactHint {
   /** 1 = leve, 2 = moderado, 3 = forte. */
   intensity: 1 | 2 | 3;
   tone: 'positive' | 'negative' | 'neutral';
+  /** Indicador de uma meta escolhida pelo jogador (destacado). */
+  goal?: boolean;
 }
 
 /**

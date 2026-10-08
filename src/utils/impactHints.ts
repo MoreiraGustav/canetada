@@ -39,7 +39,8 @@ const IDEOLOGY_HINT_LABELS: Partial<Record<ImpactKey, (delta: number) => string>
 const DEFAULT_INTENSITY_STEPS: readonly [number, number, number] = [0.1, 2, 5];
 const SECTOR_INTENSITY_STEPS: readonly [number, number, number] = [0.5, 4, 8];
 const RELATION_INTENSITY_STEPS: readonly [number, number, number] = [0.5, 4, 8];
-const MAX_HINTS = 3;
+const MAX_HINTS = 4;
+const TONE_ORDER: Record<ImpactHint['tone'], number> = { positive: 0, negative: 1, neutral: 2 };
 
 const getIntensity = (delta: number, steps: readonly [number, number, number]): 0 | 1 | 2 | 3 => {
   const magnitude = Math.abs(delta);
@@ -54,17 +55,19 @@ const toneFor = (delta: number, polarity: number): ImpactHint['tone'] => {
   return delta * polarity > 0 ? 'positive' : 'negative';
 };
 
-const buildIndicatorHints = (impact: Impact): ImpactHint[] =>
+const buildIndicatorHints = (impact: Impact, goalKeys: ReadonlySet<ImpactKey>): ImpactHint[] =>
   (Object.keys(INDICATOR_INFO) as ImpactKey[]).flatMap((key) => {
     const delta = impact[key];
     if (delta === undefined || delta === 0 || key === 'gdp') return [];
+    const goal = goalKeys.has(key);
     const intensity = getIntensity(delta, INTENSITY_STEPS[key] ?? DEFAULT_INTENSITY_STEPS);
-    if (intensity === 0) return [];
+    // Métricas das metas aparecem mesmo com efeito pequeno.
+    if (intensity === 0 && !goal) return [];
     const info = INDICATOR_INFO[key];
     const label = IDEOLOGY_HINT_LABELS[key]?.(delta) ?? info.shortLabel;
     // Eixos ideológicos: a seta indica só a intensidade da guinada (o rótulo diz o sentido).
     const direction = IDEOLOGY_HINT_LABELS[key] ? 'up' : delta > 0 ? 'up' : 'down';
-    return [{ key, label, direction, intensity, tone: toneFor(delta, info.polarity) }];
+    return [{ key, label, direction, intensity: Math.max(1, intensity) as 1 | 2 | 3, tone: toneFor(delta, info.polarity), goal }];
   });
 
 const buildSectorHints = (impact: Impact): ImpactHint[] =>
@@ -98,14 +101,26 @@ const buildRelationHints = (impact: Impact, countryNames: Record<string, string>
     ];
   });
 
+/** Métricas das metas do jogador primeiro; depois as mais intensas. */
+const byRelevance = (a: ImpactHint, b: ImpactHint): number => Number(b.goal ?? false) - Number(a.goal ?? false) || b.intensity - a.intensity;
+
+/** Ordem de exibição: ganhos, custos e, por fim, neutras (ideologia). */
+const byTone = (a: ImpactHint, b: ImpactHint): number => TONE_ORDER[a.tone] - TONE_ORDER[b.tone];
+
 /**
- * Resume um impacto em dicas qualitativas (sem números exatos), ordenadas
- * por intensidade. `countryNames` traduz IDs de países em nomes.
+ * Resume um impacto em dicas qualitativas (sem números exatos). Escolhe as
+ * mais relevantes (métricas das metas em `goalKeys` sempre entram primeiro)
+ * e as agrupa em ganhos, custos e neutras. `countryNames` traduz IDs de países.
  */
-export const summarizeImpact = (impact: Impact, countryNames: Record<string, string> = {}): ImpactHint[] =>
-  [...buildIndicatorHints(impact), ...buildSectorHints(impact), ...buildRelationHints(impact, countryNames)]
-    .sort((a, b) => b.intensity - a.intensity)
-    .slice(0, MAX_HINTS);
+export const summarizeImpact = (
+  impact: Impact,
+  countryNames: Record<string, string> = {},
+  goalKeys: readonly ImpactKey[] = [],
+): ImpactHint[] =>
+  [...buildIndicatorHints(impact, new Set(goalKeys)), ...buildSectorHints(impact), ...buildRelationHints(impact, countryNames)]
+    .sort(byRelevance)
+    .slice(0, MAX_HINTS)
+    .sort(byTone);
 
 /** Soma dois impactos (útil para combinar imediato + graduais na exibição). */
 export const mergeImpacts = (base: Impact, extra: Impact): Impact => {
