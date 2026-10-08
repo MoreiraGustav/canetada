@@ -69,7 +69,8 @@ funções compostas recebem o `SimulationState` (que tem `seed`) e devolvem esta
 - `calculateApproval(sectors: SectorApproval): number` (média ponderada por SECTOR_INFO.weight)
 
 `engine/decisions.ts`
-- `selectTurnDecisions(state: SimulationState, decisions: readonly Decision[]): { state: SimulationState; decisionIds: string[] }`
+- `selectTurnDecisions(state: SimulationState, decisions: readonly Decision[], goals?: readonly GoalDefinition[]): { state: SimulationState; decisionIds: string[] }`
+  Decisões com opção que ajuda meta ou promessa pendente pesam ×`ALIGNED_DECISION_WEIGHT`, e a 1ª do mês sai desse grupo (`engine/alignment.ts` → `getChoiceAlignment`).
   Sorteia entre MIN e MAX_DECISIONS_PER_TURN decisões elegíveis (conditions, minTurn, months, cooldown via decisionHistory, não-repetíveis só 1x),
   no máximo 1 por ministério, ponderado por `weight`. Atualiza `decisionHistory[id] = turn` para as sorteadas.
 - `applyDecisionChoice(state: SimulationState, decision: Decision, option: DecisionOption, negotiate: boolean, rng: Rng, difficulty: DifficultyConfig): { state: SimulationState; news: NewsItem[]; vote: VoteRecord | null }`
@@ -217,6 +218,7 @@ Corrupção: `obstrucao-justica` (abafar investigação), `esquema-<nome>-aceito
 - `LatentRisk` (`data/latentRisks.ts`): risco que pode vir à tona a cada mês, com chance crescente; revelações depois do mandato custam pontos de legado.
 - `NewsBlip` (`data/newsBlips.ts`): fatos do mês, sorteados sem decisão do jogador.
 - `PresidentialAction` (`data/presidentialActions.ts`): agenda presidencial livre, uma por mês, com cooldown.
+- `GovernmentProgram` (`data/programs.ts`): programa de governo ligado às metas, um por mês, em vaga própria. Usa as funções da agenda com `slot = PROGRAM_SLOT` (ex.: `applyPresidentialAction(state, program, difficulty, PROGRAM_SLOT)`).
 - Eventos `category: 'corruption'` são propostas reservadas; `priority: true` faz um evento elegível sair antes do sorteio.
 
 IDs de países: `eua`, `china`, `uniao-europeia`, `argentina`, `russia`, `india`, `africa`.

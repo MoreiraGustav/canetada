@@ -8,7 +8,7 @@
 O jogo está **completo e jogável** de ponta a ponta: menu → setup → candidato → campanha → eleição → metas → (turno → evento → resumo)* → reeleição → 2º mandato → resultado.
 
 - `npm run typecheck`: limpo
-- `npm test`: 192 testes em 16 arquivos, todos passando
+- `npm test`: 207 testes em 17 arquivos, todos passando
   - engine com fixtures próprias em `src/engine/__fixtures__/`
   - integridade e simulação do conteúdo real em `src/data/content.test.ts`
 - `npm run lint`: limpo
@@ -91,6 +91,37 @@ Tipos em `src/types/freeplay.ts`; engine em `outcomes.ts`, `latentRisks.ts`, `ne
   - Extrema esquerda: chega a −100/−100 com aprovação ~50%; aprova 7–16 leis (o Congresso de centro-direita resiste mais).
   - Extrema direita: chega a +100/+100 com aprovação 36–51%; aprova 12–25 leis.
   - Em ambos, 11–15 decisões radicais por partida.
+
+## Rodada de feedback (08/10) — "escolhi Infraestrutura e não consegui iniciar obras"
+
+Diagnóstico, antes da correção, com um jogador 100% focado na meta: Infraestrutura no Blitz chegava a 24%. Moradia, Justiça Social e Pleno Emprego nunca eram cumpridas em modo nenhum, porque tudo dependia de decisões sorteadas.
+
+- **Programas de governo** (`data/programs.ts`, 22 programas):
+  - aba "🏗️ Programas", padrão do painel
+  - um lançamento por mês, em vaga própria (separada da Agenda), cooldown de 6 meses
+  - cada meta tem versões estatal e de mercado
+  - custo imediato (contas, setores, ideologia); benefício gradual, com atraso de 0–2 meses
+  - cada lançamento entrega ≈ 7–9% da variação exigida pela meta no Completo
+  - a barra de avanço lembra quando o programa do mês não foi lançado
+- **Pauta guiada** (`engine/alignment.ts`): decisões com opção que ajuda meta ou promessa pendente pesam ×2,5 (`ALIGNED_DECISION_WEIGHT`), e a 1ª decisão do mês sai sempre desse grupo.
+- **Dicas legíveis:**
+  - ✓ verde = ganho, ✗ vermelho = custo; a seta diz só se o indicador sobe ou cai
+  - legenda no topo das decisões e dos programas
+  - métricas das metas ganham 🎯 e sempre aparecem (até 4 dicas, na ordem ganhos → custos → neutras)
+  - selos por opção em decisões, eventos, programas e agenda: "🎯 Ajuda sua meta", "🎯 Atrapalha sua meta", "📜 Ajuda a cumprir promessa", "📜 Contraria promessa"
+- **Rebalanceamento:**
+  - `goalScale`: Blitz 0,33 e Padrão 0,6 (vale também para as promessas)
+  - alvos: Infraestrutura 8.000 km, IDEB 6,0, Potência Global 85, Segurança −30%
+- **Resultado** (Normal, 8 sementes por célula):
+  - ao acaso, quase nenhuma meta é cumprida
+  - com foco numa meta: 5–8/8 no Blitz, 8/8 no Padrão e no Completo
+  - com foco em 3 metas: no Blitz, de 1/8 a 8/8 por meta (a vaga mensal é disputada); no Padrão e no Completo, 7–8/8, com aprovação final de 41–50%
+- **Conteúdo morto corrigido:** a crise hídrica nunca disparava, porque os reservatórios ficavam entre 60% e 70%. `waterSpeed` subiu de 0,15 para 0,5 e o evento passou a exigir < 55%. Agora ocorre em ~1 a cada 3 mandatos.
+- **Testes novos:**
+  - `engine/alignment.test.ts`
+  - sorteio guiado (`decisions.test.ts`)
+  - vaga de programas (`freeplay.test.ts`)
+  - `content.test.ts`: toda meta precisa de ≥ 2 programas e ≥ 3 decisões que a ajudem
 
 ## Decisões de design tomadas no engine
 
