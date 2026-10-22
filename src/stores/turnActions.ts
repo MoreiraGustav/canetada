@@ -1,5 +1,4 @@
 import { MAX_NEWS_ARCHIVE } from '@/constants/game';
-import { GAME_CONTENT } from '@/data';
 import {
   advanceTurn,
   applyDiplomaticAction,
@@ -11,11 +10,13 @@ import {
   drawEvent,
   getDifficultyConfig,
   getFiscalStance,
+  getGovernors,
   getStanceCooldownLeft,
   isPresidentialActionAvailable,
   prepareTurn,
   processTurn,
   PROGRAM_SLOT,
+  replaceMinister as replaceMinisterInEngine,
   TRAVEL_SLOT,
 } from '@/engine';
 import type { CountryId, DecisionChoice, GameData, InitiativeSlot, NewsItem, PresidentialAction, Relations, TurnEventChoice } from '@/types';
@@ -27,13 +28,17 @@ import {
   getDiplomaticAction,
   getFiscalStanceById,
   getFiscalStances,
+  getParties,
   getPresidentialAction,
   getProgram,
   getVisitKinds,
+  getWorldContent,
+  NAME_POOL,
 } from './content';
 import { pickSimulationSlice } from './gameData';
 import type { GameStoreActions, GameStoreApi } from './gameStoreTypes';
 import { assembleSimulationState, distributeSimulationState, recordSnapshot } from './simulationBridge';
+import { usePlayerStore } from './usePlayerStore';
 
 type TurnActions = Pick<
   GameStoreActions,
@@ -47,6 +52,7 @@ type TurnActions = Pick<
   | 'takeCrisisAction'
   | 'visitCity'
   | 'setFiscalStance'
+  | 'replaceMinister'
 >;
 
 const collectChoices = (data: GameData): DecisionChoice[] =>
@@ -66,7 +72,7 @@ const runTurn = (api: GameStoreApi, event: TurnEventChoice | null): void => {
     state: before,
     decisions: collectChoices(game),
     event,
-    content: GAME_CONTENT,
+    content: getWorldContent(game.world),
   });
   const slice = distributeSimulationState(state);
   recordSnapshot(state, state.turn);
@@ -77,7 +83,7 @@ const runTurn = (api: GameStoreApi, event: TurnEventChoice | null): void => {
 /** Avança o calendário e sorteia as decisões do novo mês. */
 export const startNextTurn = (api: GameStoreApi): void => {
   const advanced = advanceTurn(assembleSimulationState(pickSimulationSlice(api.get())));
-  const { state, decisionIds } = prepareTurn(advanced, GAME_CONTENT);
+  const { state, decisionIds } = prepareTurn(advanced, getWorldContent(api.get().world));
   api.commit({
     ...distributeSimulationState(state),
     phase: 'turn',
@@ -90,7 +96,7 @@ export const startNextTurn = (api: GameStoreApi): void => {
 const confirmDecisions = (api: GameStoreApi): void => {
   const game = api.get();
   if (game.phase !== 'turn' || !game.turnDecisionIds.every((id) => game.choices[id])) return;
-  const { state, eventId } = drawEvent(assembleSimulationState(pickSimulationSlice(game)), GAME_CONTENT);
+  const { state, eventId } = drawEvent(assembleSimulationState(pickSimulationSlice(game)), getWorldContent(game.world));
   const slice = distributeSimulationState(state);
   if (eventId === null) {
     api.set(slice);
@@ -124,8 +130,11 @@ const visitCity = (api: GameStoreApi, stateId: string, cityId: string): void => 
   const uf = getBrazilianState(stateId);
   const city = uf?.cities.find((entry) => entry.id === cityId);
   if (!uf || !city) return;
-  const state = assembleSimulationState(pickSimulationSlice(api.get()));
-  const action = buildVisitAction(state, uf, city, getVisitKinds(), getBrazilianStates());
+  const game = api.get();
+  const state = assembleSimulationState(pickSimulationSlice(game));
+  const partyId = usePlayerStore.getState().candidate?.partyId ?? null;
+  const governor = getGovernors(state, getBrazilianStates(), getParties(game.world), NAME_POOL, partyId).find((entry) => entry.stateId === uf.id);
+  const action = buildVisitAction(state, uf, city, getVisitKinds(), getBrazilianStates(), governor);
   performInitiative(api, action ?? undefined, TRAVEL_SLOT);
 };
 
@@ -164,4 +173,11 @@ export const createTurnActions = (api: GameStoreApi): TurnActions => ({
   takeCrisisAction: (actionId) => performInitiative(api, getCrisisAction(actionId), CRISIS_SLOT),
   visitCity: (stateId, cityId) => visitCity(api, stateId, cityId),
   setFiscalStance: (stanceId) => setFiscalStance(api, stanceId),
+  replaceMinister: (ministry, profile, partyId) => {
+    const game = api.get();
+    if (game.phase !== 'turn') return;
+    const result = replaceMinisterInEngine(assembleSimulationState(pickSimulationSlice(game)), ministry, profile, partyId, NAME_POOL);
+    if (result.news.length === 0) return;
+    api.commit({ ...distributeSimulationState(result.state), newsArchive: prependNews(game.newsArchive, result.news) });
+  },
 });

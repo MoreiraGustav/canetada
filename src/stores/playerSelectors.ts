@@ -4,10 +4,12 @@
 import { useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { canPerformDiplomaticAction } from '@/engine';
+import { ECONOMY } from '@/constants/balance';
 import { INDICATOR_INFO } from '@/constants/metrics';
 import type {
   CampaignAnswer,
   CampaignQuestion,
+  CopomDecisionView,
   ElectionResult,
   GameEnding,
   GoalView,
@@ -117,3 +119,26 @@ export const useGameResult = (): { ending: GameEnding | null; score: ScoreBreakd
 
 /** Rótulo do indicador (atalho para telas de resumo). */
 export const getIndicatorLabel = (key: keyof typeof INDICATOR_INFO): string => INDICATOR_INFO[key].shortLabel;
+
+/** Diretoria do BC que vota no Copom (presidente + 8 diretores). */
+const COPOM_DIRECTORS = 9;
+/** Mudanças menores que isso são arredondamento, não decisão do Copom. */
+const SELIC_EPSILON = 0.01;
+
+/** Decisão do Copom no mês, se a Selic mudou (para o cartão do resumo). */
+export const useCopomDecision = (): CopomDecisionView | null => {
+  const report = useGameStore((state) => state.lastReport);
+  const metrics = useMetricsStore((state) => state.metrics);
+  return useMemo(() => {
+    const delta = report?.deltas.selic ?? 0;
+    if (!report || Math.abs(delta) < SELIC_EPSILON) return null;
+    return {
+      before: metrics.selic - delta,
+      after: metrics.selic,
+      direction: delta > 0 ? 'up' : 'down',
+      inflation: metrics.inflation,
+      target: ECONOMY.inflationTarget,
+      directors: COPOM_DIRECTORS,
+    };
+  }, [report, metrics]);
+};

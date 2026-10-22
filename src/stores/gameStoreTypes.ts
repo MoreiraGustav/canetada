@@ -1,12 +1,12 @@
-import type { CandidateSelection, CountryId, Difficulty, GameData, GameMode } from '@/types';
+import type { CandidateSelection, CountryId, Difficulty, GameData, GameMode, MinisterProfile, MinistryId, WorldId } from '@/types';
 
 export interface GameStoreActions {
   /** Menu → configuração da partida (modo e dificuldade). */
   goToSetup: () => void;
   /** Volta ao menu sem apagar o save. */
   goToMenu: () => void;
-  /** Reinicia tudo e vai para a escolha de candidato. */
-  startNewGame: (mode: GameMode, difficulty: Difficulty) => void;
+  /** Reinicia tudo e vai para a escolha de candidato (no Brasil fictício ou no real). */
+  startNewGame: (mode: GameMode, difficulty: Difficulty, world?: WorldId) => void;
   /** Define o candidato e sorteia as perguntas de campanha. */
   chooseCandidate: (selection: CandidateSelection) => void;
   answerCampaign: (questionId: string, optionId: string) => void;
@@ -38,6 +38,8 @@ export interface GameStoreActions {
   visitCity: (stateId: string, cityId: string) => void;
   /** Política fiscal: muda a postura do orçamento (respeitando o intervalo entre mudanças). */
   setFiscalStance: (stanceId: string) => void;
+  /** Troca o ministro de uma pasta por um técnico ou por um político de um partido aliado. */
+  replaceMinister: (ministry: MinistryId, profile: MinisterProfile, partyId: string | null) => void;
   /** Carrega o save do localStorage; retorna false se não houver. */
   continueSavedGame: () => boolean;
   /** Apaga o save e volta ao menu. */

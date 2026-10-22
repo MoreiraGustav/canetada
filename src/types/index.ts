@@ -1,5 +1,6 @@
 export type * from './campaign';
 export type * from './candidates';
+export type * from './cast';
 export type * from './conditions';
 export type * from './congress';
 export type * from './decisions';
@@ -15,4 +16,5 @@ export type * from './news';
 export type * from './stores';
 export type * from './travel';
 export type * from './views';
+export type * from './world';
 export type * from './engine';

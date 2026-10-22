@@ -15,6 +15,7 @@ import {
 import { EVENT_CATEGORY_INFO } from '@/constants/game';
 import type { DifficultyConfig, EventOption, EventSelection, GameEvent, NewsItem, Rng, SimulationState } from '@/types';
 import { getTurnDate } from '@/utils/calendar';
+import { cabinetScandalMultiplier } from './cast';
 import { evaluateCondition, evaluateConditions } from './conditions';
 import { applyImpact, imprintPolicyMemory, scaleImpactByPolarity, scheduleDelayedImpacts, setFlags, toneFromImpact } from './impacts';
 import { createNewsItem } from './news';
@@ -73,7 +74,8 @@ interface DrawContext {
 /** Peso base: frequência × agressividade de crises (dificuldade, trégua) × propensão a escândalos (habilidade) × novidade. */
 const baseWeight = ({ state, difficulty, respite }: DrawContext, event: GameEvent): number => {
   const crisis = isCrisisEvent(event) ? difficulty.crisisWeightMultiplier * (respite ? CRISIS_RESPITE.weightMultiplier : 1) : 1;
-  const scandal = event.category === 'political-scandal' ? state.modifiers.scandalWeightMultiplier : 1;
+  // Escândalos: propensão do presidente × exposição dos ministros políticos.
+  const scandal = event.category === 'political-scandal' ? state.modifiers.scandalWeightMultiplier * cabinetScandalMultiplier(state) : 1;
   const novelty = state.eventHistory[event.id] === undefined ? 1 : SEEN_EVENT_WEIGHT;
   return EVENT_FREQUENCY_WEIGHTS[event.frequency] * crisis * scandal * novelty;
 };

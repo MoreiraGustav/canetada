@@ -1,4 +1,5 @@
-import type { CityVisitView, TravelStateView } from '@/types';
+import { PortraitImage } from '@/components/ui/PortraitImage';
+import type { CityVisitView, GovernorView, TravelStateView } from '@/types';
 import { formatNumber } from '@/utils/format';
 import { CITY_KIND_LABELS, REGION_LABELS } from '@/utils/labels';
 import { PresidentialActionCard } from './PresidentialActionCard';
@@ -23,6 +24,28 @@ const Fact = ({ label, value }: FactProps) => (
   </div>
 );
 
+const STANCE_CLASSES: Record<GovernorView['governor']['stance'], string> = {
+  aliado: 'text-positive',
+  neutro: 'text-ink-soft',
+  oposicao: 'text-negative',
+};
+
+/** Governador (fictício): aliado recebe bem a visita; de oposição, aumenta o risco de vaias. */
+const GovernorRow = ({ view }: { view: GovernorView }) => (
+  <div className="mb-3 flex items-center gap-3">
+    <PortraitImage portrait={view.portrait} name={view.governor.name} size="sm" />
+    <div className="min-w-0">
+      <p className="font-sans text-[10px] font-bold uppercase tracking-wider text-ink-muted">
+        {view.governor.sex === 'f' ? 'Governadora' : 'Governador'}
+      </p>
+      <p className="font-serif text-sm font-semibold leading-snug text-ink">
+        {view.governor.name} {view.party && <span className="font-sans text-xs font-normal text-ink-muted">({view.party.acronym})</span>}
+      </p>
+      <p className={`font-sans text-[11px] font-semibold ${STANCE_CLASSES[view.governor.stance]}`}>{view.stanceLabel}</p>
+    </div>
+  </div>
+);
+
 /** Ficha do estado escolhido no mapa e as agendas possíveis em três cidades. */
 export const StateVisitPanel = ({ view, cities, canTravel, onVisit }: StateVisitPanelProps) => {
   const { state } = view;
@@ -38,6 +61,7 @@ export const StateVisitPanel = ({ view, cities, canTravel, onVisit }: StateVisit
         <Fact label="População" value={`${formatNumber(state.population, 1)} mi`} />
         <Fact label="Capital" value={state.capital} />
       </dl>
+      {view.governor && <GovernorRow view={view.governor} />}
       <p className="mb-3 font-serif text-sm leading-snug text-ink-soft">
         {view.cooldownLeft > 0
           ? `Você esteve aqui há pouco: volte em ${view.cooldownLeft} ${view.cooldownLeft === 1 ? 'mês' : 'meses'}.`

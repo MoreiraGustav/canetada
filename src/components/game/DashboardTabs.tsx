@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Tabs } from '@/components/ui/Tabs';
 import { ActiveEffectsPanel } from './ActiveEffectsPanel';
+import { CabinetPanel } from './CabinetPanel';
 import { CongressPanel } from './CongressPanel';
 import { DiplomacyPanel } from './DiplomacyPanel';
 import { HistoryChartPanel } from './HistoryChartPanel';
@@ -12,12 +13,13 @@ import { PublicAccountsPanel } from './PublicAccountsPanel';
 import { SecondaryIndicatorsPanel } from './SecondaryIndicatorsPanel';
 import { TravelPanel } from './TravelPanel';
 
-type DashboardTabId = 'programs' | 'travel' | 'agenda' | 'accounts' | 'congress' | 'diplomacy' | 'indicators' | 'charts' | 'effects';
+type DashboardTabId = 'programs' | 'travel' | 'agenda' | 'cabinet' | 'accounts' | 'congress' | 'diplomacy' | 'indicators' | 'charts' | 'effects';
 
 const TAB_ITEMS: ReadonlyArray<{ id: DashboardTabId; label: string; icon: string }> = [
   { id: 'programs', label: 'Programas', icon: '🏗️' },
   { id: 'travel', label: 'Viagens', icon: '🗺️' },
   { id: 'agenda', label: 'Agenda', icon: '🗓️' },
+  { id: 'cabinet', label: 'Ministério', icon: '👥' },
   { id: 'accounts', label: 'Contas públicas', icon: '💰' },
   { id: 'congress', label: 'Congresso', icon: '⚖️' },
   { id: 'diplomacy', label: 'Diplomacia', icon: '🌍' },
@@ -31,6 +33,7 @@ const TAB_PANELS: Record<DashboardTabId, ComponentType> = {
   programs: ProgramsPanel,
   travel: TravelPanel,
   agenda: PresidentialAgendaPanel,
+  cabinet: CabinetPanel,
   accounts: PublicAccountsPanel,
   congress: CongressPanel,
   diplomacy: DiplomacyPanel,
@@ -39,7 +42,7 @@ const TAB_PANELS: Record<DashboardTabId, ComponentType> = {
   effects: ActiveEffectsPanel,
 };
 
-/** Área secundária do painel: programas, viagens, agenda, contas públicas, Congresso, diplomacia, indicadores, gráficos e efeitos. */
+/** Área secundária do painel: programas, viagens, agenda, ministério, contas públicas, Congresso, diplomacia, indicadores, gráficos e efeitos. */
 export const DashboardTabs = () => {
   const [active, setActive] = useState<DashboardTabId>('programs');
   const Panel = TAB_PANELS[active];

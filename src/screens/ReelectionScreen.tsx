@@ -1,7 +1,10 @@
+import { useCallback, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useShallow } from 'zustand/react/shallow';
-import { useCandidateView, useTurnInfo } from '@/stores/selectors';
+import { useCandidateView, useReelectionNight, useTurnInfo } from '@/stores/selectors';
 import { useGameStore } from '@/stores/useGameStore';
 import { useMetricsStore } from '@/stores/useMetricsStore';
+import { ElectionNight } from '@/components/game/ElectionNight';
 import { ReelectionActions } from '@/components/game/ReelectionActions';
 import { ReelectionThreshold } from '@/components/game/ReelectionThreshold';
 import { ReelectionVerdict } from '@/components/game/ReelectionVerdict';
@@ -25,6 +28,10 @@ export const ReelectionScreen = () => {
   const approval = useMetricsStore((state) => state.approval);
   const candidateView = useCandidateView();
   const turnInfo = useTurnInfo();
+  const night = useReelectionNight();
+  // O veredito aparece quando a apuração animada termina (ou é pulada).
+  const [revealed, setRevealed] = useState(false);
+  const reveal = useCallback(() => setRevealed(true), []);
 
   if (!reelection) return <LoadingScreen message="Apurando as urnas…" />;
 
@@ -34,20 +41,25 @@ export const ReelectionScreen = () => {
   return (
     <PageContainer width="medium">
       <Masthead dateline={turnInfo.dateLong} edition="Edição extra · Eleições" />
-      <ReelectionVerdict reelected={reelection.reelected} voteShare={reelection.voteShare} candidateName={candidateName} />
+      {night && <ElectionNight view={night} onDone={reveal} />}
+      {(revealed || !night) && (
+        <motion.div className="mt-6" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+          <ReelectionVerdict reelected={reelection.reelected} voteShare={reelection.voteShare} candidateName={candidateName} />
 
-      <div className="mx-auto mt-10 max-w-2xl">
-        <ReelectionThreshold
-          approval={approval}
-          threshold={config.reelectionThreshold}
-          difficultyLabel={config.label}
-          reelected={reelection.reelected}
-        />
-      </div>
+          <div className="mx-auto mt-10 max-w-2xl">
+            <ReelectionThreshold
+              approval={approval}
+              threshold={config.reelectionThreshold}
+              difficultyLabel={config.label}
+              reelected={reelection.reelected}
+            />
+          </div>
 
-      <div className="mx-auto mt-10 flex max-w-2xl flex-col gap-3 border-t-4 border-double border-ink pt-6">
-        <ReelectionActions reelected={reelection.reelected} onContinue={continueToSecondTerm} onRetire={retire} />
-      </div>
+          <div className="mx-auto mt-10 flex max-w-2xl flex-col gap-3 border-t-4 border-double border-ink pt-6">
+            <ReelectionActions reelected={reelection.reelected} onContinue={continueToSecondTerm} onRetire={retire} />
+          </div>
+        </motion.div>
+      )}
     </PageContainer>
   );
 };

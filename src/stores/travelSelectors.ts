@@ -7,6 +7,7 @@ import { buildVisitAction, canTakePresidentialAction, getStateApprovals, TRAVEL_
 import type { CityVisitView, TravelView } from '@/types';
 import { indexById } from '@/utils/math';
 import { getBrazilianState, getBrazilianStates, getBrazilMap, getVisitKinds } from './content';
+import { useGovernors } from './castSelectors';
 import { buildActionView, useAgendaDeps, useInitiativeContext } from './freeplaySelectors';
 import { pickSimulationSlice } from './gameData';
 import { assembleSimulationState } from './simulationBridge';
@@ -18,6 +19,7 @@ export const useTravelMap = (): TravelView => {
   const deps = useAgendaDeps();
   const metrics = useMetricsStore((state) => state.metrics);
   const approval = useMetricsStore((state) => state.approval);
+  const governors = useGovernors();
   return useMemo(() => {
     const state = assembleSimulationState(pickSimulationSlice(useGameStore.getState()));
     const states = getBrazilianStates();
@@ -33,16 +35,18 @@ export const useTravelMap = (): TravelView => {
         approval: approvals[uf.id]?.approval ?? state.approval,
         visitBonus: approvals[uf.id]?.visitBonus ?? 0,
         cooldownLeft: approvals[uf.id]?.cooldownLeft ?? 0,
+        governor: governors[uf.id] ?? null,
       })),
     };
     // A ideologia (métricas) e a aprovação mudam a popularidade estimada por estado.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deps, metrics, approval]);
+  }, [deps, metrics, approval, governors]);
 };
 
 /** Agendas possíveis nas cidades de um estado (impacto, risco e custo já com o peso do estado). */
 export const useCityVisits = (stateId: string | null): CityVisitView[] => {
   const ctx = useInitiativeContext();
+  const governors = useGovernors();
   return useMemo(() => {
     const uf = stateId ? getBrazilianState(stateId) : undefined;
     if (!uf) return [];
@@ -50,8 +54,8 @@ export const useCityVisits = (stateId: string | null): CityVisitView[] => {
     return uf.cities.flatMap((city) => {
       const kind = kinds.find((entry) => entry.id === city.kind);
       if (!kind) return [];
-      const action = buildVisitAction(ctx.state, uf, city, kinds, getBrazilianStates());
+      const action = buildVisitAction(ctx.state, uf, city, kinds, getBrazilianStates(), governors[uf.id]?.governor);
       return [{ city, kind, view: action ? buildActionView(action, TRAVEL_SLOT, ctx) : null }];
     });
-  }, [stateId, ctx]);
+  }, [stateId, ctx, governors]);
 };

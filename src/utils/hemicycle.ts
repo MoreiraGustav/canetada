@@ -27,24 +27,32 @@ export const HEMICYCLE = {
   centerY: 206,
   innerRadius: 70,
   outerRadius: 194,
+  /** Fileiras na Câmara (513) e numa Casa pequena como o Senado (81). */
   rows: 11,
+  smallRows: 5,
+  /** Até quantas cadeiras a Casa usa poucas fileiras. */
+  smallChamberSeats: 100,
   /** Fração do espaçamento entre fileiras ocupada pelo diâmetro da cadeira. */
   seatFill: 0.78,
 } as const;
 
-/** Raio de cada cadeira (px). */
-export const SEAT_RADIUS = (((HEMICYCLE.outerRadius - HEMICYCLE.innerRadius) / (HEMICYCLE.rows - 1)) * HEMICYCLE.seatFill) / 2;
+const rowsFor = (total: number): number => (total <= HEMICYCLE.smallChamberSeats ? HEMICYCLE.smallRows : HEMICYCLE.rows);
 
-const rowRadius = (row: number): number =>
-  HEMICYCLE.innerRadius + (row * (HEMICYCLE.outerRadius - HEMICYCLE.innerRadius)) / (HEMICYCLE.rows - 1);
+/** Raio de cada cadeira (px) numa Casa com `total` cadeiras. */
+export const seatRadius = (total: number): number =>
+  (((HEMICYCLE.outerRadius - HEMICYCLE.innerRadius) / (rowsFor(total) - 1)) * HEMICYCLE.seatFill) / 2;
+
+const rowRadius = (row: number, rows: number): number =>
+  HEMICYCLE.innerRadius + (row * (HEMICYCLE.outerRadius - HEMICYCLE.innerRadius)) / (rows - 1);
 
 /** Lugares por fileira, proporcionais ao raio, somando exatamente `total`. */
 const seatsPerRow = (total: number): number[] => {
-  const radii = Array.from({ length: HEMICYCLE.rows }, (_, row) => rowRadius(row));
+  const rows = rowsFor(total);
+  const radii = Array.from({ length: rows }, (_, row) => rowRadius(row, rows));
   const sum = radii.reduce((acc, radius) => acc + radius, 0);
   const counts = radii.map((radius) => Math.floor((total * radius) / sum));
   let missing = total - counts.reduce((acc, count) => acc + count, 0);
-  for (let row = HEMICYCLE.rows - 1; missing > 0; row = (row - 1 + HEMICYCLE.rows) % HEMICYCLE.rows) {
+  for (let row = rows - 1; missing > 0; row = (row - 1 + rows) % rows) {
     counts[row] += 1;
     missing -= 1;
   }
@@ -54,8 +62,8 @@ const seatsPerRow = (total: number): number[] => {
 /** Posições de todas as cadeiras, da esquerda para a direita (ângulo decrescente). */
 export const computeSeats = (total: number): Seat[] =>
   seatsPerRow(total)
-    .flatMap((count, row) => {
-      const radius = rowRadius(row);
+    .flatMap((count, row, counts) => {
+      const radius = rowRadius(row, counts.length);
       return Array.from({ length: count }, (_, index) => {
         const angle = Math.PI - (index * Math.PI) / Math.max(1, count - 1);
         return { x: HEMICYCLE.centerX + radius * Math.cos(angle), y: HEMICYCLE.centerY - radius * Math.sin(angle), angle };

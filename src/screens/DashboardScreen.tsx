@@ -10,6 +10,7 @@ import {
   useIndicatorViews,
   useMonthFiscalTotal,
   useNewsArchive,
+  useOppositionView,
   usePromiseViews,
   useTurnDecisions,
   useTurnInfo,
@@ -21,6 +22,7 @@ import { Masthead } from '@/components/ui/Masthead';
 import { PageContainer } from '@/components/ui/PageContainer';
 import { ApprovalOutlookCard } from '@/components/game/ApprovalOutlookCard';
 import { CrisisCabinetPanel } from '@/components/game/CrisisCabinetPanel';
+import { OppositionCard } from '@/components/game/OppositionCard';
 import { DashboardTabs } from '@/components/game/DashboardTabs';
 import { DecisionList } from '@/components/game/DecisionList';
 import { GoalProgressStrip } from '@/components/game/GoalProgressStrip';
@@ -51,6 +53,7 @@ export const DashboardScreen = () => {
   const crisisActions = useCrisisActionViews();
   const canTakeCrisisAction = useCanTakeCrisisAction();
   const monthFiscal = useMonthFiscalTotal();
+  const opposition = useOppositionView();
   const { goToMenu, chooseDecisionOption, toggleNegotiation, confirmDecisions, takeCrisisAction } = useGameStore(
     useShallow((state) => ({
       goToMenu: state.goToMenu,
@@ -74,9 +77,10 @@ export const DashboardScreen = () => {
         }
       />
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-10">
-        <aside className="lg:sticky lg:top-4 lg:border-r lg:border-rule lg:pr-6">
+        <aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:border-r lg:border-rule lg:pr-6">
           <IndicatorPanel indicators={indicators} />
           <ApprovalOutlookCard outlook={outlook} />
+          <OppositionCard view={opposition} />
           <PoliticalSpectrumCard economic={ideology.economic} social={ideology.social} />
         </aside>
         <div className="flex min-w-0 flex-col gap-10">

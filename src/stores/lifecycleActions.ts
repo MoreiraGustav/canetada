@@ -14,6 +14,7 @@ import { createInitialGameData, pickSimulationSlice } from './gameData';
 import type { GameStoreActions, GameStoreApi } from './gameStoreTypes';
 import { clearSave, loadGame, resetDomainStores } from './persistence';
 import { assembleSimulationState, distributeSimulationState } from './simulationBridge';
+import { getWorldContent } from './content';
 import { prependNews, startNextTurn } from './turnActions';
 import { usePlayerStore } from './usePlayerStore';
 
@@ -52,7 +53,7 @@ const continueToSecondTerm = (api: GameStoreApi): void => {
   const game = api.get();
   if (game.phase !== 'reelection' || !game.reelection?.reelected) return;
   const renewed = advanceTurn(startSecondTerm(assembleSimulationState(pickSimulationSlice(game))));
-  const { state, decisionIds } = prepareTurn(renewed, GAME_CONTENT);
+  const { state, decisionIds } = prepareTurn(renewed, getWorldContent(game.world));
   const name = usePlayerStore.getState().candidate?.name ?? 'Presidente';
   const news = createNewsItem(state.turn, `${name} toma posse para o segundo mandato`, 'neutral', 'politics', 'posse-2');
   api.commit({

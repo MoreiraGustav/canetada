@@ -7,6 +7,7 @@
  * Cada ação tem seu cooldown. Usa `decisionHistory` com chaves prefixadas pela vaga.
  */
 import type { DifficultyConfig, InitiativeSlot, NewsCategory, NewsItem, PresidentialAction, SimulationState } from '@/types';
+import { ministryGainMultiplier } from './cast';
 import { evaluateConditions } from './conditions';
 import { applyImpact, imprintPolicyMemory, scaleImpactByPolarity, scheduleDelayedImpacts, setFlags, toneFromImpact } from './impacts';
 import { createNewsItem } from './news';
@@ -60,7 +61,11 @@ export const applyPresidentialAction = (
   slot: InitiativeSlot = AGENDA_SLOT,
 ): { state: SimulationState; news: NewsItem[] } => {
   const key = actionKey(action, slot);
-  const scaling = { positive: difficulty.positiveImpactMultiplier, negative: difficulty.negativeImpactMultiplier };
+  // Programas: o ministro técnico da pasta amplia os ganhos.
+  const scaling = {
+    positive: difficulty.positiveImpactMultiplier * ministryGainMultiplier(state, action.ministry),
+    negative: difficulty.negativeImpactMultiplier,
+  };
   const delayed = action.delayed?.map((entry) => ({ ...entry, impact: scaleImpactByPolarity(entry.impact, scaling) }));
   const applied = applyImpact(state, action.impact, scaling);
   const scheduled = scheduleDelayedImpacts(applied, key, action.name, delayed);

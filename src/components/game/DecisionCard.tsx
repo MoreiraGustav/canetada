@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { PortraitImage } from '@/components/ui/PortraitImage';
 import { DecisionDecidedRow } from './DecisionDecidedRow';
 import { DecisionOptionCard } from './DecisionOptionCard';
 import type { DecisionView, NegotiationView } from '@/types';
@@ -43,6 +44,14 @@ export const DecisionCard = ({ view, index, negotiation, onChoose, onToggleNegot
         <span className="mr-2 text-ink-muted">{index}.</span>
         {decision.title}
       </h3>
+      {view.minister && !collapsed && (
+        <p className="mt-1.5 flex items-center gap-2 font-sans text-[11px] text-ink-soft">
+          <PortraitImage portrait={view.minister.portrait} name={view.minister.name} size="xs" />
+          <span>
+            Pauta levada por <strong className="text-ink">{view.minister.name}</strong> · {view.minister.caption}
+          </span>
+        </p>
+      )}
       {collapsed && chosen ? (
         <DecisionDecidedRow
           chosen={chosen}

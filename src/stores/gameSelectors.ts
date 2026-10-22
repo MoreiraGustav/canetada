@@ -36,6 +36,7 @@ import { POLITICAL_STATUS_LABELS, VOTE_FACTOR_LABELS } from '@/utils/labels';
 import { useAlignmentContext } from './alignmentSelectors';
 import type { AlignmentContext } from './alignmentSelectors';
 import { COUNTRY_NAMES, getAbility, getBackground, getDecision, getEvent, getEventCategory, getMinistry, getParty } from './content';
+import { useMinisterLookup } from './castSelectors';
 import { useFiscalEstimator } from './fiscalSelectors';
 import type { FiscalEstimator } from './fiscalSelectors';
 import { pickSimulationSlice } from './gameData';
@@ -115,6 +116,7 @@ export const useTurnDecisions = (): DecisionView[] => {
   const { voteChanceBonus, provisionalMeasure } = useMonthVote();
   const alignment = useAlignmentContext();
   const estimate = useFiscalEstimator();
+  const ministerOf = useMinisterLookup();
   return useMemo(() => {
     const ctx: OptionContext = {
       chanceFor: (type, negotiate) => calculateVoteChance({ type, support, approval, negotiate, voteChanceBonus, provisionalMeasure }),
@@ -129,12 +131,13 @@ export const useTurnDecisions = (): DecisionView[] => {
         {
           decision,
           ministry: getMinistry(decision.ministry),
+          minister: ministerOf(decision.ministry),
           options: decision.options.map((option) => buildOptionView(option, ctx)),
           choice: choices[id] ?? null,
         },
       ];
     });
-  }, [ids, choices, support, approval, voteChanceBonus, provisionalMeasure, alignment, estimate]);
+  }, [ids, choices, support, approval, voteChanceBonus, provisionalMeasure, alignment, estimate, ministerOf]);
 };
 
 export const useAllDecisionsChosen = (): boolean =>

@@ -23,6 +23,7 @@ import type {
   TurnResult,
   VoteRecord,
 } from '@/types';
+import { scandalTargetNews } from './cast';
 import { getIndicatorValue } from './conditions';
 import { isImpeached, stepCongress } from './congress';
 import { applyDecisionChoice, selectTurnDecisions } from './decisions';
@@ -34,6 +35,7 @@ import { updateGoalProgress } from './goals';
 import { applyActiveEffects } from './impacts';
 import { stepLatentRisks } from './latentRisks';
 import { generateIndicatorNews } from './news';
+import { generateOppositionNews } from './opposition';
 import { stepNewsBlips } from './newsBlips';
 import { stepPromises } from './promises';
 import { createRng } from './random';
@@ -61,6 +63,7 @@ const applyDecisions = (
     { state, news: [], votes: [] },
   );
 
+/** Resolve o evento do mês; num escândalo político, a oposição mira um ministro político (fictício). */
 const applyEvent = (
   state: SimulationState,
   choice: TurnEventChoice | null,
@@ -71,7 +74,9 @@ const applyEvent = (
   const event = choice ? content.events.find((entry) => entry.id === choice.eventId) : undefined;
   const option = event?.options.find((entry) => entry.id === choice?.optionId);
   if (!event || !option) return { state, news: [] };
-  return resolveEventOption(state, event, option, difficulty, rng);
+  const resolved = resolveEventOption(state, event, option, difficulty, rng);
+  const target = event.category === 'political-scandal' ? scandalTargetNews(resolved.state, rng) : [];
+  return { state: resolved.state, news: [...resolved.news, ...target] };
 };
 
 /** Pico/vale de aprovação e crises bem conduzidas (aprovação não despencou no turno). */
@@ -102,9 +107,15 @@ const computeOutcome = (state: SimulationState): TurnOutcome => {
 
 /**
  * Simulação do mês após as escolhas: efeitos, macro, social, diplomacia, setores,
- * riscos latentes (escândalos), Congresso, promessas, metas e fatos do mês.
+ * riscos latentes (escândalos), Congresso (com as sessões de impeachment), promessas,
+ * metas e fatos do mês.
  */
-const simulateMonth = (state: SimulationState, content: GameContent, rng: Rng, difficulty: DifficultyConfig): StateWithNews => {
+const simulateMonth = (
+  state: SimulationState,
+  content: GameContent,
+  rng: Rng,
+  difficulty: DifficultyConfig,
+): StateWithNews & { votes: VoteRecord[] } => {
   const effects = applyActiveEffects(state);
   const economy = stepEconomy(effects, rng, difficulty, content.countries);
   const fiscal = stepFiscalPolicy(economy, content.fiscalStances);
@@ -116,7 +127,7 @@ const simulateMonth = (state: SimulationState, content: GameContent, rng: Rng, d
   const promises = stepPromises(congress.state);
   const goals = updateGoalProgress(promises.state.goals, content.goals, promises.state.metrics);
   const blips = stepNewsBlips({ ...promises.state, goals }, rng, content.newsBlips);
-  return { state: blips.state, news: [...exposures.news, ...congress.news, ...promises.news, ...blips.news] };
+  return { state: blips.state, news: [...exposures.news, ...congress.news, ...promises.news, ...blips.news], votes: congress.votes };
 };
 
 /** Processa o turno completo (NÃO incrementa o turno). */
@@ -129,18 +140,19 @@ export const processTurn = (input: TurnInput): TurnResult => {
   const month = simulateMonth(evented.state, content, rng, difficulty);
   const withStats = updateStats(before, month.state, input.event, content);
   const indicatorNews: NewsItem[] = generateIndicatorNews(before, withStats, content.headlines, rng);
+  const oppositionNews = generateOppositionNews(before, withStats, content.oppositionLines, content.parties, rng);
   const state: SimulationState = { ...withStats, seed: rng.getSeed() };
   return {
     state,
     report: {
       turn: before.turn,
-      news: [...decided.news, ...evented.news, ...month.news, ...indicatorNews],
+      news: [...decided.news, ...evented.news, ...month.news, ...indicatorNews, ...oppositionNews],
       deltas: computeDeltas(before, state),
       sectorDeltas: Object.fromEntries(SECTOR_KEYS.map((key) => [key, round(state.sectors[key] - before.sectors[key])])),
       relationDeltas: Object.fromEntries(
         (Object.keys(state.relations) as Array<keyof SimulationState['relations']>).map((id) => [id, round(state.relations[id] - before.relations[id])]),
       ),
-      votes: decided.votes,
+      votes: [...decided.votes, ...month.votes],
       eventId: input.event?.eventId ?? null,
       eventOptionId: input.event?.optionId ?? null,
       outcome: computeOutcome(state),

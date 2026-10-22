@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getAbility, getCandidates, getParty } from '@/stores/content';
+import { useGameStore } from '@/stores/useGameStore';
 import { CandidateCard } from '@/components/game/CandidateCard';
 import { Button } from '@/components/ui/Button';
 
@@ -10,7 +11,8 @@ interface CandidateArchetypePickerProps {
 /** Opção A: escolha entre os candidatos-arquétipo pré-definidos. */
 export const CandidateArchetypePicker = ({ onConfirm }: CandidateArchetypePickerProps) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const candidates = getCandidates();
+  const world = useGameStore((state) => state.world);
+  const candidates = getCandidates(world);
   const selected = candidates.find((candidate) => candidate.id === selectedId) ?? null;
 
   return (

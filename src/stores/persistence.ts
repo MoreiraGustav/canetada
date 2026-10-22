@@ -4,8 +4,10 @@
  */
 import { SAVE_STORAGE_KEY, SAVE_VERSION } from '@/constants/game';
 import { INITIAL_METRICS } from '@/constants/metrics';
+import { createCast } from '@/engine';
 import type { GameData, SaveFile } from '@/types';
 import { debugLog } from '@/utils/debug';
+import { getWorldContent } from './content';
 import { getCongressData, useCongressStore } from './useCongressStore';
 import { getDiplomacyData, useDiplomacyStore } from './useDiplomacyStore';
 import { getMetricsData, useMetricsStore } from './useMetricsStore';
@@ -70,6 +72,12 @@ export const loadGame = (): GameData | null => {
   useCongressStore.getState().hydrate(save.congress);
   useDiplomacyStore.getState().hydrate(save.diplomacy);
   usePlayerStore.getState().hydrate(save.player);
+  // Saves de antes do elenco político: monta ministros e oposição a partir da eleição salva.
+  const { candidate, election, cast } = save.player;
+  if (!cast && candidate && election) {
+    const content = getWorldContent(save.game.world ?? 'ficticio');
+    usePlayerStore.getState().hydrate({ cast: createCast(save.game.seed, candidate, election, content.parties, content.names, false, save.game.turn) });
+  }
   return save.game;
 };
 

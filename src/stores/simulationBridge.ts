@@ -4,11 +4,14 @@
  * esta ponte lê/escreve as demais stores.
  */
 import { DEFAULT_MODIFIERS } from '@/constants/balance';
-import type { GameData, SimulationState } from '@/types';
+import type { GameData, PoliticalCast, SimulationState } from '@/types';
 import { useCongressStore, getCongressData } from './useCongressStore';
 import { useDiplomacyStore } from './useDiplomacyStore';
 import { useMetricsStore } from './useMetricsStore';
 import { usePlayerStore } from './usePlayerStore';
+
+/** Elenco vazio (antes da posse): sem ministros, os efeitos do gabinete ficam neutros. */
+const EMPTY_CAST: PoliticalCast = { seed: 1, cabinet: [], opposition: null };
 
 /** Campos de `GameData` que pertencem ao `SimulationState`. */
 export type GameSimulationSlice = Pick<
@@ -44,6 +47,7 @@ export const assembleSimulationState = (game: GameSimulationSlice): SimulationSt
     promises: player.promises,
     goals: player.goals,
     modifiers: player.candidate?.modifiers ?? DEFAULT_MODIFIERS,
+    cast: player.cast ?? EMPTY_CAST,
   };
 };
 
@@ -61,7 +65,7 @@ export const distributeSimulationState = (state: SimulationState): GameSimulatio
   });
   useCongressStore.setState({ ...state.congress });
   useDiplomacyStore.setState({ relations: state.relations });
-  usePlayerStore.setState({ promises: state.promises, goals: state.goals });
+  usePlayerStore.setState({ promises: state.promises, goals: state.goals, cast: state.cast });
   return {
     turn: state.turn,
     totalTurns: state.totalTurns,

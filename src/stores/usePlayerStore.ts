@@ -17,9 +17,10 @@ export const createInitialPlayerData = (): PlayerData => ({
   election: null,
   goals: [],
   promises: [],
+  cast: null,
 });
 
-/** Candidato escolhido, campanha, resultado da eleição, metas e promessas. */
+/** Candidato escolhido, campanha, resultado da eleição, metas, promessas e o elenco político. */
 export const usePlayerStore = create<PlayerStore>()((set) => ({
   ...createInitialPlayerData(),
   hydrate: (data) => set({ ...data }),
@@ -31,6 +32,6 @@ export const usePlayerStore = create<PlayerStore>()((set) => ({
 }));
 
 export const getPlayerData = (): PlayerData => {
-  const { candidate, campaignQuestionIds, campaignAnswers, election, goals, promises } = usePlayerStore.getState();
-  return { candidate, campaignQuestionIds, campaignAnswers, election, goals, promises };
+  const { candidate, campaignQuestionIds, campaignAnswers, election, goals, promises, cast } = usePlayerStore.getState();
+  return { candidate, campaignQuestionIds, campaignAnswers, election, goals, promises, cast };
 };

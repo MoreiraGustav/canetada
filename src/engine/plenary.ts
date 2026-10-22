@@ -4,7 +4,10 @@
  * Nada aqui muda o resultado — só o torna visível para o jogador.
  */
 import { CONGRESS, IDEOLOGY, ORDINARY_LAW_THRESHOLD, PEC_THRESHOLD, PLENARY } from '@/constants/balance';
+import type { ChamberConfig } from '@/constants/balance';
 import type {
+  Chamber,
+  ImpeachmentFacts,
   LegislativeType,
   Party,
   PartyVote,
@@ -17,7 +20,7 @@ import type {
 } from '@/types';
 import { clamp } from '@/utils/math';
 import { isFlagActive } from './conditions';
-import { calculateVoteChance, FLAG_PROVISIONAL_MEASURE, FLAG_STREET_PRESSURE } from './congress';
+import { calculateVoteChance, FLAG_PROVISIONAL_MEASURE, FLAG_STREET_PRESSURE } from './voteChance';
 /** Variações de chance menores que isso não aparecem como fator. */
 const FACTOR_EPSILON = 0.0005;
 
@@ -72,9 +75,12 @@ export const explainVoteChance = (state: SimulationState, type: LegislativeType,
   return { chance: previous, baseline, factors };
 };
 
-/** Primos usados para derivar ausências e abstenções do mesmo sorteio da votação. */
+/** Primos usados para derivar ausências, abstenções e a Casa da derrota do mesmo sorteio da votação. */
 const ABSENT_PRIME = 7919;
 const ABSTENTION_PRIME = 104729;
+const PEC_HOUSE_PRIME = 1299709;
+/** Razão áurea: espalha os turnos em "sorteios" estáveis para as sessões de impeachment. */
+const GOLDEN_RATIO = 0.618033988749895;
 
 /** Parte fracionária de x × primo: espalha um único sorteio em números "independentes" (sem gastar o PRNG). */
 const spread = (roll: number, prime: number): number => {
@@ -82,20 +88,58 @@ const spread = (roll: number, prime: number): number => {
   return value - Math.floor(value);
 };
 
+/** Votos "sim" exigidos: maioria dos votantes (lei), 3/5 (PEC) ou 2/3 (impeachment). */
+type Requirement = 'majority' | 'pec' | 'impeachment';
+
+const requiredVotes = (config: ChamberConfig, requirement: Requirement, voting: number): number => {
+  if (requirement === 'pec') return config.pecVotes;
+  if (requirement === 'impeachment') return config.impeachmentVotes;
+  return Math.floor(voting / 2) + 1;
+};
+
+/** Placar com o resultado e a folga (em votos) dados: aprovado ⇒ sim ≥ exigido; rejeitado ⇒ sim < exigido. */
+const buildTally = (chamber: Chamber, requirement: Requirement, approved: boolean, marginVotes: number, roll: number): VoteTally => {
+  const config = PLENARY.chambers[chamber];
+  const absent = config.absentMin + Math.floor(spread(roll, ABSENT_PRIME) * config.absentRange);
+  const abstentions = config.abstentionMin + Math.floor(spread(roll, ABSTENTION_PRIME) * config.abstentionRange);
+  const voting = config.seats - absent - abstentions;
+  const required = requiredVotes(config, requirement, voting);
+  const margin = Math.round(Math.abs(marginVotes));
+  const yes = approved ? clamp(required + margin, required, voting) : clamp(required - 1 - margin, 0, required - 1);
+  return { yes, no: voting - yes, abstentions, absent, required, chamber };
+};
+
 /**
  * Placar coerente com o resultado: a folga em votos é proporcional a (chance − sorteio),
  * então votações aprovadas por pouco saem apertadas. Lei ordinária precisa de maioria
- * dos votantes; PEC, de 308 votos.
+ * dos votantes; PEC, de 3/5 da Casa.
  */
-export const tallyVotes = (type: LegislativeType, chance: number, roll: number): VoteTally => {
+export const tallyVotes = (type: LegislativeType, chance: number, roll: number, chamber: Chamber = 'camara'): VoteTally =>
+  buildTally(chamber, type === 'pec' ? 'pec' : 'majority', roll < chance, (chance - roll) * PLENARY.chambers[chamber].marginVotes, roll);
+
+/**
+ * Placares de uma proposta: lei ordinária só no plenário da Câmara; PEC nas duas Casas.
+ * PEC rejeitada cai na Câmara ou, passando por pouco nela, no Senado.
+ */
+export const tallyBill = (type: LegislativeType, chance: number, roll: number): { camara: VoteTally; senado: VoteTally | null } => {
+  if (type !== 'pec') return { camara: tallyVotes(type, chance, roll), senado: null };
   const approved = roll < chance;
-  const absent = PLENARY.absentMin + Math.floor(spread(roll, ABSENT_PRIME) * PLENARY.absentRange);
-  const abstentions = PLENARY.abstentionMin + Math.floor(spread(roll, ABSTENTION_PRIME) * PLENARY.abstentionRange);
-  const voting = PLENARY.seats - absent - abstentions;
-  const required = type === 'pec' ? PLENARY.pecVotes : Math.floor(voting / 2) + 1;
-  const swing = Math.round((chance - roll) * PLENARY.marginVotes);
-  const yes = approved ? clamp(required + Math.max(0, swing), required, voting) : clamp(required - 1 + Math.min(0, swing), 0, required - 1);
-  return { yes, no: voting - yes, abstentions, absent, required };
+  if (approved || spread(roll, PEC_HOUSE_PRIME) < PLENARY.pecChamberRejectionShare) {
+    return { camara: tallyVotes(type, chance, roll), senado: approved ? tallyVotes(type, chance, roll, 'senado') : null };
+  }
+  const narrow = spread(roll, PEC_HOUSE_PRIME) * PLENARY.pecChamberNarrowMargin;
+  return { camara: buildTally('camara', 'pec', true, narrow, roll), senado: tallyVotes(type, chance, roll, 'senado') };
+};
+
+/**
+ * Placar de uma sessão de impeachment (2/3 da Casa). A folga cresce com o quanto
+ * aprovação e base estão além (ou aquém) dos limites; o turno espalha ausências.
+ */
+export const tallyImpeachment = (chamber: Chamber, approved: boolean, facts: ImpeachmentFacts, turn: number): VoteTally => {
+  const depth = Math.abs(facts.approvalLimit - facts.approval) + Math.abs(facts.supportLimit - facts.support);
+  const roll = spread(turn, GOLDEN_RATIO);
+  const config = PLENARY.chambers[chamber];
+  return buildTally(chamber, 'impeachment', approved, Math.min(config.impeachmentMaxMargin, depth * config.impeachmentVotesPerPoint), roll);
 };
 
 /** Distribui `total` entre pesos com arredondamento pelo maior resto (a soma fecha exata). */
@@ -135,20 +179,32 @@ const fitWithinCapacity = (votes: readonly number[], capacity: readonly number[]
   return fitted;
 };
 
+/** Bancadas no Senado: os 81 senadores divididos na proporção das bancadas da Câmara. */
+export const senateParties = (parties: readonly Party[]): Party[] => {
+  const seated = parties.filter((party) => party.seats > 0);
+  const senators = apportion(PLENARY.chambers.senado.seats, seated.map((party) => party.seats));
+  return seated.map((party, index) => ({ ...party, seats: senators[index] }));
+};
+
 /**
  * Votos por bancada coerentes com o placar: cada partido adere conforme a afinidade
  * com o governo (logística); o corte é ajustado por bisseção para fechar o total de "sim".
+ * `against` = votação contra o governo (impeachment): quem vota "sim" é quem tem menos afinidade.
  */
 export const splitVotesByParty = (
   tally: VoteTally,
   parties: readonly Party[],
   ideology: { economic: number; social: number },
   playerPartyId: string | null,
+  against = false,
 ): PartyVote[] => {
   const seated = parties.filter((party) => party.seats > 0);
   const others = apportion(tally.absent + tally.abstentions, seated.map((party) => party.seats));
   const voters = seated.map((party, index) => party.seats - others[index]);
-  const affinities = seated.map((party) => partyAffinity(party, ideology, playerPartyId));
+  const affinities = seated.map((party) => {
+    const affinity = partyAffinity(party, ideology, playerPartyId);
+    return against ? 1 - affinity : affinity;
+  });
   const yesShare = (cut: number): number[] => affinities.map((affinity) => logistic(PLENARY.partySteepness * (affinity - cut)));
   const expectedYes = (cut: number): number => yesShare(cut).reduce((acc, share, index) => acc + share * voters[index], 0);
   let low = -1;

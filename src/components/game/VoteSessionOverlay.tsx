@@ -10,8 +10,8 @@ interface VoteSessionOverlayProps {
 }
 
 /**
- * Sessão deliberativa na Câmara: as votações do mês passam uma a uma no
- * plenário, com o painel eletrônico, o placar, o carimbo e o porquê do resultado.
+ * Sessão deliberativa no Congresso: as votações do mês passam uma a uma no plenário
+ * (PECs na Câmara e no Senado), com o painel, o placar, o carimbo e o porquê do resultado.
  */
 export const VoteSessionOverlay = ({ items, onClose }: VoteSessionOverlayProps) => {
   const [index, setIndex] = useState(0);
@@ -37,13 +37,13 @@ export const VoteSessionOverlay = ({ items, onClose }: VoteSessionOverlayProps) 
       <motion.div
         role="dialog"
         aria-modal="true"
-        aria-label="Sessão de votação na Câmara dos Deputados"
+        aria-label="Sessão de votação no Congresso Nacional"
         className="max-h-[94vh] w-full max-w-4xl overflow-y-auto border-t-4 border-ink bg-paper p-4 shadow-lifted sm:border sm:p-6"
         initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >
         <div className="mb-3 flex items-center justify-between gap-3 border-b-4 border-double border-ink pb-2">
-          <p className="font-display text-lg font-bold text-ink">🏛️ Plenário da Câmara · Sessão deliberativa</p>
+          <p className="font-display text-lg font-bold text-ink">🏛️ Congresso Nacional · Sessão deliberativa</p>
           <button type="button" onClick={onClose} className="font-sans text-xl leading-none text-ink-soft hover:text-ink" aria-label="Fechar">
             ×
           </button>

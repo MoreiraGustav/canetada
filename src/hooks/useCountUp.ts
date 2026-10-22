@@ -8,8 +8,13 @@ const easeOutCubic = (t: number): number => 1 - (1 - t) ** 3;
 const prefersReducedMotion = (): boolean =>
   typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
+/** Ritmo da contagem: desacelerando no fim (padrão) ou constante (apuração com suspense). */
+export type CountUpEasing = 'out' | 'linear';
+
+const EASINGS: Record<CountUpEasing, (t: number) => number> = { out: easeOutCubic, linear: (t) => t };
+
 /** Valor animado de 0 até `target` (contagem de votos). Respeita `prefers-reduced-motion`. */
-export const useCountUp = (target: number, durationMs: number = DEFAULT_DURATION_MS): number => {
+export const useCountUp = (target: number, durationMs: number = DEFAULT_DURATION_MS, easing: CountUpEasing = 'out'): number => {
   const [value, setValue] = useState(() => (prefersReducedMotion() ? target : 0));
 
   useEffect(() => {
@@ -21,12 +26,12 @@ export const useCountUp = (target: number, durationMs: number = DEFAULT_DURATION
     const startedAt = performance.now();
     const tick = (now: number): void => {
       const t = Math.min(1, (now - startedAt) / durationMs);
-      setValue(target * easeOutCubic(t));
+      setValue(target * EASINGS[easing](t));
       if (t < 1) frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [target, durationMs]);
+  }, [target, durationMs, easing]);
 
   return value;
 };

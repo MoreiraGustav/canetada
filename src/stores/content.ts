@@ -17,6 +17,7 @@ import type {
   DiplomaticAction,
   EventCategoryInfo,
   FiscalStance,
+  GameContent,
   GameEvent,
   GoalDefinition,
   MinistryId,
@@ -26,6 +27,7 @@ import type {
   PresidentialAction,
   StateShape,
   VisitKind,
+  WorldId,
 } from '@/types';
 import { indexById } from '@/utils/math';
 
@@ -45,13 +47,38 @@ const CRISIS_ACTIONS_BY_ID = indexById(GAME_CONTENT.crisisActions);
 const STANCES_BY_ID = indexById(GAME_CONTENT.fiscalStances);
 const STATES_BY_ID = indexById(GAME_CONTENT.states);
 
+const DEFAULT_WORLD: WorldId = 'ficticio';
+const inWorld = (world: WorldId) => (entry: { world?: WorldId }): boolean => (entry.world ?? DEFAULT_WORLD) === world;
+
+/**
+ * Conteúdo de um mundo: só os partidos e candidatos daquele Brasil (o resto é comum).
+ * No Brasil real o presidente é uma pessoa real: as propostas reservadas (corrupção do
+ * próprio presidente) ficam de fora, e com elas os escândalos que dependem delas.
+ */
+const buildWorldContent = (world: WorldId): GameContent => ({
+  ...GAME_CONTENT,
+  parties: GAME_CONTENT.parties.filter(inWorld(world)),
+  candidates: GAME_CONTENT.candidates.filter(inWorld(world)),
+  events: world === 'real' ? GAME_CONTENT.events.filter((event) => event.category !== 'corruption') : GAME_CONTENT.events,
+});
+const WORLD_CONTENT: Record<WorldId, GameContent> = { ficticio: buildWorldContent('ficticio'), real: buildWorldContent('real') };
+
+/** Conteúdo passado ao engine numa partida do mundo escolhido. */
+export const getWorldContent = (world: WorldId): GameContent => WORLD_CONTENT[world];
+
+/** O Brasil real só aparece no setup se houver candidatos reais cadastrados. */
+export const hasRealWorld = (): boolean => WORLD_CONTENT.real.candidates.length > 0;
+
+/** Nomes dos personagens fictícios (ministros e governadores). */
+export const NAME_POOL = GAME_CONTENT.names;
+
 /** ID do país → nome (para dicas de impacto). */
 export const COUNTRY_NAMES: Readonly<Record<string, string>> = Object.fromEntries(
   GAME_CONTENT.countries.map((country) => [country.id, country.name]),
 );
 
-export const getCandidates = (): readonly Candidate[] => GAME_CONTENT.candidates;
-export const getParties = (): readonly Party[] => GAME_CONTENT.parties;
+export const getCandidates = (world: WorldId = DEFAULT_WORLD): readonly Candidate[] => WORLD_CONTENT[world].candidates;
+export const getParties = (world: WorldId = DEFAULT_WORLD): readonly Party[] => WORLD_CONTENT[world].parties;
 export const getBackgrounds = (): readonly BackgroundDefinition[] => GAME_CONTENT.backgrounds;
 export const getAbilities = (): readonly Ability[] => GAME_CONTENT.abilities;
 export const getGoalDefinitions = (): readonly GoalDefinition[] => GAME_CONTENT.goals;

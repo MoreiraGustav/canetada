@@ -1,5 +1,4 @@
 import { GAME_MODES } from '@/constants/game';
-import { GAME_CONTENT } from '@/data';
 import {
   buildPlayerCandidate,
   calculateElectionResult,
@@ -9,7 +8,7 @@ import {
   selectCampaignQuestions,
 } from '@/engine';
 import type { CampaignAnswer, CampaignOption, NewGameParams } from '@/types';
-import { getCampaignOption } from './content';
+import { getCampaignOption, getWorldContent } from './content';
 import { advanceSeed, createInitialGameData, generateSeed } from './gameData';
 import type { GameStoreActions, GameStoreApi } from './gameStoreTypes';
 import { resetDomainStores } from './persistence';
@@ -43,9 +42,10 @@ const startGovernment = (api: GameStoreApi, goalIds: string[]): void => {
     election: player.election,
     goalIds,
   };
-  const initial = createInitialState(params, GAME_CONTENT);
+  const content = getWorldContent(game.world);
+  const initial = createInitialState(params, content);
   recordSnapshot(initial, 0);
-  const { state, decisionIds } = prepareTurn(initial, GAME_CONTENT);
+  const { state, decisionIds } = prepareTurn(initial, content);
   const headline = `${player.candidate.name} toma posse como Presidente da República em Brasília`;
   api.commit({
     ...distributeSimulationState(state),
@@ -60,14 +60,15 @@ const startGovernment = (api: GameStoreApi, goalIds: string[]): void => {
 
 export const createSetupActions = (api: GameStoreApi): SetupActions => ({
   goToSetup: () => api.set({ phase: 'setup' }),
-  startNewGame: (mode, difficulty) => {
+  startNewGame: (mode, difficulty, world = 'ficticio') => {
     resetDomainStores();
     const termLength = GAME_MODES[mode].turns;
-    api.commit({ ...createInitialGameData(), phase: 'candidate', mode, difficulty, termLength, totalTurns: termLength, seed: generateSeed() });
+    api.commit({ ...createInitialGameData(), phase: 'candidate', world, mode, difficulty, termLength, totalTurns: termLength, seed: generateSeed() });
   },
   chooseCandidate: (selection) => {
-    const candidate = buildPlayerCandidate(selection, GAME_CONTENT);
-    const { questionIds, seed } = selectCampaignQuestions(GAME_CONTENT.campaignQuestions, api.get().seed);
+    const content = getWorldContent(api.get().world);
+    const candidate = buildPlayerCandidate(selection, content);
+    const { questionIds, seed } = selectCampaignQuestions(content.campaignQuestions, api.get().seed);
     usePlayerStore.getState().hydrate({ candidate, campaignQuestionIds: questionIds, campaignAnswers: [], election: null });
     api.commit({ phase: 'campaign', seed });
   },
@@ -79,8 +80,8 @@ export const createSetupActions = (api: GameStoreApi): SetupActions => ({
     const player = usePlayerStore.getState();
     if (!player.candidate) return;
     const options = resolveCampaignOptions(player.campaignQuestionIds, player.campaignAnswers);
-    const { seed } = api.get();
-    usePlayerStore.getState().hydrate({ election: calculateElectionResult(player.candidate, options, GAME_CONTENT, seed) });
+    const { seed, world } = api.get();
+    usePlayerStore.getState().hydrate({ election: calculateElectionResult(player.candidate, options, getWorldContent(world), seed) });
     api.commit({ phase: 'election-result', seed: advanceSeed(seed) });
   },
   confirmElection: () => api.commit({ phase: 'goals' }),

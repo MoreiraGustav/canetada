@@ -641,6 +641,15 @@ export const FIXTURE_CONTENT: GameContent = {
       audience: 'lowerClass',
     },
   ],
+  names: {
+    femaleFirst: ['Ana', 'Bia', 'Carla'],
+    maleFirst: ['Davi', 'Edu', 'Fábio'],
+    surnames: ['Lima', 'Souza', 'Rocha', 'Prado'],
+  },
+  oppositionLines: [
+    { indicator: 'inflation', direction: 'up', threshold: 0.25, templates: ['{oposicao} culpa o governo pela inflação'] },
+    { indicator: 'approval', direction: 'down', threshold: 2, templates: ['{oposicao} comemora queda do governo'] },
+  ],
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────

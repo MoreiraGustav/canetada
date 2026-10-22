@@ -1,5 +1,6 @@
 import type { Impact } from './impact';
 import type { SectorAffinity } from './metrics';
+import type { Portrait, WorldId } from './world';
 
 export type BackgroundId = 'politico-veterano' | 'empresario' | 'militar' | 'academico' | 'ativista';
 
@@ -47,8 +48,10 @@ export interface Party {
   description: string;
   /** Pontos somados à base aliada inicial (tamanho da bancada). */
   congressBase: number;
-  /** Deputados federais do partido (as bancadas somam 513), usados no placar por partido. */
+  /** Deputados federais do partido (as bancadas de cada mundo somam 513), usados no placar por partido. */
   seats: number;
+  /** Mundo a que o partido pertence (padrão: fictício). */
+  world?: WorldId;
 }
 
 export interface BackgroundDefinition {
@@ -95,6 +98,12 @@ export interface Candidate {
   emblem: string;
   /** Slogan de campanha. */
   slogan: string;
+  /** Mundo a que o candidato pertence (padrão: fictício). */
+  world?: WorldId;
+  /** Rosto (foto livre de pessoa real ou retrato ilustrado). */
+  portrait?: Portrait;
+  /** Aviso exibido no cartão (ex.: "Cenário hipotético: inelegível na vida real"). */
+  note?: string;
 }
 
 /** Dados do formulário de criação de candidato (GDD §2.4, Opção B). */

@@ -1,4 +1,5 @@
 import type { CampaignAnswer, ElectionResult, PlayerPromise, ReelectionResult } from './campaign';
+import type { PoliticalCast } from './cast';
 import type { PlayerCandidate } from './candidates';
 import type { CongressState } from './congress';
 import type { DecisionChoice } from './decisions';
@@ -16,10 +17,13 @@ import type { GoalProgress } from './goals';
 import type { ActiveEffect } from './impact';
 import type { GameMetrics, MetricsSnapshot, SectorAffinity, SectorApproval } from './metrics';
 import type { NewsItem } from './news';
+import type { WorldId } from './world';
 
 /** Dados serializáveis de `useGameStore` (estado geral e orquestração do turno). */
 export interface GameData {
   phase: GamePhase;
+  /** Brasil fictício (padrão) ou Brasil real. */
+  world: WorldId;
   mode: GameMode;
   difficulty: Difficulty;
   turn: number;
@@ -73,6 +77,8 @@ export interface PlayerData {
   election: ElectionResult | null;
   goals: GoalProgress[];
   promises: PlayerPromise[];
+  /** Ministros, oposição e semente dos personagens (null antes da posse). */
+  cast: PoliticalCast | null;
 }
 
 /** Preferências de áudio (persistidas separadamente do save). */

@@ -30,6 +30,7 @@ import type {
 } from '@/types';
 import { clamp } from '@/utils/math';
 import { calculateApproval } from './approval';
+import { createCast } from './cast';
 import { getDifficultyConfig } from './difficulty';
 import { createGoalProgress } from './goals';
 import { applyImpact } from './impacts';
@@ -140,10 +141,18 @@ const coherenceBonus = (candidate: PlayerCandidate, options: readonly CampaignOp
     return acc + (alignment * 2 - 1) * ELECTION.coherenceBonus;
   }, 0);
 
-/** Adversário no 2º turno: o arquétipo ideologicamente mais distante do jogador. */
-const findOpponent = (candidate: PlayerCandidate, candidates: readonly Candidate[]): Candidate | undefined =>
+/**
+ * Adversário no 2º turno: o candidato ideologicamente mais distante do jogador.
+ * Cenários hipotéticos (`note`, ex.: inelegível na vida real) só entram se não houver outro.
+ */
+const findOpponent = (candidate: PlayerCandidate, candidates: readonly Candidate[]): Candidate | undefined => {
+  const others = candidates.filter((entry) => entry.id !== candidate.archetypeId);
+  const eligible = others.filter((entry) => !entry.note);
+  return farthest(candidate, eligible.length > 0 ? eligible : others);
+};
+
+const farthest = (candidate: PlayerCandidate, candidates: readonly Candidate[]): Candidate | undefined =>
   candidates
-    .filter((entry) => entry.id !== candidate.archetypeId)
     .reduce<Candidate | undefined>((best, entry) => {
       const distance = Math.hypot(entry.economicIdeology - candidate.economicIdeology, entry.socialIdeology - candidate.socialIdeology);
       const bestDistance = best
@@ -179,6 +188,7 @@ export const calculateElectionResult = (
     firstRoundShare: voteShare - randomBetween(rng, ELECTION.firstRoundGapMin, ELECTION.firstRoundGapMax),
     opponentName: opponent?.name ?? 'Candidato da oposição',
     opponentPartyId: opponent?.partyId ?? '',
+    opponentId: opponent?.id,
     initialCongressSupport: clamp(support, ELECTION.minInitialSupport, ELECTION.maxInitialSupport),
     capital: capitalFor(margin),
   };
@@ -240,6 +250,15 @@ const createBaseState = (params: NewGameParams, content: GameContent): Simulatio
     modifiers: params.candidate.modifiers,
     stats: createStats(approval),
     seed: params.seed,
+    cast: createCast(
+      params.seed,
+      params.candidate,
+      params.election,
+      content.parties,
+      content.names,
+      findById(content.candidates, params.election.opponentId ?? '')?.world === 'real',
+      1,
+    ),
   };
 };
 

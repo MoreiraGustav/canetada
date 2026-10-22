@@ -3,8 +3,9 @@
  * Componentes recebem estes objetos via props, sem calcular nada.
  */
 import type { PlayerPromise } from './campaign';
+import type { CharacterView, Governor, Minister } from './cast';
 import type { Ability, BackgroundDefinition, Party, PlayerCandidate } from './candidates';
-import type { CpiState, ImpeachmentState, PoliticalStatus, VoteFactorKey, VoteRecord, VoteTally } from './congress';
+import type { Chamber, CpiState, ImpeachmentFacts, ImpeachmentState, PoliticalStatus, VoteFactorKey, VoteRecord, VoteTally } from './congress';
 import type { Decision, DecisionChoice, DecisionOption, MinistryInfo } from './decisions';
 import type { Country } from './diplomacy';
 import type { ApprovalDriverKey } from './engine';
@@ -15,6 +16,7 @@ import type { GoalDefinition, GoalProgress } from './goals';
 import type { ImpactHint } from './impact';
 import type { IndicatorInfo, IndicatorKey, SectorKey } from './metrics';
 import type { BrazilianCity, BrazilianState, StateShape, VisitKind } from './travel';
+import type { Portrait } from './world';
 
 export type Tone = 'positive' | 'negative' | 'neutral';
 
@@ -84,6 +86,8 @@ export interface DecisionOptionView {
 export interface DecisionView {
   decision: Decision;
   ministry: MinistryInfo;
+  /** Ministro da pasta que leva a proposta (null antes da posse). */
+  minister: CharacterView | null;
   options: DecisionOptionView[];
   choice: DecisionChoice | null;
 }
@@ -293,6 +297,7 @@ export interface TravelStateView {
   approval: number;
   visitBonus: number;
   cooldownLeft: number;
+  governor: GovernorView | null;
 }
 
 export interface TravelView {
@@ -318,14 +323,117 @@ export interface PartyVoteView {
   economicIdeology: number;
 }
 
-/** Uma votação pronta para a sessão animada do plenário. */
+/** Uma etapa da votação numa Casa (Câmara ou Senado). */
+export interface VoteStageView {
+  chamber: Chamber;
+  /** "Câmara dos Deputados" / "Senado Federal". */
+  chamberLabel: string;
+  tally: VoteTally;
+  /** Bancadas da esquerda para a direita (ordem do plenário). */
+  parties: PartyVoteView[];
+  /** A etapa alcançou os votos exigidos. */
+  passed: boolean;
+  /** Carimbo ao fim da etapa (ex.: "Aprovada", "Rejeitada", "Afastado"). */
+  stamp: string;
+}
+
+/** Uma votação pronta para a sessão animada do plenário (uma ou duas Casas). */
 export interface VoteSessionItem {
   vote: VoteRecord;
   typeLabel: string;
-  tally: VoteTally;
+  stages: VoteStageView[];
   /** Chance de partida (base no limiar e aprovação de referência). */
   baseline: number;
   factors: VoteFactorView[];
-  /** Bancadas da esquerda para a direita (ordem do plenário). */
-  parties: PartyVoteView[];
+  /** Votação contra o governo (impeachment): "sim" é ruim para o presidente. */
+  against: boolean;
+  /** Situação que levou ao impeachment (só nessas sessões). */
+  impeachment: ImpeachmentFacts | null;
+}
+
+/** Ministro pronto para a UI. */
+export interface MinisterView {
+  minister: Minister;
+  ministry: MinistryInfo;
+  party: Party | null;
+  portrait: Portrait;
+  /** "Técnica" / "Político · PT". */
+  profileLabel: string;
+  /** O que o perfil faz no jogo. */
+  effectLabel: string;
+  cooldownLeft: number;
+  canReplace: boolean;
+}
+
+export interface CabinetView {
+  ministers: MinisterView[];
+  /** Partidos aliados que podem indicar ministros políticos. */
+  allies: Party[];
+}
+
+/** Líder da oposição pronto para a UI. */
+export interface OppositionView {
+  name: string;
+  party: Party | null;
+  portrait: Portrait;
+  real: boolean;
+  /** Fatia da Câmara fora da base aliada (%). */
+  strength: number;
+}
+
+/** Governador de um estado pronto para a UI. */
+export interface GovernorView {
+  governor: Governor;
+  party: Party | null;
+  portrait: Portrait;
+  stanceLabel: string;
+}
+
+/** Um lado da disputa na noite da eleição. */
+export interface ElectionContender {
+  name: string;
+  /** Sigla do partido (pode ser vazia). */
+  party: string;
+  color: string;
+  portrait: Portrait;
+}
+
+/** Estado na apuração: votos do jogador e quando o estado começa a divulgar. */
+export interface ElectionNightState {
+  id: string;
+  uf: string;
+  name: string;
+  population: number;
+  shape: StateShape | null;
+  /** % dos votos válidos do jogador no estado. */
+  share: number;
+  /** Fração da noite em que o estado começa a divulgar. */
+  reportDelay: number;
+}
+
+/** Noite da eleição (posse ou reeleição), pronta para a apuração animada. */
+export interface ElectionNightView {
+  title: string;
+  viewBox: string;
+  player: ElectionContender;
+  opponent: ElectionContender;
+  /** % nacional final do jogador. */
+  nationalShare: number;
+  won: boolean;
+  states: ElectionNightState[];
+  /** Fração apurada de um estado no instante `progress` (0–1) da noite. */
+  reportedAt: (stateId: string, progress: number) => number;
+  /** Parcial nacional do jogador e fração do eleitorado já apurada no instante `progress`. */
+  partialAt: (progress: number) => { share: number; counted: number };
+}
+
+/** Decisão do Copom no mês (só quando a Selic mudou). */
+export interface CopomDecisionView {
+  before: number;
+  after: number;
+  direction: 'up' | 'down';
+  inflation: number;
+  target: number;
+  /** Diretores do Banco Central que votam (unanimidade no jogo). */
+  directors: number;
 }

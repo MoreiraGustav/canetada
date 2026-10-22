@@ -52,7 +52,7 @@ export const MenuScreen = () => {
           </Card>
           {summary && <MenuSavedGameCard summary={summary} onContinue={handleContinue} onDelete={() => setConfirmOpen(true)} />}
           <p className="font-sans text-[11px] leading-relaxed text-ink-muted">
-            O progresso é salvo automaticamente neste navegador. Candidatos, partidos e eventos são fictícios.
+            O progresso é salvo automaticamente neste navegador. Obra de ficção: no Brasil real, pessoas reais aparecem só em cenários hipotéticos.
           </p>
         </motion.aside>
       </div>

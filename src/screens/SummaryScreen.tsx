@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { getCountries } from '@/stores/content';
-import { useIndicatorViews, useLastReport, useTurnInfo, useVoteSession } from '@/stores/selectors';
+import { useCopomDecision, useIndicatorViews, useLastReport, useTurnInfo, useVoteSession } from '@/stores/selectors';
 import { useGameStore } from '@/stores/useGameStore';
+import { CopomCard } from '@/components/game/CopomCard';
 import { SummaryHeadlines } from '@/components/game/SummaryHeadlines';
 import { SummaryMonthPanel } from '@/components/game/SummaryMonthPanel';
 import { SummaryOutcomeBanner } from '@/components/game/SummaryOutcomeBanner';
@@ -30,6 +31,7 @@ export const SummaryScreen = () => {
   const indicatorViews = useIndicatorViews(PRIMARY_INDICATORS);
   const advance = useGameStore((state) => state.advance);
   const session = useVoteSession(report?.votes ?? NO_VOTES);
+  const copom = useCopomDecision();
   // A sessão no plenário abre sozinha quando houve votação no mês.
   const [sessionOpen, setSessionOpen] = useState(true);
 
@@ -47,6 +49,7 @@ export const SummaryScreen = () => {
         <div className="flex flex-col gap-6 lg:col-span-2">
           <SummaryHeadlines news={report.news} />
           <SummaryVotes votes={report.votes} onReplay={() => setSessionOpen(true)} />
+          <CopomCard decision={copom} />
         </div>
         <SummaryMonthPanel
           indicatorViews={indicatorViews}

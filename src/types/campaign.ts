@@ -76,6 +76,8 @@ export interface ElectionResult {
   firstRoundShare: number;
   opponentName: string;
   opponentPartyId: string;
+  /** ID do candidato adversário (para o retrato), se veio da lista de candidatos. */
+  opponentId?: string;
   /** Base aliada inicial resultante. */
   initialCongressSupport: number;
   capital: 'alto' | 'medio' | 'baixo';

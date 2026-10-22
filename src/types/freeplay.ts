@@ -80,6 +80,8 @@ export interface PresidentialAction {
   /** Manchete quando executada (≤ 85 caracteres). */
   headline: string;
   flags?: string[];
+  /** Pasta responsável (programas): um ministro técnico amplia os ganhos. */
+  ministry?: MinistryId;
 }
 
 /**

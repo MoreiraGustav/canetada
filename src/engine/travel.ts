@@ -2,14 +2,16 @@
  * Viagens pelo Brasil: uma visita por mês (vaga própria) a uma cidade de um estado.
  * O efeito vem do modelo do perfil da cidade (data/visitKinds.ts), ampliado pelo
  * peso do estado: a bancada federal dá base aliada, a população amplia o efeito
- * nos setores e um eleitorado hostil aumenta a chance de vaias. Cada estado só
- * pode ser revisitado após TRAVEL.stateCooldown meses.
+ * nos setores, um eleitorado hostil aumenta a chance de vaias e o governador
+ * (aliado ou de oposição) muda a recepção. Cada estado só pode ser revisitado
+ * após TRAVEL.stateCooldown meses.
  */
-import { IDEOLOGY, TRAVEL } from '@/constants/balance';
+import { CABINET, IDEOLOGY, TRAVEL } from '@/constants/balance';
 import type {
   BrazilianCity,
   BrazilianState,
   GameMetrics,
+  Governor,
   Impact,
   OutcomeRisk,
   PresidentialAction,
@@ -78,10 +80,14 @@ export const getStateApprovals = (state: SimulationState, states: readonly Brazi
   });
 };
 
-/** Risco da visita: chance base do perfil + hostilidade de um eleitorado sem afinidade com o governo. */
-const visitRisk = (risk: OutcomeRisk, affinity: number, fill: (text: string) => string): OutcomeRisk => ({
+/** Governador aliado recebe bem (menos risco, mais base); de oposição, o contrário. */
+const GOVERNOR_RISK: Record<Governor['stance'], number> = { aliado: CABINET.allyVisitRisk, neutro: 0, oposicao: CABINET.oppositionVisitRisk };
+const GOVERNOR_SUPPORT: Record<Governor['stance'], number> = { aliado: CABINET.allyVisitSupport, neutro: 0, oposicao: 0 };
+
+/** Risco da visita: chance base do perfil + hostilidade do eleitorado + postura do governador. */
+const visitRisk = (risk: OutcomeRisk, affinity: number, governor: Governor | undefined, fill: (text: string) => string): OutcomeRisk => ({
   ...risk,
-  chance: clamp(risk.chance + TRAVEL.hostileRiskBonus * (1 - affinity), 0, MAX_RISK_CHANCE),
+  chance: clamp(risk.chance + TRAVEL.hostileRiskBonus * (1 - affinity) + (governor ? GOVERNOR_RISK[governor.stance] : 0), 0, MAX_RISK_CHANCE),
   headline: fill(risk.headline),
 });
 
@@ -95,13 +101,15 @@ export const buildVisitAction = (
   city: BrazilianCity,
   kinds: readonly VisitKind[],
   states: readonly BrazilianState[],
+  governor?: Governor,
 ): PresidentialAction | null => {
   const kind = kinds.find((entry) => entry.id === city.kind);
   if (!kind) return null;
   const fill = (text: string): string => fillVisitTemplate(text, city, uf);
   const scaled = scaleAudience(kind.impact, populationFactor(uf, states));
   // Bancada do estado: cada deputado conta para a base aliada.
-  const impact: Impact = { ...scaled, congressSupport: (scaled.congressSupport ?? 0) + TRAVEL.supportPerSeat * uf.seats };
+  const governorSupport = governor ? GOVERNOR_SUPPORT[governor.stance] : 0;
+  const impact: Impact = { ...scaled, congressSupport: (scaled.congressSupport ?? 0) + TRAVEL.supportPerSeat * uf.seats + governorSupport };
   return {
     id: uf.id,
     name: fill(kind.name),
@@ -109,7 +117,7 @@ export const buildVisitAction = (
     description: kind.description,
     impact,
     delayed: kind.delayed,
-    risk: visitRisk(kind.risk, stateAffinity(state.metrics, uf), fill),
+    risk: visitRisk(kind.risk, stateAffinity(state.metrics, uf), governor, fill),
     cooldown: TRAVEL.stateCooldown,
     headline: fill(kind.headline),
   };

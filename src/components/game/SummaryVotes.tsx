@@ -14,6 +14,26 @@ const LEGISLATIVE_LABELS: Record<VoteRecord['type'], string> = {
   pec: 'PEC',
 };
 
+/** Sessões de impeachment: rótulo e resultado do ponto de vista do governo. */
+const IMPEACHMENT_LABELS: Record<'impeachment-opening' | 'impeachment-trial', { label: string; passed: string; failed: string }> = {
+  'impeachment-opening': { label: 'Impeachment · Câmara', passed: 'Processo aberto', failed: 'Arquivado' },
+  'impeachment-trial': { label: 'Impeachment · Senado', passed: 'Afastado', failed: 'Absolvido' },
+};
+
+const describe = (vote: VoteRecord): { meta: string; badge: string; good: boolean } => {
+  const tally = vote.tally ? ` · ${vote.tally.yes} sim × ${vote.tally.no} não` : '';
+  if (vote.kind && vote.kind !== 'law') {
+    const labels = IMPEACHMENT_LABELS[vote.kind];
+    return { meta: `${labels.label}${tally}`, badge: vote.approved ? labels.passed : labels.failed, good: !vote.approved };
+  }
+  const senate = vote.senateTally ? ` · Senado ${vote.senateTally.yes} × ${vote.senateTally.no}` : '';
+  return {
+    meta: `${LEGISLATIVE_LABELS[vote.type]} · chance de ${formatChance(vote.chance)}${tally}${senate}${vote.negotiated ? ' · negociada com a base' : ''}`,
+    badge: vote.approved ? 'Aprovada' : 'Rejeitada',
+    good: vote.approved,
+  };
+};
+
 /** Votações do Congresso no mês, com o placar e um atalho para rever a sessão. */
 export const SummaryVotes = ({ votes, onReplay }: SummaryVotesProps) => {
   if (votes.length === 0) return null;
@@ -30,24 +50,23 @@ export const SummaryVotes = ({ votes, onReplay }: SummaryVotesProps) => {
         )}
       </div>
       <ul>
-        {votes.map((vote) => (
-          <li
-            key={`${vote.decisionId}-${vote.optionId}`}
-            className="flex flex-col gap-1 border-b border-rule py-2 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="min-w-0">
-              <p className="font-display text-base font-bold leading-snug text-ink">{vote.title}</p>
-              <p className="font-sans text-[11px] uppercase tracking-wide text-ink-muted">
-                {LEGISLATIVE_LABELS[vote.type]} · chance de {formatChance(vote.chance)}
-                {vote.tally && ` · ${vote.tally.yes} sim × ${vote.tally.no} não`}
-                {vote.negotiated && ' · negociada com a base'}
-              </p>
-            </div>
-            <Badge tone={vote.approved ? 'positive' : 'negative'} className="self-start sm:self-center">
-              {vote.approved ? 'Aprovada' : 'Rejeitada'}
-            </Badge>
-          </li>
-        ))}
+        {votes.map((vote) => {
+          const { meta, badge, good } = describe(vote);
+          return (
+            <li
+              key={`${vote.decisionId}-${vote.optionId}`}
+              className="flex flex-col gap-1 border-b border-rule py-2 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="min-w-0">
+                <p className="font-display text-base font-bold leading-snug text-ink">{vote.title}</p>
+                <p className="font-sans text-[11px] uppercase tracking-wide text-ink-muted">{meta}</p>
+              </div>
+              <Badge tone={good ? 'positive' : 'negative'} className="self-start sm:self-center">
+                {badge}
+              </Badge>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

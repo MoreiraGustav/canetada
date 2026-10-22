@@ -2,6 +2,8 @@
  * Integridade do conteúdo real (`GAME_CONTENT`) e simulação realista de um
  * mandato completo com escolhas aleatórias.
  */
+/// <reference types="node" />
+import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_MODIFIERS } from '@/constants/balance';
 import { GOALS_TO_SELECT, MAX_DECISIONS_PER_TURN, MINISTRY_INFO } from '@/constants/game';
@@ -23,6 +25,14 @@ const C = GAME_CONTENT;
 const INITIATIVES = [...C.presidentialActions, ...C.programs, ...C.crisisActions];
 /** Cadeiras da Câmara dos Deputados. */
 const CHAMBER_SEATS = 513;
+const WORLDS = ['ficticio', 'real'] as const;
+const partiesOf = (world: (typeof WORLDS)[number]) => C.parties.filter((party) => (party.world ?? 'ficticio') === world);
+/** Conteúdo do Brasil fictício (o padrão), como as stores passam ao engine. */
+const FICTIONAL = {
+  ...C,
+  parties: partiesOf('ficticio'),
+  candidates: C.candidates.filter((candidate) => (candidate.world ?? 'ficticio') === 'ficticio'),
+};
 const CITIES_PER_STATE = 3;
 
 /** Flags definidas pelo próprio engine (docs/SPEC.md). */
@@ -433,15 +443,18 @@ const SIMULATION_SEEDS = [11, 223, 4049, 77777, 909090];
 /** Partida real: candidato, campanha e metas sorteados pela semente; modo completo, normal. */
 const createRealGame = (seed: number): SimulationState => {
   const rng = createRng(seed);
-  const candidate = buildPlayerCandidate({ kind: 'archetype', candidateId: C.candidates[randomInt(rng, 0, C.candidates.length - 1)].id }, C);
+  const candidate = buildPlayerCandidate(
+    { kind: 'archetype', candidateId: FICTIONAL.candidates[randomInt(rng, 0, FICTIONAL.candidates.length - 1)].id },
+    FICTIONAL,
+  );
   const { questionIds } = selectCampaignQuestions(C.campaignQuestions, seed);
   const campaignOptions = questionIds.flatMap((id) => {
     const question = C.campaignQuestions.find((entry) => entry.id === id);
     return question ? [question.options[randomInt(rng, 0, question.options.length - 1)]] : [];
   });
   const goalIds = shuffle(rng, C.goals.map((goal) => goal.id)).slice(0, GOALS_TO_SELECT);
-  const election = calculateElectionResult(candidate, campaignOptions, C, seed);
-  return createInitialState({ mode: 'full', difficulty: 'normal', seed, candidate, campaignOptions, election, goalIds }, C);
+  const election = calculateElectionResult(candidate, campaignOptions, FICTIONAL, seed);
+  return createInitialState({ mode: 'full', difficulty: 'normal', seed, candidate, campaignOptions, election, goalIds }, FICTIONAL);
 };
 
 describe('simulação realista de 48 turnos com o conteúdo real', () => {
@@ -531,7 +544,29 @@ describe('GAME_CONTENT — contas públicas e plenário', () => {
     expect(C.crisisActions.filter((action) => (action.conditions ?? []).length === 0).map((action) => action.id)).toEqual([]);
   });
 
-  it('as bancadas partidárias somam a Câmara inteira', () => {
-    expect(C.parties.reduce((acc, party) => acc + party.seats, 0)).toBe(CHAMBER_SEATS);
+  it('em cada mundo (fictício e real) as bancadas partidárias somam a Câmara inteira', () => {
+    for (const world of WORLDS) {
+      expect(partiesOf(world).reduce((acc, party) => acc + party.seats, 0)).toBe(CHAMBER_SEATS);
+    }
+  });
+
+  it('todo candidato tem partido do mesmo mundo, e toda foto existe e tem crédito', () => {
+    const mismatched = C.candidates.filter((candidate) => {
+      const party = C.parties.find((entry) => entry.id === candidate.partyId);
+      return !party || (party.world ?? 'ficticio') !== (candidate.world ?? 'ficticio');
+    });
+    expect(mismatched.map((candidate) => candidate.id)).toEqual([]);
+    const photos = C.candidates.flatMap((candidate) => (candidate.portrait?.photo ? [candidate] : []));
+    expect(photos.filter((candidate) => !existsSync(`public/${candidate.portrait?.photo}`)).map((candidate) => candidate.id)).toEqual([]);
+    expect(photos.filter((candidate) => !candidate.portrait?.credit?.license || !candidate.portrait.credit.source).map((candidate) => candidate.id)).toEqual([]);
+  });
+
+  it('reações da oposição cabem na manchete com qualquer líder (nome fictício ou partido real)', () => {
+    const labels = [
+      ...C.candidates.filter((candidate) => (candidate.world ?? 'ficticio') === 'ficticio').map((candidate) => `${candidate.name} (${C.parties.find((party) => party.id === candidate.partyId)?.acronym})`),
+      ...partiesOf('real').map((party) => `Oposição liderada pelo ${party.acronym}`),
+    ];
+    const headlines = C.oppositionLines.flatMap((line) => line.templates.flatMap((template) => labels.map((label): [string, string] => [template, template.replace('{oposicao}', label)])));
+    expect(tooLong(headlines, TEXT_LIMITS.headline)).toEqual([]);
   });
 });

@@ -290,6 +290,53 @@ export const FISCAL = {
   projectionMonths: 48,
 } as const;
 
+// ─── Engine: ministros, oposição e governadores ───────────────────────────
+
+export const CABINET = {
+  /** Ganhos das decisões e programas da pasta com ministro técnico (fração extra). */
+  technicalBonus: 0.15,
+  /** Pontos de base aliada de equilíbrio por ministro político (partido aliado no governo). */
+  politicalSupport: 1.25,
+  /**
+   * Composição padrão do gabinete (ministros políticos): a base aliada e o risco de
+   * escândalo são calibrados para ela; cada político a mais/menos desloca os dois.
+   */
+  baselinePolitical: 4,
+  /** Peso extra de escândalos políticos no sorteio por ministro político além do padrão. */
+  scandalPerPolitical: 0.12,
+  /** Meses até poder trocar de novo o ministro de uma pasta. */
+  replaceCooldown: 6,
+  /** Desgaste de trocar um ministro (pontos de aprovação). */
+  replaceApprovalCost: -0.5,
+  /** Quantos partidos aliados (os mais próximos no espectro) dividem as pastas políticas. */
+  alliedParties: 4,
+  /** Chance de a oposição reagir quando um indicador se move além do limiar. */
+  oppositionReactionChance: 0.6,
+  /** Governadores: distância no espectro até a qual o partido é aliado / a partir da qual é oposição. */
+  governorAllyDistance: 50,
+  governorOppositionDistance: 105,
+  /** Viagem a estado de governador aliado: menos risco e mais base; de oposição: mais risco. */
+  allyVisitRisk: -0.05,
+  allyVisitSupport: 0.5,
+  oppositionVisitRisk: 0.1,
+} as const;
+
+/** Pastas que começam com ministro político (as demais começam com técnicos). */
+export const POLITICAL_MINISTRIES = ['infraestrutura', 'desenvolvimento-social', 'defesa', 'justica'] as const;
+
+// ─── Engine: noite da eleição (apuração por estado) ───────────────────────
+
+export const ELECTION_MAP = {
+  /** Pontos de votos válidos por unidade de afinidade do eleitorado com o candidato (relativa à média). */
+  leanWeight: 28,
+  /** Pontos de votos por ponto de bônus de visita recente ao estado (reeleição). */
+  visitWeight: 0.4,
+  minShare: 8,
+  maxShare: 92,
+  /** Atraso máximo (fração da apuração) até um estado começar a divulgar votos. */
+  maxReportDelay: 0.55,
+} as const;
+
 // ─── Engine: viagens pelo Brasil ──────────────────────────────────────────
 
 export const TRAVEL = {
@@ -491,19 +538,58 @@ export const CONGRESS = {
   crimeSupportBonus: 15,
 } as const;
 
-/** Plenário da Câmara: placar exibido nas votações (derivado da chance e do sorteio). */
-export const PLENARY = {
-  seats: 513,
-  /** Votos "sim" para aprovar PEC (3/5 da Câmara). */
-  pecVotes: 308,
-  /** Deputados ausentes: mínimo + até `absentRange` a mais. */
-  absentMin: 15,
-  absentRange: 30,
+/** Configuração de cada Casa para o placar exibido (derivado da chance e do sorteio). */
+export interface ChamberConfig {
+  seats: number;
+  /** Votos "sim" para aprovar PEC (3/5 da Casa). */
+  pecVotes: number;
+  /** Votos "sim" para o impeachment (2/3 da Casa). */
+  impeachmentVotes: number;
+  /** Ausentes: mínimo + até `absentRange` a mais. */
+  absentMin: number;
+  absentRange: number;
   /** Abstenções: mínimo + até `abstentionRange` a mais. */
-  abstentionMin: 2,
-  abstentionRange: 10,
+  abstentionMin: number;
+  abstentionRange: number;
   /** Votos de folga por unidade de (chance − sorteio): votações apertadas saem por poucos votos. */
-  marginVotes: 140,
+  marginVotes: number;
+  /** Votos de folga no impeachment por ponto de aprovação/base além (ou aquém) do limite. */
+  impeachmentVotesPerPoint: number;
+  /** Folga máxima do impeachment (o partido do presidente não vota em massa contra ele). */
+  impeachmentMaxMargin: number;
+}
+
+export const PLENARY = {
+  chambers: {
+    camara: {
+      seats: 513,
+      pecVotes: 308,
+      impeachmentVotes: 342,
+      absentMin: 15,
+      absentRange: 30,
+      abstentionMin: 2,
+      abstentionRange: 10,
+      marginVotes: 140,
+      impeachmentVotesPerPoint: 4,
+      impeachmentMaxMargin: 60,
+    },
+    senado: {
+      seats: 81,
+      pecVotes: 49,
+      impeachmentVotes: 54,
+      absentMin: 1,
+      absentRange: 6,
+      abstentionMin: 0,
+      abstentionRange: 3,
+      marginVotes: 22,
+      impeachmentVotesPerPoint: 0.6,
+      impeachmentMaxMargin: 10,
+    },
+  } satisfies Record<'camara' | 'senado', ChamberConfig>,
+  /** PEC rejeitada: chance de ter caído já na Câmara (o resto cai no Senado). */
+  pecChamberRejectionShare: 0.6,
+  /** PEC que passa na Câmara e cai no Senado: folga máxima (votos) na Câmara. */
+  pecChamberNarrowMargin: 20,
   /** Inclinação da adesão das bancadas (logística sobre a afinidade com o governo). */
   partySteepness: 9,
   /** Distância no espectro em que um partido não tem afinidade nenhuma com o governo. */

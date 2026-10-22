@@ -33,14 +33,32 @@ export interface VoteChanceBreakdown {
   factors: VoteFactor[];
 }
 
-/** Placar no plenário da Câmara (513 deputados). */
+/** Casa legislativa da votação. */
+export type Chamber = 'camara' | 'senado';
+
+/** O que está sendo votado: uma proposta do governo ou o impeachment do presidente. */
+export type VoteKind = 'law' | 'impeachment-opening' | 'impeachment-trial';
+
+/** Situação política que levou a uma votação de impeachment (para explicar o resultado). */
+export interface ImpeachmentFacts {
+  approval: number;
+  approvalLimit: number;
+  support: number;
+  supportLimit: number;
+  /** Crime de responsabilidade comprovado (afrouxa os limites). */
+  crime: boolean;
+}
+
+/** Placar no plenário (Câmara: 513 deputados; Senado: 81 senadores). */
 export interface VoteTally {
   yes: number;
   no: number;
   abstentions: number;
   absent: number;
-  /** Votos "sim" necessários: maioria dos votantes (lei) ou 308 (PEC, 3/5). */
+  /** Votos "sim" necessários: maioria dos votantes (lei), 3/5 (PEC) ou 2/3 (impeachment). */
   required: number;
+  /** Casa (ausente em saves antigos = Câmara). */
+  chamber?: Chamber;
 }
 
 /** Votos de uma bancada partidária numa votação. */
@@ -72,6 +90,12 @@ export interface VoteRecord {
   approval?: number;
   /** Posição do governo no espectro na hora da votação (usada no voto por partido). */
   ideology?: { economic: number; social: number };
+  /** O que foi votado (ausente = proposta do governo). */
+  kind?: VoteKind;
+  /** Placar no Senado (PECs passam pelas duas Casas; julgamento do impeachment é no Senado). */
+  senateTally?: VoteTally | null;
+  /** Situação que levou à votação de impeachment. */
+  impeachment?: ImpeachmentFacts;
 }
 
 export interface CongressState {

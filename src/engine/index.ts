@@ -1,6 +1,10 @@
 /** API pública do engine (funções puras, sem React/Zustand/DOM). */
 export { getChoiceAlignment, isAlignedChoice, totalImpactDelta } from './alignment';
 export { calculateApproval } from './approval';
+export { alliedParties, createCast, deriveSeed, getGovernors, getMinister, getMinisterCooldownLeft, replaceMinister } from './cast';
+export { computeStateVotes, nationalPartial, reportedFraction } from './electionMap';
+export type { StateVote } from './electionMap';
+export { oppositionLabel } from './opposition';
 export { explainApproval } from './approvalOutlook';
 export { evaluateCondition, evaluateConditions, getIndicatorValue, isFlagActive } from './conditions';
 export { calculateVoteChance, FLAG_RECENT_NEGOTIATION, getNegotiationCost, getPoliticalStatus, getVoteBonus, hasProvisionalMeasure, isImpeached, stepCongress } from './congress';
@@ -33,7 +37,7 @@ export { applyActiveEffects, applyImpact, scaleImpact, scaleImpactByPolarity, sc
 export { createNewsItem, generateIndicatorNews } from './news';
 export { stepNewsBlips } from './newsBlips';
 export { rollOutcomeRisk } from './outcomes';
-export { explainVoteChance, splitVotesByParty, tallyVotes } from './plenary';
+export { explainVoteChance, senateParties, splitVotesByParty, tallyBill, tallyImpeachment, tallyVotes } from './plenary';
 export {
   AGENDA_SLOT,
   applyPresidentialAction,

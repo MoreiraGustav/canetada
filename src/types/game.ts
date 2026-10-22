@@ -1,5 +1,6 @@
 import type { Ability, BackgroundDefinition, Candidate, ModifierSet, Party, PlayerCandidate } from './candidates';
 import type { CampaignOption, CampaignQuestion, ElectionResult, PlayerPromise } from './campaign';
+import type { NamePool, OppositionLine, PoliticalCast } from './cast';
 import type { CongressState, CpiTopic, VoteRecord } from './congress';
 import type { Decision, DecisionChoice } from './decisions';
 import type { Bloc, Country, CountryId, DiplomaticAction, Relations } from './diplomacy';
@@ -117,6 +118,8 @@ export interface SimulationState {
   stats: GameStats;
   /** Semente do PRNG; avançada a cada uso para determinismo. */
   seed: number;
+  /** Ministros, oposição e a semente dos personagens. */
+  cast: PoliticalCast;
 }
 
 /** Todo o conteúdo estático do jogo (data-driven), injetado no engine. */
@@ -151,6 +154,10 @@ export interface GameContent {
   states: BrazilianState[];
   /** Agenda de viagem por perfil de cidade. */
   visitKinds: VisitKind[];
+  /** Nomes para ministros e governadores fictícios. */
+  names: NamePool;
+  /** Reações da oposição aos indicadores do mês. */
+  oppositionLines: OppositionLine[];
 }
 
 export interface NewGameParams {
@@ -186,6 +193,7 @@ export interface TurnReport {
   sectorDeltas: Partial<Record<SectorKey, number>>;
   /** Variação das relações diplomáticas no turno (preenchida pelas stores se ausente). */
   relationDeltas?: Partial<Record<CountryId, number>>;
+  /** Votações do mês: leis das decisões e sessões de impeachment. */
   votes: VoteRecord[];
   eventId: string | null;
   eventOptionId: string | null;

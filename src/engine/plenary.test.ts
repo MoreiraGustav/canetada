@@ -3,7 +3,7 @@ import { PLENARY } from '@/constants/balance';
 import type { VoteTally } from '@/types';
 import { createFixtureState, FIXTURE_CONTENT, withApproval, withSupport } from './__fixtures__/content';
 import { calculateVoteChance, getVoteBonus } from './congress';
-import { explainVoteChance, splitVotesByParty, tallyVotes } from './plenary';
+import { explainVoteChance, splitVotesByParty, tallyBill, tallyVotes } from './plenary';
 
 const total = (tally: VoteTally): number => tally.yes + tally.no + tally.abstentions + tally.absent;
 
@@ -44,11 +44,11 @@ describe('tallyVotes', () => {
       ['pec', 0.4, 0.41],
     ] as const) {
       const tally = tallyVotes(type, chance, roll);
-      expect(total(tally)).toBe(PLENARY.seats);
+      expect(total(tally)).toBe(PLENARY.chambers.camara.seats);
       if (roll < chance) expect(tally.yes).toBeGreaterThanOrEqual(tally.required);
       else expect(tally.yes).toBeLessThan(tally.required);
     }
-    expect(tallyVotes('pec', 0.6, 0.2).required).toBe(PLENARY.pecVotes);
+    expect(tallyVotes('pec', 0.6, 0.2).required).toBe(PLENARY.chambers.camara.pecVotes);
   });
 
   it('votação apertada sai por poucos votos; folgada, por muitos', () => {
@@ -72,5 +72,26 @@ describe('splitVotesByParty', () => {
   it('o partido do presidente e os afins votam mais "sim" que os adversários', () => {
     const [own, rival] = splitVotesByParty(tally, parties, { economic: 50, social: 20 }, parties[0].id);
     expect(own.yes / own.seats).toBeGreaterThan(rival.yes / rival.seats);
+  });
+});
+
+describe('tallyBill — PEC nas duas Casas', () => {
+  it('lei ordinária só vai à Câmara; PEC aprovada passa nas duas Casas com 3/5', () => {
+    expect(tallyBill('ordinary', 0.7, 0.2).senado).toBeNull();
+    const pec = tallyBill('pec', 0.7, 0.2);
+    expect(pec.camara.yes).toBeGreaterThanOrEqual(PLENARY.chambers.camara.pecVotes);
+    expect(pec.senado?.yes ?? 0).toBeGreaterThanOrEqual(PLENARY.chambers.senado.pecVotes);
+    expect(pec.senado?.chamber).toBe('senado');
+  });
+
+  it('PEC rejeitada cai na Câmara ou passa nela e cai no Senado — nunca passa nas duas', () => {
+    const outcomes = Array.from({ length: 50 }, (_, i) => tallyBill('pec', 0.3, 0.31 + i * 0.0135));
+    outcomes.forEach(({ camara, senado }) => {
+      const camaraPassed = camara.yes >= camara.required;
+      if (!camaraPassed) expect(senado).toBeNull();
+      else expect((senado?.yes ?? 0) < (senado?.required ?? 0)).toBe(true);
+    });
+    expect(outcomes.some(({ senado }) => senado !== null)).toBe(true);
+    expect(outcomes.some(({ senado }) => senado === null)).toBe(true);
   });
 });

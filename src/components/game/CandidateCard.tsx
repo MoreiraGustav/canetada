@@ -1,3 +1,5 @@
+import { PhotoCreditLine } from '@/components/ui/PhotoCreditLine';
+import { PortraitImage } from '@/components/ui/PortraitImage';
 import type { Ability, Candidate, Party } from '@/types';
 
 interface CandidateCardProps {
@@ -30,8 +32,14 @@ export const CandidateCard = ({ candidate, party, ability, selected, onSelect }:
         </span>
       )}
     </span>
-    <span className="mt-2 font-display text-2xl font-bold leading-tight">{candidate.name}</span>
-    {party && <span className="font-sans text-xs text-ink-muted">{party.name}</span>}
+    <span className="mt-2 flex items-start gap-3">
+      <PortraitImage portrait={candidate.portrait} name={candidate.name} size="md" />
+      <span className="min-w-0">
+        <span className="block font-display text-2xl font-bold leading-tight">{candidate.name}</span>
+        {party && <span className="block font-sans text-xs text-ink-muted">{party.name}</span>}
+      </span>
+    </span>
+    {candidate.note && <span className="mt-2 block bg-ochre-light px-2 py-1 font-sans text-[11px] text-ink">⚠ {candidate.note}</span>}
     <span className="mt-3 font-serif text-sm leading-relaxed text-ink-soft">{candidate.profile}</span>
     <span className="mt-3 grid gap-1 border-t border-rule pt-3 font-sans text-xs">
       <span className="text-positive">
@@ -49,6 +57,7 @@ export const CandidateCard = ({ candidate, party, ability, selected, onSelect }:
         — {ability.description}
       </span>
     )}
-    <span className="mt-auto pt-4 font-serif text-sm italic text-ink">“{candidate.slogan}”</span>
+    {candidate.slogan && <span className="mt-auto pt-4 font-serif text-sm italic text-ink">“{candidate.slogan}”</span>}
+    <PhotoCreditLine credit={candidate.portrait?.credit} link={false} className={candidate.slogan ? 'mt-2' : 'mt-auto pt-4'} />
   </button>
 );

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { getAbilities, getBackgrounds, getParties } from '@/stores/content';
+import { useGameStore } from '@/stores/useGameStore';
 import { CandidateIdeologySliders } from '@/components/game/CandidateIdeologySliders';
 import { CandidateOptionGrid } from '@/components/game/CandidateOptionGrid';
 import type { CandidateOptionItem } from '@/components/game/CandidateOptionGrid';
@@ -12,9 +13,9 @@ interface CustomCandidateFormProps {
 
 const NAME_MAX_LENGTH = 40;
 
-const createInitialDraft = (): CustomCandidateInput => ({
+const createInitialDraft = (partyId: string): CustomCandidateInput => ({
   name: '',
-  partyId: getParties()[0]?.id ?? '',
+  partyId,
   economicIdeology: 0,
   socialIdeology: 0,
   background: getBackgrounds()[0]?.id ?? 'politico-veterano',
@@ -23,14 +24,15 @@ const createInitialDraft = (): CustomCandidateInput => ({
 
 /** Opção B: formulário de criação de candidato próprio. */
 export const CustomCandidateForm = ({ onConfirm }: CustomCandidateFormProps) => {
-  const [draft, setDraft] = useState<CustomCandidateInput>(createInitialDraft);
+  const world = useGameStore((state) => state.world);
+  const [draft, setDraft] = useState<CustomCandidateInput>(() => createInitialDraft(getParties(world)[0]?.id ?? ''));
   const update = <K extends keyof CustomCandidateInput>(key: K, value: CustomCandidateInput[K]): void =>
     setDraft((current) => ({ ...current, [key]: value }));
   const isValid = draft.name.trim().length > 0 && draft.partyId !== '';
 
   const partyItems = useMemo<CandidateOptionItem<string>[]>(
-    () => getParties().map((party) => ({ id: party.id, title: `${party.acronym} — ${party.name}`, description: party.description, color: party.color })),
-    [],
+    () => getParties(world).map((party) => ({ id: party.id, title: `${party.acronym} — ${party.name}`, description: party.description, color: party.color })),
+    [world],
   );
   const backgroundItems = useMemo<CandidateOptionItem<BackgroundId>[]>(
     () => getBackgrounds().map((item) => ({ id: item.id, title: item.name, description: item.description, icon: item.icon })),

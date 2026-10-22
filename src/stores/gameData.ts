@@ -22,6 +22,7 @@ const createInitialStats = (): GameStats => ({
 
 export const createInitialGameData = (): GameData => ({
   phase: 'menu',
+  world: 'ficticio',
   mode: DEFAULT_MODE,
   difficulty: 'normal',
   turn: 1,

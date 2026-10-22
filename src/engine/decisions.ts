@@ -16,12 +16,13 @@ import type {
 } from '@/types';
 import { getTurnDate } from '@/utils/calendar';
 import { getChoiceAlignment, isAlignedChoice } from './alignment';
+import { ministryGainMultiplier } from './cast';
 import { evaluateConditions } from './conditions';
 import { FLAG_RECENT_NEGOTIATION, getNegotiationCost } from './congress';
 import { applyImpact, imprintPolicyMemory, scaleImpactByPolarity, scheduleDelayedImpacts, setFlags, toneFromImpact } from './impacts';
 import { createNewsItem } from './news';
 import { rollOutcomeRisk } from './outcomes';
-import { explainVoteChance, tallyVotes } from './plenary';
+import { explainVoteChance, tallyBill } from './plenary';
 import { pickWeighted, randomInt, withStateRng } from './random';
 
 const DEFAULT_DECISION_WEIGHT = 1;
@@ -98,7 +99,10 @@ export const selectTurnDecisions = (
   return { state: { ...state, decisionHistory, seed }, decisionIds: picked.map((decision) => decision.id) };
 };
 
-/** Executa a opção: impacto escalado pela dificuldade, efeitos graduais, flags, memória política e desfecho incerto. */
+/**
+ * Executa a opção: impacto escalado pela dificuldade (e pelo ministro: técnico entrega mais),
+ * efeitos graduais, flags, memória política e desfecho incerto.
+ */
 const executeOption = (
   state: SimulationState,
   decision: Decision,
@@ -106,7 +110,10 @@ const executeOption = (
   rng: Rng,
   difficulty: DifficultyConfig,
 ): StateWithNews => {
-  const scaling = { positive: difficulty.positiveImpactMultiplier, negative: difficulty.negativeImpactMultiplier };
+  const scaling = {
+    positive: difficulty.positiveImpactMultiplier * ministryGainMultiplier(state, decision.ministry),
+    negative: difficulty.negativeImpactMultiplier,
+  };
   const delayed = option.delayed?.map((entry) => ({ ...entry, impact: scaleImpactByPolarity(entry.impact, scaling) }));
   const applied = applyImpact(state, option.impact, scaling);
   const scheduled = scheduleDelayedImpacts(applied, decision.id, decision.title, delayed);
@@ -152,6 +159,7 @@ export const applyDecisionChoice = (
   const { chance, factors } = explainVoteChance(state, option.legislative, negotiateVotes);
   const roll = rng.next();
   const approved = roll < chance;
+  const tallies = tallyBill(option.legislative, chance, roll);
   const vote: VoteRecord = {
     turn: state.turn,
     decisionId: decision.id,
@@ -161,7 +169,8 @@ export const applyDecisionChoice = (
     chance,
     approved,
     negotiated: negotiateVotes,
-    tally: tallyVotes(option.legislative, chance, roll),
+    tally: tallies.camara,
+    senateTally: tallies.senado,
     factors,
     support: state.congress.support,
     approval: state.approval,
