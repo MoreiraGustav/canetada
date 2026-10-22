@@ -15,10 +15,15 @@ import { createRng, randomInt, shuffle } from '@/engine/random';
 import type { AbilityId, BackgroundId, ChoiceEffects, Condition, Impact, OutcomeRisk, PlayerPromise, SimulationState } from '@/types';
 import { getTurnFromDate } from '@/utils/calendar';
 import { GAME_CONTENT } from '@/data';
+import { BRAZIL_MAP } from '@/data/brazilMap';
+import { fillVisitTemplate } from '@/engine/travel';
 
 const C = GAME_CONTENT;
-/** Iniciativas livres: agenda presidencial + programas de governo (mesmo formato). */
-const INITIATIVES = [...C.presidentialActions, ...C.programs];
+/** Iniciativas livres: agenda presidencial, programas de governo e gabinete de crise (mesmo formato). */
+const INITIATIVES = [...C.presidentialActions, ...C.programs, ...C.crisisActions];
+/** Cadeiras da Câmara dos Deputados. */
+const CHAMBER_SEATS = 513;
+const CITIES_PER_STATE = 3;
 
 /** Flags definidas pelo próprio engine (docs/SPEC.md). */
 const ENGINE_FLAGS = ['negociacao-recente', 'cpi-instalada', 'impeachment-aberto', 'presidente-afastado'];
@@ -93,6 +98,12 @@ const collectImpacts = (): Array<Labeled<Impact>> => [
   ]),
   ...C.latentRisks.map((risk) => ({ where: `risco latente ${risk.id}`, value: risk.exposureImpact })),
   ...C.newsBlips.flatMap((blip) => (blip.impact ? [{ where: `fato ${blip.id}`, value: blip.impact }] : [])),
+  ...C.visitKinds.flatMap((kind) => [
+    { where: `visita ${kind.id}`, value: kind.impact },
+    { where: `visita ${kind.id} (risk)`, value: kind.risk.impact },
+    ...(kind.delayed ?? []).map((entry) => ({ where: `visita ${kind.id} (delayed)`, value: entry.impact })),
+  ]),
+  ...C.fiscalStances.map((stance) => ({ where: `política fiscal ${stance.id}`, value: stance.monthly })),
 ];
 
 const collectConditions = (): Array<Labeled<Condition>> => [
@@ -115,6 +126,12 @@ const collectConditions = (): Array<Labeled<Condition>> => [
   ]),
 ];
 
+/** Condições "qualquer uma" abertas nas condições que as compõem (para checar flags e chaves). */
+const flattenConditions = (entries: Array<Labeled<Condition>>): Array<Labeled<Condition>> =>
+  entries.flatMap((entry) =>
+    entry.value.kind === 'any' ? flattenConditions(entry.value.conditions.map((value) => ({ where: entry.where, value }))) : [entry],
+  );
+
 const setFlags = (): Set<string> =>
   new Set([
     ...C.decisions.flatMap((decision) => decision.options.flatMap((option) => option.flags ?? [])),
@@ -123,6 +140,7 @@ const setFlags = (): Set<string> =>
     ...INITIATIVES.flatMap((action) => action.flags ?? []),
     ...C.newsBlips.flatMap((blip) => blip.flags ?? []),
     ...C.latentRisks.flatMap((risk) => [risk.exposedFlag, ...(risk.exposureFlags ?? [])]),
+    ...C.fiscalStances.flatMap((stance) => (stance.flag ? [stance.flag] : [])),
   ]);
 
 const COUNTRY_IDS = new Set<string>(C.countries.map((country) => country.id));
@@ -159,6 +177,8 @@ const invalidCondition = (condition: Condition): boolean => {
       return !Number.isFinite(condition.value);
     case 'term':
       return !Number.isInteger(condition.value) || condition.value < 1;
+    case 'any':
+      return condition.conditions.length < 2 || condition.conditions.some(invalidCondition);
   }
 };
 
@@ -307,7 +327,7 @@ describe('GAME_CONTENT — impactos', () => {
 });
 
 describe('GAME_CONTENT — condições e flags', () => {
-  const conditions = collectConditions();
+  const conditions = flattenConditions(collectConditions());
 
   it('condições referenciam indicadores, setores e países válidos', () => {
     expect(conditions.filter(({ value }) => invalidCondition(value)).map(({ where }) => where)).toEqual([]);
@@ -447,5 +467,71 @@ describe('simulação realista de 48 turnos com o conteúdo real', () => {
     expect(metrics.exchangeRate).toBeLessThanOrEqual(12);
     expect(approval).toBeGreaterThanOrEqual(0);
     expect(approval).toBeLessThanOrEqual(100);
+  });
+});
+
+// ─── Viagens, contas públicas e plenário ─────────────────────────────────
+
+describe('GAME_CONTENT — viagens pelo Brasil', () => {
+  const cities = C.states.flatMap((uf) => uf.cities.map((city) => ({ uf, city })));
+
+  it('27 unidades da federação, com a Câmara completa (513 deputados) e contorno no mapa', () => {
+    expect(C.states).toHaveLength(27);
+    expect(C.states.reduce((acc, uf) => acc + uf.seats, 0)).toBe(CHAMBER_SEATS);
+    expect(duplicates(C.states.map((uf) => uf.id))).toEqual([]);
+    const shapes = new Set(BRAZIL_MAP.map((shape) => shape.id));
+    expect(C.states.filter((uf) => !shapes.has(uf.id)).map((uf) => uf.id)).toEqual([]);
+  });
+
+  it('cada estado tem 3 cidades, a primeira é a capital, e todo perfil de cidade tem modelo de visita', () => {
+    const kinds = new Set(C.visitKinds.map((kind) => kind.id));
+    expect(C.states.filter((uf) => uf.cities.length !== CITIES_PER_STATE || uf.cities[0].kind !== 'capital').map((uf) => uf.id)).toEqual([]);
+    expect(cities.filter(({ city }) => !kinds.has(city.kind)).map(({ city }) => city.id)).toEqual([]);
+    expect(duplicates(cities.map(({ city }) => city.id))).toEqual([]);
+    expect(cities.filter(({ city }) => !KEBAB_CASE.test(city.id)).map(({ city }) => city.id)).toEqual([]);
+  });
+
+  it('textos das visitas cabem nos limites com qualquer cidade preenchida', () => {
+    expect([
+      ...tooLong(cities.map(({ city }) => [`${city.id}.hook`, city.hook]), TEXT_LIMITS.optionDescription),
+      ...tooLong(C.visitKinds.map((kind) => [`${kind.id}.description`, kind.description]), TEXT_LIMITS.optionDescription),
+      ...cities.flatMap(({ uf, city }) => {
+        const kind = C.visitKinds.find((entry) => entry.id === city.kind);
+        if (!kind) return [];
+        return tooLong(
+          [
+            [`${city.id}.headline`, fillVisitTemplate(kind.headline, city, uf)],
+            [`${city.id}.risk`, fillVisitTemplate(kind.risk.headline, city, uf)],
+          ],
+          TEXT_LIMITS.headline,
+        );
+      }),
+    ]).toEqual([]);
+  });
+
+  it('riscos das visitas entre 0 e 1', () => {
+    expect(C.visitKinds.filter((kind) => !(kind.risk.chance > 0 && kind.risk.chance < 1)).map((kind) => kind.id)).toEqual([]);
+  });
+});
+
+describe('GAME_CONTENT — contas públicas e plenário', () => {
+  it('exatamente uma política fiscal neutra (a regra fiscal) e flags únicas nas demais', () => {
+    const neutral = C.fiscalStances.filter((stance) => stance.flag === null && stance.primaryTarget === null);
+    expect(neutral).toHaveLength(1);
+    const flags = C.fiscalStances.flatMap((stance) => (stance.flag ? [stance.flag] : []));
+    expect(duplicates(flags)).toEqual([]);
+    expect(C.fiscalStances.filter((stance) => stance.flag !== null && stance.primaryTarget === null).map((stance) => stance.id)).toEqual([]);
+    expect([
+      ...tooLong(C.fiscalStances.map((stance) => [`${stance.id}.headline`, stance.headline]), TEXT_LIMITS.headline),
+      ...tooLong(C.fiscalStances.map((stance) => [`${stance.id}.description`, stance.description]), 120),
+    ]).toEqual([]);
+  });
+
+  it('toda medida do gabinete de crise só é liberada por condições', () => {
+    expect(C.crisisActions.filter((action) => (action.conditions ?? []).length === 0).map((action) => action.id)).toEqual([]);
+  });
+
+  it('as bancadas partidárias somam a Câmara inteira', () => {
+    expect(C.parties.reduce((acc, party) => acc + party.seats, 0)).toBe(CHAMBER_SEATS);
   });
 });

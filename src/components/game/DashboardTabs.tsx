@@ -8,13 +8,17 @@ import { DiplomacyPanel } from './DiplomacyPanel';
 import { HistoryChartPanel } from './HistoryChartPanel';
 import { PresidentialAgendaPanel } from './PresidentialAgendaPanel';
 import { ProgramsPanel } from './ProgramsPanel';
+import { PublicAccountsPanel } from './PublicAccountsPanel';
 import { SecondaryIndicatorsPanel } from './SecondaryIndicatorsPanel';
+import { TravelPanel } from './TravelPanel';
 
-type DashboardTabId = 'programs' | 'agenda' | 'congress' | 'diplomacy' | 'indicators' | 'charts' | 'effects';
+type DashboardTabId = 'programs' | 'travel' | 'agenda' | 'accounts' | 'congress' | 'diplomacy' | 'indicators' | 'charts' | 'effects';
 
 const TAB_ITEMS: ReadonlyArray<{ id: DashboardTabId; label: string; icon: string }> = [
   { id: 'programs', label: 'Programas', icon: '🏗️' },
+  { id: 'travel', label: 'Viagens', icon: '🗺️' },
   { id: 'agenda', label: 'Agenda', icon: '🗓️' },
+  { id: 'accounts', label: 'Contas públicas', icon: '💰' },
   { id: 'congress', label: 'Congresso', icon: '⚖️' },
   { id: 'diplomacy', label: 'Diplomacia', icon: '🌍' },
   { id: 'indicators', label: 'Indicadores', icon: '📋' },
@@ -25,7 +29,9 @@ const TAB_ITEMS: ReadonlyArray<{ id: DashboardTabId; label: string; icon: string
 /** Painel de cada aba (lookup por ID; só a aba ativa assina as stores). */
 const TAB_PANELS: Record<DashboardTabId, ComponentType> = {
   programs: ProgramsPanel,
+  travel: TravelPanel,
   agenda: PresidentialAgendaPanel,
+  accounts: PublicAccountsPanel,
   congress: CongressPanel,
   diplomacy: DiplomacyPanel,
   indicators: SecondaryIndicatorsPanel,
@@ -33,7 +39,7 @@ const TAB_PANELS: Record<DashboardTabId, ComponentType> = {
   effects: ActiveEffectsPanel,
 };
 
-/** Área secundária do painel: programas de governo, agenda presidencial, Congresso, diplomacia, indicadores, gráficos e efeitos. */
+/** Área secundária do painel: programas, viagens, agenda, contas públicas, Congresso, diplomacia, indicadores, gráficos e efeitos. */
 export const DashboardTabs = () => {
   const [active, setActive] = useState<DashboardTabId>('programs');
   const Panel = TAB_PANELS[active];

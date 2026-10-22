@@ -1,4 +1,5 @@
 import { ChoiceAlignmentBadges } from '@/components/game/ChoiceAlignmentBadges';
+import { FiscalCostLine } from '@/components/game/FiscalCostLine';
 import { ImpactHintList } from '@/components/game/ImpactHintList';
 import { OutcomeRiskBadge } from '@/components/game/OutcomeRiskBadge';
 import type { EventOptionView } from '@/types';
@@ -38,6 +39,7 @@ export const EventOptionCard = ({ view, letter, selected, onSelect }: EventOptio
     <div className="mt-auto flex flex-col gap-2">
       <ChoiceAlignmentBadges alignment={view.alignment} />
       <ImpactHintList hints={view.hints} hasDelayedEffects={view.hasDelayedEffects} />
+      <FiscalCostLine cost={view.fiscal} />
       <OutcomeRiskBadge chance={view.riskChance} className="self-start" />
     </div>
   </button>

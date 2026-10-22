@@ -5,9 +5,11 @@ import { CAMPAIGN_QUESTIONS } from './campaign';
 import { CANDIDATES } from './candidates';
 import { BLOCS, COUNTRIES } from './countries';
 import { CPI_TOPICS } from './cpiTopics';
+import { CRISIS_ACTIONS } from './crisisActions';
 import { DECISIONS } from './decisions';
 import { DIPLOMATIC_ACTIONS } from './diplomaticActions';
 import { EVENTS } from './events';
+import { FISCAL_STANCES } from './fiscalStances';
 import { GOALS } from './goals';
 import { HEADLINE_TEMPLATES } from './headlines';
 import { LATENT_RISKS } from './latentRisks';
@@ -16,6 +18,8 @@ import { NEWS_BLIPS } from './newsBlips';
 import { PARTIES } from './parties';
 import { PRESIDENTIAL_ACTIONS } from './presidentialActions';
 import { PROGRAMS } from './programs';
+import { BRAZILIAN_STATES } from './states';
+import { VISIT_KINDS } from './visitKinds';
 
 /** Registro central de todo o conteúdo do jogo (data-driven). */
 export const GAME_CONTENT: GameContent = {
@@ -37,4 +41,8 @@ export const GAME_CONTENT: GameContent = {
   newsBlips: NEWS_BLIPS,
   presidentialActions: PRESIDENTIAL_ACTIONS,
   programs: PROGRAMS,
+  fiscalStances: FISCAL_STANCES,
+  crisisActions: CRISIS_ACTIONS,
+  states: BRAZILIAN_STATES,
+  visitKinds: VISIT_KINDS,
 };

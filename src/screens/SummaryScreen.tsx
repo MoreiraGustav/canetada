@@ -1,17 +1,21 @@
+import { useState } from 'react';
 import { getCountries } from '@/stores/content';
-import { useIndicatorViews, useLastReport, useTurnInfo } from '@/stores/selectors';
+import { useIndicatorViews, useLastReport, useTurnInfo, useVoteSession } from '@/stores/selectors';
 import { useGameStore } from '@/stores/useGameStore';
 import { SummaryHeadlines } from '@/components/game/SummaryHeadlines';
 import { SummaryMonthPanel } from '@/components/game/SummaryMonthPanel';
 import { SummaryOutcomeBanner } from '@/components/game/SummaryOutcomeBanner';
 import { SummaryVotes } from '@/components/game/SummaryVotes';
+import { VoteSessionOverlay } from '@/components/game/VoteSessionOverlay';
 import { Button } from '@/components/ui/Button';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Masthead } from '@/components/ui/Masthead';
 import { PageContainer } from '@/components/ui/PageContainer';
 import { PRIMARY_INDICATORS } from '@/constants/metrics';
-import type { TurnOutcome } from '@/types';
+import type { TurnOutcome, VoteRecord } from '@/types';
 import { formatTurnLong } from '@/utils/calendar';
+
+const NO_VOTES: readonly VoteRecord[] = [];
 
 const ADVANCE_LABELS: Record<TurnOutcome, string> = {
   continue: 'Próximo mês',
@@ -25,6 +29,9 @@ export const SummaryScreen = () => {
   const turnInfo = useTurnInfo();
   const indicatorViews = useIndicatorViews(PRIMARY_INDICATORS);
   const advance = useGameStore((state) => state.advance);
+  const session = useVoteSession(report?.votes ?? NO_VOTES);
+  // A sessão no plenário abre sozinha quando houve votação no mês.
+  const [sessionOpen, setSessionOpen] = useState(true);
 
   if (!report) return <LoadingScreen />;
 
@@ -39,7 +46,7 @@ export const SummaryScreen = () => {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
           <SummaryHeadlines news={report.news} />
-          <SummaryVotes votes={report.votes} />
+          <SummaryVotes votes={report.votes} onReplay={() => setSessionOpen(true)} />
         </div>
         <SummaryMonthPanel
           indicatorViews={indicatorViews}
@@ -55,6 +62,7 @@ export const SummaryScreen = () => {
           {ADVANCE_LABELS[report.outcome]}
         </Button>
       </div>
+      {sessionOpen && session.length > 0 && <VoteSessionOverlay items={session} onClose={() => setSessionOpen(false)} />}
     </PageContainer>
   );
 };

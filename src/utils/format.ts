@@ -39,6 +39,16 @@ export const formatIndicatorValue = (key: IndicatorKey, value: number): string =
 export const formatIndicatorDelta = (key: IndicatorKey, delta: number): string =>
   formatSigned(delta, INDICATOR_INFO[key].decimals);
 
+const BILLIONS_PER_TRILLION = 1000;
+const SMALL_BILLIONS = 10;
+
+/** Valor em R$ bilhões, sem sinal: 22 → "R$ 22 bi"; 4.4 → "R$ 4,4 bi"; 8140 → "R$ 8,1 tri". */
+export const formatBillions = (billions: number): string => {
+  const magnitude = Math.abs(billions);
+  if (magnitude >= BILLIONS_PER_TRILLION) return `R$ ${formatNumber(magnitude / BILLIONS_PER_TRILLION, 1)} tri`;
+  return `R$ ${formatNumber(magnitude, magnitude < SMALL_BILLIONS ? 1 : 0)} bi`;
+};
+
 /** 0.643 → "64%". */
 export const formatChance = (probability: number): string => `${formatNumber(probability * 100, 0)}%`;
 

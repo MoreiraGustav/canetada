@@ -19,6 +19,8 @@ export default defineConfig({
             { name: 'react', test: /node_modules[\\/](react|react-dom|scheduler)[\\/]/ },
             { name: 'motion', test: /node_modules[\\/](framer-motion|motion-dom|motion-utils)[\\/]/ },
             { name: 'charts', test: /node_modules[\\/](recharts|d3-[^\\/]+|victory-vendor|@reduxjs|immer|reselect|redux)[\\/]/ },
+            // Mapa e dados dos estados (aba Viagens) antes do resto do conteúdo, para nenhum chunk passar de 500 kB.
+            { name: 'brazil', test: /src[\\/]data[\\/](brazilMap|states|visitKinds)\.ts/ },
             { name: 'content', test: /src[\\/]data[\\/]/ },
           ],
         },

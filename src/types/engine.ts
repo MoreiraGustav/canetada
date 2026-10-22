@@ -60,3 +60,21 @@ export type ApprovalSignal =
   | 'prestige';
 
 export type ApprovalSignals = Record<ApprovalSignal, number>;
+
+/** O que puxa a aprovação: um sinal dos indicadores ou um fator político. */
+export type ApprovalDriverKey = ApprovalSignal | 'affinity' | 'militancy' | 'confidence' | 'honeymoon' | 'wear';
+
+export interface ApprovalDriver {
+  key: ApprovalDriverKey;
+  /** Pontos de aprovação geral (ponderados pelos setores) em relação ao início do governo. */
+  points: number;
+}
+
+/** Para onde a aprovação caminha e por quê. */
+export interface ApprovalOutlook {
+  current: number;
+  /** Aprovação de equilíbrio: onde ela chega se nada mudar. */
+  target: number;
+  /** Fatores ordenados por impacto (maior |pontos| primeiro). */
+  drivers: ApprovalDriver[];
+}

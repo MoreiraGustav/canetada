@@ -4,11 +4,13 @@ import type { CongressState, CpiTopic, VoteRecord } from './congress';
 import type { Decision, DecisionChoice } from './decisions';
 import type { Bloc, Country, CountryId, DiplomaticAction, Relations } from './diplomacy';
 import type { GameEvent } from './events';
+import type { FiscalStance } from './fiscal';
 import type { GovernmentProgram, LatentRisk, NewsBlip, PresidentialAction } from './freeplay';
 import type { GoalDefinition, GoalProgress } from './goals';
 import type { ActiveEffect } from './impact';
 import type { GameMetrics, IndicatorDeltas, SectorAffinity, SectorApproval, SectorKey } from './metrics';
 import type { HeadlineTemplate, NewsItem } from './news';
+import type { BrazilianState, VisitKind } from './travel';
 
 export type GameMode = 'blitz' | 'standard' | 'full';
 
@@ -141,6 +143,14 @@ export interface GameContent {
   presidentialActions: PresidentialAction[];
   /** Programas de governo (iniciativa de política pública, um por mês). */
   programs: GovernmentProgram[];
+  /** Políticas fiscais que o presidente pode adotar (a neutra é a regra fiscal). */
+  fiscalStances: FiscalStance[];
+  /** Gabinete de crise: medidas de emergência liberadas por indicadores no vermelho. */
+  crisisActions: PresidentialAction[];
+  /** As 27 unidades da federação visitáveis. */
+  states: BrazilianState[];
+  /** Agenda de viagem por perfil de cidade. */
+  visitKinds: VisitKind[];
 }
 
 export interface NewGameParams {

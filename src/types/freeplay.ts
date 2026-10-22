@@ -93,5 +93,8 @@ export interface GovernmentProgram extends PresidentialAction {
   ministry: MinistryId;
 }
 
-/** Vaga mensal de uma iniciativa livre: agenda presidencial ou programa de governo. */
-export type InitiativeSlot = 'acao-presidencial' | 'programa';
+/**
+ * Vaga mensal de uma iniciativa livre: agenda presidencial, programa de governo,
+ * viagem pelo Brasil ou medida do gabinete de crise (uma de cada por mês).
+ */
+export type InitiativeSlot = 'acao-presidencial' | 'programa' | 'viagem' | 'gabinete-de-crise';

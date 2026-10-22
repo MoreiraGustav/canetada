@@ -1,4 +1,4 @@
-import type { PoliticalStatus } from '@/types';
+import type { ApprovalDriverKey, CityKind, PoliticalStatus, RegionId, VoteFactorKey } from '@/types';
 
 interface ThresholdLabel {
   min: number;
@@ -58,3 +58,59 @@ const SOCIAL_IDEOLOGY_LABELS: readonly ThresholdLabel[] = [
 export const getEconomicIdeologyLabel = (value: number): string => findLabel(value, ECONOMIC_IDEOLOGY_LABELS);
 
 export const getSocialIdeologyLabel = (value: number): string => findLabel(value, SOCIAL_IDEOLOGY_LABELS);
+
+/** O que empurrou a chance de aprovação de uma votação. */
+export const VOTE_FACTOR_LABELS: Record<VoteFactorKey, string> = {
+  support: 'Base aliada',
+  approval: 'Aprovação popular',
+  negotiation: 'Cargos e emendas negociados',
+  ability: 'Habilidade do presidente',
+  'street-pressure': 'Militância nas ruas',
+  'provisional-measure': 'Medida provisória',
+};
+
+/** Rótulo e ícone de cada fator do termômetro da aprovação. */
+export const APPROVAL_DRIVER_INFO: Record<ApprovalDriverKey, { label: string; icon: string }> = {
+  inflation: { label: 'Inflação', icon: '🛒' },
+  unemployment: { label: 'Emprego', icon: '👷' },
+  growth: { label: 'Crescimento', icon: '📈' },
+  strongCurrency: { label: 'Dólar', icon: '💵' },
+  debt: { label: 'Dívida pública', icon: '🏦' },
+  fiscal: { label: 'Contas públicas', icon: '🧾' },
+  lowRates: { label: 'Juros', icon: '💳' },
+  security: { label: 'Segurança', icon: '🚔' },
+  environment: { label: 'Meio ambiente', icon: '🌳' },
+  education: { label: 'Educação', icon: '📚' },
+  health: { label: 'Saúde', icon: '🏥' },
+  poverty: { label: 'Pobreza', icon: '🍲' },
+  infrastructure: { label: 'Infraestrutura', icon: '🛣️' },
+  prestige: { label: 'Prestígio lá fora', icon: '🌍' },
+  affinity: { label: 'Imagem das suas decisões', icon: '🪞' },
+  militancy: { label: 'Militância fiel', icon: '📣' },
+  confidence: { label: 'Confiança na sua equipe', icon: '🤝' },
+  honeymoon: { label: 'Lua de mel', icon: '💐' },
+  wear: { label: 'Desgaste do mandato', icon: '⏳' },
+};
+
+export const REGION_LABELS: Record<RegionId, string> = {
+  norte: 'Norte',
+  nordeste: 'Nordeste',
+  'centro-oeste': 'Centro-Oeste',
+  sudeste: 'Sudeste',
+  sul: 'Sul',
+};
+
+export const CITY_KIND_LABELS: Record<CityKind, string> = {
+  capital: 'Capital',
+  periferia: 'Periferia',
+  industrial: 'Polo industrial',
+  agro: 'Agronegócio',
+  sertao: 'Semiárido',
+  amazonia: 'Amazônia',
+  porto: 'Porto',
+  turismo: 'Festa e turismo',
+  tecnologia: 'Ciência e inovação',
+  fronteira: 'Fronteira',
+  mineracao: 'Mineração',
+  fe: 'Romaria',
+};

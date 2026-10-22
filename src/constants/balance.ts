@@ -275,6 +275,39 @@ export const ECONOMY = {
   confidenceReference: 45,
 } as const;
 
+// ─── Engine: política fiscal e contas públicas ────────────────────────────
+
+export const FISCAL = {
+  /**
+   * Multiplicador fiscal: p.p. de crescimento (choque mensal) por p.p. do PIB de
+   * aperto no primário além do que a regra fiscal já faria. Sustentado, um ajuste
+   * de 0,4 p.p./ano tira ≈ 0,3 p.p. do crescimento; a expansão dá o inverso.
+   */
+  multiplier: 0.8,
+  /** Meses entre mudanças de política fiscal (o orçamento não muda todo mês). */
+  stanceCooldown: 6,
+  /** Horizonte das projeções de dívida (meses). */
+  projectionMonths: 48,
+} as const;
+
+// ─── Engine: viagens pelo Brasil ──────────────────────────────────────────
+
+export const TRAVEL = {
+  /** Meses até poder voltar ao mesmo estado. */
+  stateCooldown: 6,
+  /** Pontos de base aliada por deputado da bancada do estado visitado (SP, 70 deputados ≈ +1,75). */
+  supportPerSeat: 0.025,
+  /** Escala dos efeitos nos setores: estado menos populoso → fator mínimo; o mais populoso → 1. */
+  minPopulationFactor: 0.6,
+  /** Chance extra de vaias e protestos num eleitorado sem nenhuma afinidade com o governo. */
+  hostileRiskBonus: 0.25,
+  /** Popularidade estimada no estado: pontos por afinidade ideológica (relativa à média nacional). */
+  leanWeight: 30,
+  /** Bônus local de uma visita (pontos na popularidade do estado) e decaimento mensal. */
+  localVisitBonus: 10,
+  localBonusDecay: 0.85,
+} as const;
+
 // ─── Engine: dinâmica social, ambiental e de segurança ────────────────────
 
 export const SOCIAL = {
@@ -456,6 +489,25 @@ export const CONGRESS = {
    */
   crimeApprovalBonus: 15,
   crimeSupportBonus: 15,
+} as const;
+
+/** Plenário da Câmara: placar exibido nas votações (derivado da chance e do sorteio). */
+export const PLENARY = {
+  seats: 513,
+  /** Votos "sim" para aprovar PEC (3/5 da Câmara). */
+  pecVotes: 308,
+  /** Deputados ausentes: mínimo + até `absentRange` a mais. */
+  absentMin: 15,
+  absentRange: 30,
+  /** Abstenções: mínimo + até `abstentionRange` a mais. */
+  abstentionMin: 2,
+  abstentionRange: 10,
+  /** Votos de folga por unidade de (chance − sorteio): votações apertadas saem por poucos votos. */
+  marginVotes: 140,
+  /** Inclinação da adesão das bancadas (logística sobre a afinidade com o governo). */
+  partySteepness: 9,
+  /** Distância no espectro em que um partido não tem afinidade nenhuma com o governo. */
+  partyAffinityRange: 180,
 } as const;
 
 // ─── Engine: diplomacia ───────────────────────────────────────────────────

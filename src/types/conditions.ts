@@ -56,10 +56,20 @@ export interface TermCondition {
   value: number;
 }
 
+/**
+ * Verdadeira se QUALQUER uma das condições for verdadeira (as demais regras são "todas").
+ * Ex.: gabinete de crise liberado por inflação alta OU dólar disparado.
+ */
+export interface AnyCondition {
+  kind: 'any';
+  conditions: Condition[];
+}
+
 export type Condition =
   | IndicatorCondition
   | SectorCondition
   | RelationCondition
   | FlagCondition
   | TurnCondition
-  | TermCondition;
+  | TermCondition
+  | AnyCondition;

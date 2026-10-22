@@ -47,6 +47,8 @@ export interface Party {
   description: string;
   /** Pontos somados à base aliada inicial (tamanho da bancada). */
   congressBase: number;
+  /** Deputados federais do partido (as bancadas somam 513), usados no placar por partido. */
+  seats: number;
 }
 
 export interface BackgroundDefinition {

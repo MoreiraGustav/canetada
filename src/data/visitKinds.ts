@@ -1,0 +1,180 @@
+import type { VisitKind } from '@/types';
+
+/**
+ * Agenda presidencial por perfil de cidade (aba "Viagens"). O engine
+ * (`engine/travel.ts`) completa cada visita com o peso do estado: a bancada
+ * federal dá apoio no Congresso, a população amplia o efeito nos setores e um
+ * eleitorado hostil aumenta o risco de vaias e protestos.
+ * `{city}` e `{uf}` são preenchidos com a cidade e a sigla do estado.
+ */
+export const VISIT_KINDS: VisitKind[] = [
+  {
+    id: 'capital',
+    name: 'Agenda oficial em {city}',
+    icon: '🏛️',
+    description: 'Reunião com governador e bancada: ajuda no Congresso, custa repasses.',
+    impact: { congressSupport: 0.8, debt: 0.02, sectors: { middleClass: 1 } },
+    risk: {
+      chance: 0.05,
+      impact: { approval: -0.8, congressSupport: -0.5 },
+      headline: 'Governador de {uf} cobra repasses e expõe atrito com o Presidente em {city}',
+    },
+    headline: 'Presidente desembarca em {city} ({uf}) e se reúne com governador e bancada',
+    audience: 'middleClass',
+  },
+  {
+    id: 'periferia',
+    name: 'Caminhada na periferia: {city}',
+    icon: '👟',
+    description: 'Contato direto com quem mais precisa; segurança e vaias são um risco.',
+    impact: { sectors: { lowerClass: 4, middleClass: -0.5 } },
+    risk: {
+      chance: 0.2,
+      impact: { approval: -1, sectors: { lowerClass: -2, middleClass: -1 } },
+      headline: 'Protesto de moradores interrompe caminhada do Presidente em {city}',
+    },
+    headline: 'Presidente caminha por {city} ({uf}), ouve moradores e promete obras',
+    audience: 'lowerClass',
+  },
+  {
+    id: 'industrial',
+    name: 'Visita a fábricas em {city}',
+    icon: '🏭',
+    description: 'Agrada a indústria e seus trabalhadores; sindicatos podem protestar.',
+    impact: { sectors: { business: 4, middleClass: 1 } },
+    risk: {
+      chance: 0.15,
+      impact: { sectors: { lowerClass: -2, business: -1 } },
+      headline: 'Metalúrgicos fazem protesto na porta de fábrica visitada pelo Presidente',
+    },
+    headline: 'Presidente visita fábricas em {city} ({uf}) e promete reindustrialização',
+    audience: 'business',
+  },
+  {
+    id: 'agro',
+    name: 'Abertura da colheita em {city}',
+    icon: '🌾',
+    description: 'Prestigia o agronegócio, mas ambientalistas criticam a foto.',
+    impact: { sectors: { agribusiness: 5, environmentalists: -2 } },
+    risk: {
+      chance: 0.15,
+      impact: { sectors: { agribusiness: -3 } },
+      headline: 'Produtores vaiam o Presidente em {city} e cobram crédito e estradas',
+    },
+    headline: 'Presidente abre a colheita em {city} ({uf}) e anuncia crédito ao agro',
+    audience: 'agribusiness',
+  },
+  {
+    id: 'sertao',
+    name: 'Obras contra a seca em {city}',
+    icon: '💧',
+    description: 'Anuncia adutoras e cisternas no semiárido: popular, mas custa caro.',
+    impact: { debt: 0.08, waterReserves: 1, sectors: { lowerClass: 4 } },
+    risk: {
+      chance: 0.1,
+      impact: { approval: -1, sectors: { lowerClass: -2 } },
+      headline: 'Em {city}, moradores mostram ao Presidente obra hídrica parada há anos',
+    },
+    headline: 'No sertão, Presidente lança obras hídricas em {city} ({uf})',
+    audience: 'lowerClass',
+  },
+  {
+    id: 'amazonia',
+    name: 'Agenda ambiental em {city}',
+    icon: '🌳',
+    description: 'Sobrevoo e reforço da fiscalização; desagrada parte do agro local.',
+    impact: { deforestation: -120, prestige: 1, sectors: { environmentalists: 5, agribusiness: -2 } },
+    risk: {
+      chance: 0.15,
+      impact: { sectors: { agribusiness: -2 } },
+      headline: 'Garimpeiros e madeireiros bloqueiam estrada durante visita a {city}',
+    },
+    headline: 'Presidente sobrevoa {city} ({uf}) e anuncia reforço contra o desmatamento',
+    audience: 'environmentalists',
+  },
+  {
+    id: 'porto',
+    name: 'Visita ao porto de {city}',
+    icon: '⚓',
+    description: 'Anuncia investimento em logística para exportar mais; custa ao Tesouro.',
+    impact: { debt: 0.05, tradeBalance: 0.6, sectors: { business: 2, agribusiness: 2 } },
+    risk: {
+      chance: 0.1,
+      impact: { sectors: { business: -2, lowerClass: -1 } },
+      headline: 'Greve de portuários em {city} recebe o Presidente com faixas e apitaço',
+    },
+    headline: 'No porto de {city} ({uf}), Presidente anuncia obras para escoar exportações',
+    audience: 'business',
+  },
+  {
+    id: 'turismo',
+    name: 'Festa popular em {city}',
+    icon: '🎉',
+    description: 'Simpatia em alta na festa, mas qualquer gafe vira meme.',
+    impact: { approval: 1.2, sectors: { lowerClass: 1 } },
+    risk: {
+      chance: 0.3,
+      impact: { approval: -1.5, sectors: { middleClass: -2 } },
+      headline: 'Gafe do Presidente durante festa em {city} viraliza nas redes',
+    },
+    headline: 'Presidente é recebido com festa em {city} ({uf}) e arrisca passos de dança',
+    audience: 'middleClass',
+  },
+  {
+    id: 'tecnologia',
+    name: 'Polo de inovação em {city}',
+    icon: '🔬',
+    description: 'Anuncia verba para ciência e startups; o retorno vem a longo prazo.',
+    impact: { debt: 0.04, sectors: { environmentalists: 3, middleClass: 1.5 } },
+    risk: {
+      chance: 0.1,
+      impact: { sectors: { environmentalists: -2, middleClass: -1 } },
+      headline: 'Estudantes protestam contra cortes na ciência durante visita a {city}',
+    },
+    delayed: [{ impact: { potentialGrowth: 0.02 }, delay: 2, duration: 6, label: 'Investimento em inovação' }],
+    headline: 'Em {city} ({uf}), Presidente anuncia fundo para ciência e inovação',
+    audience: 'environmentalists',
+  },
+  {
+    id: 'fronteira',
+    name: 'Inspeção da fronteira em {city}',
+    icon: '🎖️',
+    description: 'Reforça o combate ao tráfico com as Forças Armadas; ativistas criticam.',
+    impact: { homicideRate: -0.15, securityTrust: 1.5, sectors: { military: 5, environmentalists: -1 } },
+    risk: {
+      chance: 0.1,
+      impact: { approval: -1, prestige: -1 },
+      headline: 'Visita a {city} expõe crise humanitária na fronteira e gera críticas',
+    },
+    headline: 'Em {city} ({uf}), Presidente reforça tropas contra o tráfico na fronteira',
+    audience: 'military',
+  },
+  {
+    id: 'mineracao',
+    name: 'Visita à mineração em {city}',
+    icon: '⛏️',
+    description: 'Promete empregos e royalties; atingidos por tragédias cobram respostas.',
+    impact: { foreignInvestment: 0.5, sectors: { business: 3, lowerClass: 1 } },
+    risk: {
+      chance: 0.25,
+      impact: { approval: -1, sectors: { environmentalists: -3 } },
+      headline: 'Atingidos por barragens cobram o Presidente durante visita a {city}',
+    },
+    headline: 'Presidente visita {city} ({uf}) e promete mais empregos na mineração',
+    audience: 'business',
+  },
+  {
+    id: 'fe',
+    name: 'Visita ao santuário de {city}',
+    icon: '🙏',
+    description: 'Gesto aos fiéis rende simpatia; críticos falam em uso político da fé.',
+    impact: { ideologySocial: 1, sectors: { lowerClass: 2, middleClass: 1, military: 1 } },
+    risk: {
+      chance: 0.15,
+      impact: { sectors: { environmentalists: -3, middleClass: -1 } },
+      headline: 'Ida do Presidente a santuário em {city} reacende debate sobre Estado laico',
+    },
+    headline: 'Presidente participa de missa em {city} ({uf}) e é saudado por romeiros',
+    audience: 'lowerClass',
+  },
+];

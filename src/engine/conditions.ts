@@ -44,6 +44,8 @@ export const evaluateCondition = (state: SimulationState, condition: Condition):
       return compare(state.turn, condition.comparator, condition.value);
     case 'term':
       return compare(state.termNumber, condition.comparator, condition.value);
+    case 'any':
+      return condition.conditions.some((entry) => evaluateCondition(state, entry));
   }
 };
 

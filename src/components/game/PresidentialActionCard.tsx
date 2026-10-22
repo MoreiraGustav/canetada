@@ -1,4 +1,5 @@
 import { ChoiceAlignmentBadges } from './ChoiceAlignmentBadges';
+import { FiscalCostLine } from './FiscalCostLine';
 import { ImpactHintList } from './ImpactHintList';
 import { OutcomeRiskBadge } from './OutcomeRiskBadge';
 import type { PresidentialActionView } from '@/types';
@@ -12,6 +13,8 @@ interface PresidentialActionCardProps {
   kicker?: string;
   /** Aviso quando a vaga do mês já foi usada. */
   usedLabel?: string;
+  /** Linha extra em itálico abaixo do nome (ex.: o gancho local de uma cidade). */
+  note?: string;
 }
 
 const statusLabel = (view: PresidentialActionView, monthUsed: boolean, usedLabel: string): string | null => {
@@ -28,6 +31,7 @@ export const PresidentialActionCard = ({
   onTake,
   kicker,
   usedLabel = 'Agenda do mês já cumprida',
+  note,
 }: PresidentialActionCardProps) => {
   const { action } = view;
   const status = statusLabel(view, monthUsed, usedLabel);
@@ -45,9 +49,11 @@ export const PresidentialActionCard = ({
         </span>
         <span className="font-serif text-base font-semibold leading-snug text-ink">{action.name}</span>
       </span>
+      {note && <span className="font-serif text-xs italic leading-snug text-ink-muted">{note}</span>}
       <span className="font-serif text-sm leading-snug text-ink-soft">{action.description}</span>
       <ChoiceAlignmentBadges alignment={view.alignment} />
       <ImpactHintList hints={view.hints} hasDelayedEffects={(action.delayed?.length ?? 0) > 0} />
+      <FiscalCostLine cost={view.fiscal} />
       <OutcomeRiskBadge chance={view.riskChance} className="self-start" />
       {status && <span className="mt-auto font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{status}</span>}
     </button>

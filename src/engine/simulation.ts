@@ -36,8 +36,6 @@ import { randomNormal } from './random';
 export { calculateApproval } from './approval';
 
 const REF = INITIAL_METRICS;
-/** Flag canônica (dados): o governo rompeu a regra fiscal. */
-const FLAG_FISCAL_RULE_BROKEN = 'arcabouco-fiscal-rompido';
 const SCORE_MAX = 100;
 
 const clampMetrics = (metrics: GameMetrics): GameMetrics =>
@@ -65,7 +63,7 @@ interface MacroContext {
 }
 
 /** Expectativas = meta + desancoragem por dívida alta e déficit acima do limiar. */
-const expectedInflation = (m: GameMetrics): number =>
+export const expectedInflation = (m: GameMetrics): number =>
   ECONOMY.inflationTarget +
   ECONOMY.expectationsDebtPenalty * Math.max(0, m.debt - ECONOMY.debtRiskThreshold) +
   ECONOMY.expectationsDeficitPenalty * Math.max(0, -m.primaryBalance - ECONOMY.deficitRiskThreshold);
@@ -102,8 +100,8 @@ const stepGrowth = (ctx: MacroContext, state: SimulationState): number =>
   ECONOMY.growthFdiEffect * (ctx.m.foreignInvestment - ECONOMY.fdiReference) +
   ctx.noise(ECONOMY.growthNoise);
 
-/** Copom autônomo: só age (em passos de 0,25) se a Selic se afastar da regra de Taylor além da tolerância. */
-const stepSelic = (m: GameMetrics, gap: number): number => {
+/** Copom autônomo: só age (em passos de 0,5) se a Selic se afastar da regra de Taylor além da tolerância. */
+export const stepSelic = (m: GameMetrics, gap: number): number => {
   const taylor =
     ECONOMY.taylorNeutralRate +
     m.inflation +
@@ -118,14 +116,14 @@ const stepSelic = (m: GameMetrics, gap: number): number => {
  * Juro efetivo da dívida = fração da Selic + spread + prêmio de risco (dívida acima do limiar)
  * − desconto de credibilidade (superávit primário: o mercado cobra menos para rolar a dívida).
  */
-const effectiveDebtRate = (m: GameMetrics): number =>
+export const effectiveDebtRate = (m: GameMetrics): number =>
   ECONOMY.debtRateSelicShare * m.selic +
   ECONOMY.debtRateSpread +
   ECONOMY.debtRiskPremium * Math.max(0, m.debt - ECONOMY.debtRiskThreshold) -
   ECONOMY.fiscalCredibilityDiscount * Math.max(0, m.primaryBalance);
 
 /** Dívida: Δd mensal = [d × (i_ef − g_nominal)/100 − primário] / 12. */
-const stepDebt = (m: GameMetrics): number => {
+export const stepDebt = (m: GameMetrics): number => {
   const effectiveRate = effectiveDebtRate(m);
   const nominalGrowth = m.gdpGrowth + m.inflation;
   return m.debt + ((m.debt * (effectiveRate - nominalGrowth)) / 100 - m.primaryBalance) / MONTHS_PER_YEAR;
@@ -153,18 +151,10 @@ const stepExternal = (ctx: MacroContext, state: SimulationState, countries?: rea
 };
 
 /**
- * Primário: componente cíclico (hiato) + regra fiscal. Com a regra em vigor, gasto novo exige
- * compensação e o resultado converge à meta (fração anual da distância); rompida a regra,
- * não há convergência e os déficits se acumulam.
+ * Primário: só o componente cíclico (hiato). A política fiscal — regra fiscal ou a
+ * postura escolhida pelo presidente — é aplicada depois, em `fiscal.ts` (stepFiscalPolicy).
  */
-const stepPrimaryBalance = (state: SimulationState, gap: number): number => {
-  const m = state.metrics;
-  const ruleActive = state.flags[FLAG_FISCAL_RULE_BROKEN] === undefined;
-  // Só corrige déficits em relação à meta: superávits conquistados não são apagados.
-  const shortfall = Math.max(0, ECONOMY.fiscalRuleTarget - m.primaryBalance);
-  const convergence = ruleActive ? (ECONOMY.fiscalRuleConvergencePerYear / MONTHS_PER_YEAR) * shortfall : 0;
-  return m.primaryBalance + ECONOMY.primaryCyclicality * gap + convergence;
-};
+const stepPrimaryBalance = (m: GameMetrics, gap: number): number => m.primaryBalance + ECONOMY.primaryCyclicality * gap;
 
 /** Dinâmica macroeconômica mensal agregada (GDD §9, item 8: apenas agregado). */
 export const stepEconomy = (state: SimulationState, rng: Rng, difficulty: DifficultyConfig, countries?: readonly Country[]): SimulationState => {
@@ -193,7 +183,7 @@ export const stepEconomy = (state: SimulationState, rng: Rng, difficulty: Diffic
     exchangeRate: m.exchangeRate * (1 + fxChangePct / 100),
     selic: stepSelic(m, ctx.gap),
     debt: stepDebt(m),
-    primaryBalance: stepPrimaryBalance(state, ctx.gap),
+    primaryBalance: stepPrimaryBalance(m, ctx.gap),
   };
   return { ...state, metrics: clampMetrics(next) };
 };
@@ -307,7 +297,7 @@ export const computeApprovalSignals = (m: GameMetrics): ApprovalSignals => ({
 });
 
 /** Bônus de lua de mel: some linearmente nos primeiros HONEYMOON_TURNS do mandato. */
-const honeymoonBonus = (state: SimulationState): number => {
+export const honeymoonBonus = (state: SimulationState): number => {
   const elapsed = state.turn - state.termStartTurn;
   return elapsed >= HONEYMOON_TURNS ? 0 : HONEYMOON_BONUS * (1 - elapsed / HONEYMOON_TURNS);
 };
@@ -350,11 +340,13 @@ export const computeSectorEquilibrium = (state: SimulationState): SectorApproval
  * Setores se movem uma fração rumo ao equilíbrio, que inclui lua de mel e o
  * desgaste acumulado do mandato (decay × multiplicador × meses de governo).
  */
+/** Desgaste acumulado do mandato: decay × multiplicador × meses de governo. */
+export const termWear = (state: SimulationState, difficulty: DifficultyConfig): number =>
+  difficulty.approvalDecayPerTurn * state.modifiers.approvalDecayMultiplier * (state.turn - state.termStartTurn);
+
 export const stepSectors = (state: SimulationState, difficulty: DifficultyConfig): SimulationState => {
   const equilibrium = computeSectorEquilibrium(state);
-  const monthsInTerm = state.turn - state.termStartTurn;
-  const wear = difficulty.approvalDecayPerTurn * state.modifiers.approvalDecayMultiplier * monthsInTerm;
-  const shift = honeymoonBonus(state) - wear;
+  const shift = honeymoonBonus(state) - termWear(state, difficulty);
   const sectors = Object.fromEntries(
     SECTOR_KEYS.map((key) => {
       const target = clamp(equilibrium[key] + shift, 0, SCORE_MAX);

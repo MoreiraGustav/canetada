@@ -1,7 +1,9 @@
 /**
  * Iniciativas livres do jogador, cada uma em sua "vaga" mensal:
  * - agenda presidencial (`AGENDA_SLOT`): gestos políticos, uma por mês;
- * - programas de governo (`PROGRAM_SLOT`): políticas públicas ligadas às metas, um por mês.
+ * - programas de governo (`PROGRAM_SLOT`): políticas públicas ligadas às metas, um por mês;
+ * - viagens (`TRAVEL_SLOT`, ver travel.ts): uma visita a um estado por mês;
+ * - gabinete de crise (`CRISIS_SLOT`): medidas de emergência liberadas por indicadores no vermelho.
  * Cada ação tem seu cooldown. Usa `decisionHistory` com chaves prefixadas pela vaga.
  */
 import type { DifficultyConfig, InitiativeSlot, NewsCategory, NewsItem, PresidentialAction, SimulationState } from '@/types';
@@ -13,17 +15,25 @@ import { createRng } from './random';
 
 export const AGENDA_SLOT: InitiativeSlot = 'acao-presidencial';
 export const PROGRAM_SLOT: InitiativeSlot = 'programa';
+export const TRAVEL_SLOT: InitiativeSlot = 'viagem';
+export const CRISIS_SLOT: InitiativeSlot = 'gabinete-de-crise';
 
 /** Categoria da manchete por vaga (lookup, sem switch). */
 const SLOT_NEWS_CATEGORY: Record<InitiativeSlot, NewsCategory> = {
   'acao-presidencial': 'politics',
   programa: 'decision',
+  viagem: 'politics',
+  'gabinete-de-crise': 'economy',
 };
 
 /** Chave do histórico que guarda o turno da última iniciativa da vaga. */
 const monthlyKey = (slot: InitiativeSlot): string => `${slot}:ultima`;
 
 const actionKey = (action: PresidentialAction, slot: InitiativeSlot): string => `${slot}:${action.id}`;
+
+/** Último turno em que a iniciativa `actionId` foi usada na vaga (undefined = nunca). */
+export const getInitiativeLastTurn = (state: SimulationState, actionId: string, slot: InitiativeSlot): number | undefined =>
+  state.decisionHistory[`${slot}:${actionId}`];
 
 /** A vaga mensal (agenda ou programa) ainda está livre neste mês. */
 export const canTakePresidentialAction = (state: SimulationState, slot: InitiativeSlot = AGENDA_SLOT): boolean =>

@@ -32,6 +32,12 @@ export interface GameStoreActions {
   performPresidentialAction: (actionId: string) => void;
   /** Programa de governo: um lançamento por mês (respeitando o cooldown de cada programa). */
   launchProgram: (programId: string) => void;
+  /** Gabinete de crise: uma medida de emergência por mês (só as liberadas pelos indicadores). */
+  takeCrisisAction: (actionId: string) => void;
+  /** Viagem: uma visita por mês a uma cidade (cada estado tem seu tempo de espera). */
+  visitCity: (stateId: string, cityId: string) => void;
+  /** Política fiscal: muda a postura do orçamento (respeitando o intervalo entre mudanças). */
+  setFiscalStance: (stanceId: string) => void;
   /** Carrega o save do localStorage; retorna false se não houver. */
   continueSavedGame: () => boolean;
   /** Apaga o save e volta ao menu. */

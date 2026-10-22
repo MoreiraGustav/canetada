@@ -1,10 +1,14 @@
 import { useShallow } from 'zustand/react/shallow';
 import {
   useAllDecisionsChosen,
+  useApprovalOutlook,
   useCanLaunchProgram,
+  useCanTakeCrisisAction,
   useCongressView,
+  useCrisisActionViews,
   useGoalViews,
   useIndicatorViews,
+  useMonthFiscalTotal,
   useNewsArchive,
   usePromiseViews,
   useTurnDecisions,
@@ -15,6 +19,8 @@ import { useMetricsStore } from '@/stores/useMetricsStore';
 import { Button } from '@/components/ui/Button';
 import { Masthead } from '@/components/ui/Masthead';
 import { PageContainer } from '@/components/ui/PageContainer';
+import { ApprovalOutlookCard } from '@/components/game/ApprovalOutlookCard';
+import { CrisisCabinetPanel } from '@/components/game/CrisisCabinetPanel';
 import { DashboardTabs } from '@/components/game/DashboardTabs';
 import { DecisionList } from '@/components/game/DecisionList';
 import { GoalProgressStrip } from '@/components/game/GoalProgressStrip';
@@ -41,12 +47,17 @@ export const DashboardScreen = () => {
   const programPending = useCanLaunchProgram();
   const goals = useGoalViews();
   const promises = usePromiseViews();
-  const { goToMenu, chooseDecisionOption, toggleNegotiation, confirmDecisions } = useGameStore(
+  const outlook = useApprovalOutlook();
+  const crisisActions = useCrisisActionViews();
+  const canTakeCrisisAction = useCanTakeCrisisAction();
+  const monthFiscal = useMonthFiscalTotal();
+  const { goToMenu, chooseDecisionOption, toggleNegotiation, confirmDecisions, takeCrisisAction } = useGameStore(
     useShallow((state) => ({
       goToMenu: state.goToMenu,
       chooseDecisionOption: state.chooseDecisionOption,
       toggleNegotiation: state.toggleNegotiation,
       confirmDecisions: state.confirmDecisions,
+      takeCrisisAction: state.takeCrisisAction,
     })),
   );
 
@@ -65,10 +76,12 @@ export const DashboardScreen = () => {
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)] lg:items-start lg:gap-10">
         <aside className="lg:sticky lg:top-4 lg:border-r lg:border-rule lg:pr-6">
           <IndicatorPanel indicators={indicators} />
+          <ApprovalOutlookCard outlook={outlook} />
           <PoliticalSpectrumCard economic={ideology.economic} social={ideology.social} />
         </aside>
         <div className="flex min-w-0 flex-col gap-10">
           <NewsFeed items={news} />
+          <CrisisCabinetPanel actions={crisisActions} canAct={canTakeCrisisAction} onTake={takeCrisisAction} />
           <DecisionList
             decisions={decisions}
             negotiation={negotiation}
@@ -79,7 +92,13 @@ export const DashboardScreen = () => {
           <DashboardTabs />
         </div>
       </div>
-      <TurnAdvanceBar enabled={allChosen} dateLabel={turnInfo.dateShort} programPending={programPending} onAdvance={confirmDecisions} />
+      <TurnAdvanceBar
+        enabled={allChosen}
+        dateLabel={turnInfo.dateShort}
+        programPending={programPending}
+        fiscal={monthFiscal}
+        onAdvance={confirmDecisions}
+      />
     </PageContainer>
   );
 };

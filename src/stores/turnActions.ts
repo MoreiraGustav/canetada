@@ -3,24 +3,50 @@ import { GAME_CONTENT } from '@/data';
 import {
   advanceTurn,
   applyDiplomaticAction,
+  applyFiscalStance,
   applyPresidentialAction,
+  buildVisitAction,
   canPerformDiplomaticAction,
+  CRISIS_SLOT,
   drawEvent,
   getDifficultyConfig,
+  getFiscalStance,
+  getStanceCooldownLeft,
   isPresidentialActionAvailable,
   prepareTurn,
   processTurn,
   PROGRAM_SLOT,
+  TRAVEL_SLOT,
 } from '@/engine';
 import type { CountryId, DecisionChoice, GameData, InitiativeSlot, NewsItem, PresidentialAction, Relations, TurnEventChoice } from '@/types';
-import { getCountry, getDiplomaticAction, getPresidentialAction, getProgram } from './content';
+import {
+  getBrazilianState,
+  getBrazilianStates,
+  getCountry,
+  getCrisisAction,
+  getDiplomaticAction,
+  getFiscalStanceById,
+  getFiscalStances,
+  getPresidentialAction,
+  getProgram,
+  getVisitKinds,
+} from './content';
 import { pickSimulationSlice } from './gameData';
 import type { GameStoreActions, GameStoreApi } from './gameStoreTypes';
 import { assembleSimulationState, distributeSimulationState, recordSnapshot } from './simulationBridge';
 
 type TurnActions = Pick<
   GameStoreActions,
-  'chooseDecisionOption' | 'toggleNegotiation' | 'confirmDecisions' | 'resolveEvent' | 'performDiplomaticAction' | 'performPresidentialAction' | 'launchProgram'
+  | 'chooseDecisionOption'
+  | 'toggleNegotiation'
+  | 'confirmDecisions'
+  | 'resolveEvent'
+  | 'performDiplomaticAction'
+  | 'performPresidentialAction'
+  | 'launchProgram'
+  | 'takeCrisisAction'
+  | 'visitCity'
+  | 'setFiscalStance'
 >;
 
 const collectChoices = (data: GameData): DecisionChoice[] =>
@@ -93,6 +119,27 @@ const performInitiative = (api: GameStoreApi, action: PresidentialAction | undef
   api.commit({ ...distributeSimulationState(result.state), newsArchive: prependNews(game.newsArchive, result.news) });
 };
 
+/** Visita a uma cidade: monta a agenda pelo perfil da cidade e o peso do estado, na vaga de viagens. */
+const visitCity = (api: GameStoreApi, stateId: string, cityId: string): void => {
+  const uf = getBrazilianState(stateId);
+  const city = uf?.cities.find((entry) => entry.id === cityId);
+  if (!uf || !city) return;
+  const state = assembleSimulationState(pickSimulationSlice(api.get()));
+  const action = buildVisitAction(state, uf, city, getVisitKinds(), getBrazilianStates());
+  performInitiative(api, action ?? undefined, TRAVEL_SLOT);
+};
+
+/** Troca a política fiscal (no mês de decisões, fora do intervalo entre mudanças e se for outra postura). */
+const setFiscalStance = (api: GameStoreApi, stanceId: string): void => {
+  const game = api.get();
+  const stance = getFiscalStanceById(stanceId);
+  const state = assembleSimulationState(pickSimulationSlice(game));
+  const stances = getFiscalStances();
+  if (game.phase !== 'turn' || !stance || getStanceCooldownLeft(state) > 0 || getFiscalStance(state, stances)?.id === stance.id) return;
+  const result = applyFiscalStance(state, stance, stances);
+  api.commit({ ...distributeSimulationState(result.state), newsArchive: prependNews(game.newsArchive, result.news) });
+};
+
 export const createTurnActions = (api: GameStoreApi): TurnActions => ({
   chooseDecisionOption: (decisionId, optionId) => {
     const { choices } = api.get();
@@ -114,4 +161,7 @@ export const createTurnActions = (api: GameStoreApi): TurnActions => ({
   performDiplomaticAction: (actionId, countryId) => performDiplomaticAction(api, actionId, countryId),
   performPresidentialAction: (actionId) => performInitiative(api, getPresidentialAction(actionId)),
   launchProgram: (programId) => performInitiative(api, getProgram(programId), PROGRAM_SLOT),
+  takeCrisisAction: (actionId) => performInitiative(api, getCrisisAction(actionId), CRISIS_SLOT),
+  visitCity: (stateId, cityId) => visitCity(api, stateId, cityId),
+  setFiscalStance: (stanceId) => setFiscalStance(api, stanceId),
 });

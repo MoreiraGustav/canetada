@@ -1,6 +1,6 @@
 /**
  * Composição do turno mensal. Ordem: decisões → evento → efeitos ativos →
- * economia → social → diplomacia → setores → Congresso → promessas → metas →
+ * economia → política fiscal → social → diplomacia → setores → Congresso → promessas → metas →
  * estatísticas → notícias de indicadores → desfecho.
  */
 import { CRISIS_HANDLED_MAX_APPROVAL_DROP } from '@/constants/balance';
@@ -29,6 +29,7 @@ import { applyDecisionChoice, selectTurnDecisions } from './decisions';
 import { getDifficultyConfig } from './difficulty';
 import { stepDiplomacy } from './diplomacy';
 import { resolveEventOption, selectEvent } from './events';
+import { stepFiscalPolicy } from './fiscal';
 import { updateGoalProgress } from './goals';
 import { applyActiveEffects } from './impacts';
 import { stepLatentRisks } from './latentRisks';
@@ -106,7 +107,8 @@ const computeOutcome = (state: SimulationState): TurnOutcome => {
 const simulateMonth = (state: SimulationState, content: GameContent, rng: Rng, difficulty: DifficultyConfig): StateWithNews => {
   const effects = applyActiveEffects(state);
   const economy = stepEconomy(effects, rng, difficulty, content.countries);
-  const social = stepSocial(economy, rng);
+  const fiscal = stepFiscalPolicy(economy, content.fiscalStances);
+  const social = stepSocial(fiscal, rng);
   const diplomacy = stepDiplomacy(social, content.countries);
   const sectors = stepSectors(diplomacy, difficulty);
   const exposures = stepLatentRisks(sectors, rng, content.latentRisks);

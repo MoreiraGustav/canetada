@@ -144,3 +144,7 @@ export const getSavedGameSummary = (): SavedGameSummary | null => {
 
 export * from './gameSelectors';
 export * from './freeplaySelectors';
+export * from './fiscalSelectors';
+export * from './travelSelectors';
+export * from './outlookSelectors';
+export * from './congressSelectors';

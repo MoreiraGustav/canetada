@@ -16,6 +16,43 @@ export interface ImpeachmentState {
   deadlineTurn: number;
 }
 
+/** O que empurrou a chance de aprovação de uma votação (na ordem em que é somado). */
+export type VoteFactorKey = 'support' | 'approval' | 'negotiation' | 'ability' | 'street-pressure' | 'provisional-measure';
+
+export interface VoteFactor {
+  key: VoteFactorKey;
+  /** Variação na chance de aprovação (fração: 0,12 = +12 p.p.). */
+  delta: number;
+}
+
+/** Chance de aprovação e de onde ela vem: partida de 50% + fatores. */
+export interface VoteChanceBreakdown {
+  chance: number;
+  /** Chance com base aliada no limiar e aprovação de referência (50%). */
+  baseline: number;
+  factors: VoteFactor[];
+}
+
+/** Placar no plenário da Câmara (513 deputados). */
+export interface VoteTally {
+  yes: number;
+  no: number;
+  abstentions: number;
+  absent: number;
+  /** Votos "sim" necessários: maioria dos votantes (lei) ou 308 (PEC, 3/5). */
+  required: number;
+}
+
+/** Votos de uma bancada partidária numa votação. */
+export interface PartyVote {
+  partyId: string;
+  seats: number;
+  yes: number;
+  no: number;
+  /** Abstenções e ausências. */
+  other: number;
+}
+
 export interface VoteRecord {
   turn: number;
   decisionId: string;
@@ -26,6 +63,15 @@ export interface VoteRecord {
   chance: number;
   approved: boolean;
   negotiated: boolean;
+  /** Placar no plenário (ausente em saves antigos). */
+  tally?: VoteTally;
+  /** Fatores que formaram a chance (ausente em saves antigos). */
+  factors?: VoteFactor[];
+  /** Base aliada e aprovação popular no momento da votação. */
+  support?: number;
+  approval?: number;
+  /** Posição do governo no espectro na hora da votação (usada no voto por partido). */
+  ideology?: { economic: number; social: number };
 }
 
 export interface CongressState {

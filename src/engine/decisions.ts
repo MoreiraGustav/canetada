@@ -17,10 +17,11 @@ import type {
 import { getTurnDate } from '@/utils/calendar';
 import { getChoiceAlignment, isAlignedChoice } from './alignment';
 import { evaluateConditions } from './conditions';
-import { calculateVoteChance, FLAG_RECENT_NEGOTIATION, getNegotiationCost, getVoteBonus, hasProvisionalMeasure } from './congress';
+import { FLAG_RECENT_NEGOTIATION, getNegotiationCost } from './congress';
 import { applyImpact, imprintPolicyMemory, scaleImpactByPolarity, scheduleDelayedImpacts, setFlags, toneFromImpact } from './impacts';
 import { createNewsItem } from './news';
 import { rollOutcomeRisk } from './outcomes';
+import { explainVoteChance, tallyVotes } from './plenary';
 import { pickWeighted, randomInt, withStateRng } from './random';
 
 const DEFAULT_DECISION_WEIGHT = 1;
@@ -147,15 +148,10 @@ export const applyDecisionChoice = (
     return { state: executed.state, news: [news, ...executed.news], vote: null };
   }
   const before = negotiateVotes ? negotiate(state) : state;
-  const chance = calculateVoteChance({
-    type: option.legislative,
-    support: state.congress.support,
-    approval: state.approval,
-    negotiate: negotiateVotes,
-    voteChanceBonus: getVoteBonus(state),
-    provisionalMeasure: hasProvisionalMeasure(state),
-  });
-  const approved = rng.next() < chance;
+  // Chance e fatores (base aliada, aprovação, negociação, bônus do mês) calculados antes do custo da negociação.
+  const { chance, factors } = explainVoteChance(state, option.legislative, negotiateVotes);
+  const roll = rng.next();
+  const approved = roll < chance;
   const vote: VoteRecord = {
     turn: state.turn,
     decisionId: decision.id,
@@ -165,6 +161,11 @@ export const applyDecisionChoice = (
     chance,
     approved,
     negotiated: negotiateVotes,
+    tally: tallyVotes(option.legislative, chance, roll),
+    factors,
+    support: state.congress.support,
+    approval: state.approval,
+    ideology: { economic: state.metrics.ideologyEconomic, social: state.metrics.ideologySocial },
   };
   const voted = recordVote(before, vote);
   if (approved) {

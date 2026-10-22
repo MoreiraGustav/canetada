@@ -27,6 +27,11 @@ const conditionPull = (condition: Condition, effects: ChoiceEffects): -1 | 0 | 1
     return condition.present ? 1 : -1;
   }
   if (condition.kind === 'turn' || condition.kind === 'term') return 0;
+  // "Qualquer uma": ajuda se aproxima alguma das alternativas (e não afasta nenhuma).
+  if (condition.kind === 'any') {
+    const pulls = condition.conditions.map((entry) => conditionPull(entry, effects));
+    return pulls.includes(-1) ? -1 : pulls.includes(1) ? 1 : 0;
+  }
   const delta =
     condition.kind === 'indicator'
       ? totalImpactDelta(effects, condition.indicator)
