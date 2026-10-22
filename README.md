@@ -16,8 +16,10 @@
 
 - **Escolher ou criar seu candidato** — do centro aos extremos — e fazer campanha num debate na TV.
 - **Governar mês a mês:** 3–4 decisões por mês em nove ministérios, cada uma com trade-offs reais.
-- **Lidar com o Congresso:** leis ordinárias e PECs, negociação de cargos e emendas, medidas provisórias, CPIs e impeachment.
-- **Enfrentar o imprevisto:** enchentes, crises econômicas, escândalos, pandemias, Copa do Mundo e eleições municipais.
+- **Lidar com o Congresso:** leis ordinárias e PECs, negociação de cargos e emendas, medidas provisórias, CPIs e impeachment. Cada votação passa no plenário, com o placar dos 513 deputados, o voto de cada bancada e o porquê do resultado.
+- **Cuidar das contas públicas:** toda escolha mostra quanto custa em reais e o que faz com a dívida em 4 anos; a política fiscal (de "gastar para crescer" a "choque fiscal") é sua, com a projeção da dívida na tela.
+- **Viajar pelo Brasil:** um mapa dos 27 estados com a popularidade do governo em cada um e agendas em 81 cidades — da Fiesp ao sertão, da fronteira à Amazônia.
+- **Enfrentar o imprevisto:** enchentes, crises econômicas, escândalos, pandemias, Copa do Mundo e eleições municipais. Quando um indicador entra no vermelho, o gabinete de crise libera medidas de emergência, e o termômetro da aprovação mostra o que está puxando sua popularidade.
 - **Escolher seu lado:** o governo se move no espectro político; posições radicais destravam pautas radicais e uma militância fiel.
 - **Ceder (ou não) à corrupção:** propostas reservadas trazem ganhos imediatos — e riscos que crescem até virarem escândalo, inclusive depois do mandato.
 - **Deixar um legado:** metas de governo, reeleição e uma pontuação final com título histórico.

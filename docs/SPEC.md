@@ -139,6 +139,30 @@ funções compostas recebem o `SimulationState` (que tem `seed`) e devolvem esta
 `engine/difficulty.ts`
 - `getDifficultyConfig(difficulty: Difficulty): DifficultyConfig`
 
+`engine/fiscal.ts` (contas públicas; tipos em `types/fiscal.ts`)
+- `getFiscalStance(state, stances): FiscalStance | undefined` — a postura com flag ativa; sem nenhuma, a neutra (regra fiscal).
+- `applyFiscalStance(state, stance, stances): StateWithNews` — troca a flag `politica-fiscal-*` e registra o mês (`decisionHistory['politica-fiscal:ultima']`); `getStanceCooldownLeft(state)` (FISCAL.stanceCooldown = 6).
+- `stepFiscalPolicy(state, stances): SimulationState` — etapa mensal após `stepEconomy`: regra fiscal (padrão) ou meta da postura, multiplicador fiscal no crescimento e o custo contínuo `monthly`. (`stepEconomy` agora só aplica o componente cíclico do primário.)
+- `gdpShareToBillions(share, gdpTrillions)`, `getPublicAccounts(metrics): PublicAccounts`, `computeDebtDrivers(metrics): DebtDrivers`.
+- `projectDebt(state, stance, months = 48): DebtProjectionPoint[]` — projeção determinística sem choques; `createFiscalCostEstimator(state, stance) → (impact) => FiscalCost` (R$/ano, R$ à vista, Δ dívida em 4 anos).
+
+`engine/plenary.ts` (só explica/exibe; não muda o resultado)
+- `explainVoteChance(state, type, negotiate): VoteChanceBreakdown` — partida de 50% + fatores sequenciais (`support`, `approval`, `negotiation`, `ability`, `street-pressure`, `provisional-measure`) que somam a chance usada em `applyDecisionChoice`.
+- `tallyVotes(type, chance, roll): VoteTally` — placar de 513 deputados coerente com `roll < chance` (lei: maioria dos votantes; PEC: 308).
+- `splitVotesByParty(tally, parties, ideology, playerPartyId): PartyVote[]` — votos por bancada (somam o placar).
+- `VoteRecord` ganhou campos opcionais `tally`, `factors`, `support`, `approval`, `ideology`.
+
+`engine/travel.ts`
+- `buildVisitAction(state, uf, city, kinds, states): PresidentialAction | null` — visita como iniciativa da vaga `TRAVEL_SLOT` (id = UF, cooldown por estado); bancada → base aliada, população → efeito nos setores, eleitorado hostil → risco.
+- `getStateApprovals(state, states): StateApprovalView[]`, `stateAffinity(metrics, uf)`, `getStateCooldownLeft(state, uf)`, `fillVisitTemplate(text, city, uf)`.
+
+`engine/approvalOutlook.ts`
+- `explainApproval(state, difficulty): ApprovalOutlook` — aprovação de equilíbrio e fatores (sinais × sensibilidades ponderados pelos setores, afinidade, militância, confiança, lua de mel, desgaste).
+
+Vagas mensais de iniciativa (`InitiativeSlot`, `presidentialActions.ts`): `AGENDA_SLOT`, `PROGRAM_SLOT`, `TRAVEL_SLOT` ('viagem') e `CRISIS_SLOT` ('gabinete-de-crise'). `getInitiativeLastTurn(state, actionId, slot)`.
+
+Anti-bola de neve: gatilhos de eventos inclinam o sorteio condicional (peso × produto dos gatilhos, teto `MAX_TRIGGER_MULTIPLIER`; eventos sem gatilho ficam com ×1); `CRISIS_RESPITE` reduz crises logo após uma crise; `APPROVAL_FLOOR` encolhe perdas de setores muito insatisfeitos. Condição nova: `{ kind: 'any', conditions }` (OU).
+
 `engine/index.ts` — barrel reexportando a API pública.
 
 ### Flags definidas pelo engine (dados podem usar em conditions)
@@ -169,6 +193,12 @@ Arquivos e exports (nomes exatos):
 - `data/cpiTopics.ts` → `CPI_TOPICS: CpiTopic[]` (6+)
 - `data/legacy.ts` → `LEGACY_TIERS: LegacyTier[]` (6–8, de "Impedido"/"Pato Manco" a "Estadista")
 - `data/index.ts` → `GAME_CONTENT: GameContent` (já escrito pelo coordenador)
+- `data/fiscalStances.ts` → `FISCAL_STANCES: FiscalStance[]` (5; exatamente uma neutra, sem flag e sem meta)
+- `data/crisisActions.ts` → `CRISIS_ACTIONS: PresidentialAction[]` (gabinete de crise; toda medida tem `conditions`)
+- `data/states.ts` → `BRAZILIAN_STATES: BrazilianState[]` (27 UFs, bancadas somam 513, 3 cidades cada, a 1ª é a capital)
+- `data/visitKinds.ts` → `VISIT_KINDS: VisitKind[]` (um por `CityKind`; textos com `{city}`/`{uf}`)
+- `data/brazilMap.ts` → `BRAZIL_MAP`, `BRAZIL_MAP_VIEWBOX` (malha do IBGE simplificada; só a UI usa, via `stores/content.ts`)
+- `Party.seats`: bancada na Câmara (os partidos somam 513).
 
 Regras: IDs kebab-case únicos; tom sério e institucional (sem humor); PT-BR; manchetes estilo Folha/G1;
 números realistas (IBGE, BCB, INPE, IPEA); toda decisão com trade-off (sem ação "grátis");
@@ -210,6 +240,7 @@ Definidas por decisões: `reforma-tributaria-aprovada`, `reforma-administrativa-
 `ensino-integral-ampliado`, `minha-casa-ampliado`, `corte-de-gastos`, `aumento-de-impostos`.
 Definidas por eventos: `escandalo-ministerial`, `vazamento-audio`, `crise-hidrica`, `tarifaco-eua`, `greve-geral`, `pandemia`, `boom-commodities`.
 Definidas pelo engine: `negociacao-recente`, `cpi-instalada`, `impeachment-aberto`, `presidente-afastado`.
+Política fiscal (uma por vez, definidas pelos dados de `fiscalStances`): `politica-fiscal-expansao-forte`, `politica-fiscal-expansao`, `politica-fiscal-ajuste`, `politica-fiscal-ajuste-forte`.
 Lidas pelo engine (definidas por dados): `crime-de-responsabilidade` (afrouxa os limiares de impeachment), `escandalo-ministerial`/`vazamento-audio` (bônus de CPI).
 Corrupção: `obstrucao-justica` (abafar investigação), `esquema-<nome>-aceito` / `esquema-<nome>-exposto` (um par por esquema, ligado a um `LatentRisk`).
 

@@ -1,18 +1,18 @@
 # Progresso — Presidente Simulator
 
-> Atualizado em **07/10/2026**. Para retomar, peça: *"continue o simulador a partir do PROGRESS.md"*.
+> Atualizado em **22/10/2026**. Para retomar, peça: *"continue o simulador a partir do PROGRESS.md"*.
 > Contrato de APIs entre engine/data/stores/ui: **`docs/SPEC.md`**.
 
 ## Estado atual
 
-O jogo está **completo e jogável** de ponta a ponta: menu → setup → candidato → campanha → eleição → metas → (turno → evento → resumo)* → reeleição → 2º mandato → resultado.
+O jogo está **completo e jogável** de ponta a ponta: menu → setup → candidato → campanha → eleição → metas → (turno → evento → resumo [→ sessão no plenário])* → reeleição → 2º mandato → resultado.
 
 - `npm run typecheck`: limpo
-- `npm test`: 207 testes em 17 arquivos, todos passando
+- `npm test`: 240 testes em 21 arquivos, todos passando
   - engine com fixtures próprias em `src/engine/__fixtures__/`
   - integridade e simulação do conteúdo real em `src/data/content.test.ts`
 - `npm run lint`: limpo
-- `npm run build`: ok, todos os chunks abaixo de 500 kB (vendors separados em `vite.config.ts`)
+- `npm run build`: ok, todos os chunks abaixo de 500 kB (vendors, mapa/estados e conteúdo separados em `vite.config.ts`; o chunk `content` está em ~497 kB)
 - `npm run dev`: abre em `http://localhost:5173`
 
 ## Feito ✅
@@ -123,6 +123,29 @@ Diagnóstico, antes da correção, com um jogador 100% focado na meta: Infraestr
   - vaga de programas (`freeplay.test.ts`)
   - `content.test.ts`: toda meta precisa de ≥ 2 programas e ≥ 3 decisões que a ajudem
 
+## Rodada de feedback (22/10) — "crises viram bola de neve", "quero controlar a dívida", "não vejo as votações", "quero visitar estados"
+
+Diagnóstico (24 partidas por estratégia, Mandato Completo): a economia em si não é explosiva — choques se dissipam em 1–2 anos —, mas com aprovação baixa **78% dos eventos sorteados eram crises** (contra 45% com aprovação alta). O sorteio condicional só considerava eventos com gatilho ativo, e com o país mal só sobravam crises. As perdas de aprovação também valiam 100% mesmo com o setor no chão.
+
+- **Anti-bola de neve** (`engine/events.ts`, `engine/impacts.ts`):
+  - gatilhos **inclinam** o sorteio condicional em vez de restringi-lo (eventos sem gatilho continuam com peso 1); produto dos multiplicadores limitado a `MAX_TRIGGER_MULTIPLIER` = 4
+  - **trégua entre crises** (`CRISIS_RESPITE`): nos 2 meses após uma crise, outras crises pesam ×0,35
+  - **núcleo fiel** (`APPROVAL_FLOOR`): perdas de um setor abaixo de 30% encolhem até ×0,35 (espelho dos retornos decrescentes dos ganhos)
+  - resultado: com aprovação baixa, ~65% dos eventos são crises; no Normal ninguém (ao acaso ou prudente) cai abaixo de 25%
+- **Gabinete de crise** (`data/crisisActions.ts`, 12 medidas, vaga própria `gabinete-de-crise`): aparece no topo do painel só quando um indicador entra no vermelho (condições com o novo `{ kind: 'any' }`), com o motivo ("⚠ Dólar acima de R$ 6,20"). Medidas mais fortes que decisões comuns, cada uma com custo: vender reservas, segurar combustíveis, frentes de trabalho, contingenciamento, reforma ministerial, pacto nacional, Força Nacional, defesa contra impeachment etc. No Difícil, jogadores ao acaso que usam o gabinete sofrem metade dos impeachments (11 → 5 em 24).
+- **Termômetro da aprovação** (`engine/approvalOutlook.ts`): na lateral do painel, a aprovação de equilíbrio ("tendência: caindo para 44%") e os fatores que puxam para cima/baixo em pontos (inflação, emprego, lua de mel, desgaste...).
+- **Contas públicas** (`engine/fiscal.ts`, aba "💰 Contas públicas"):
+  - **custo em reais** de toda escolha (decisões, eventos, programas, agenda, gabinete, viagens): R$/ano no primário, R$ à vista na dívida e a diferença na dívida projetada em 4 anos (0,1% do PIB ≈ R$ 11 bi); o total das decisões do mês aparece na barra de avançar
+  - dívida, primário, juros (R$ 667 bi/ano no início) e déficit nominal em reais; barras de "por que a dívida se move" (juros × crescimento × primário)
+  - **política fiscal** (`data/fiscalStances.ts`, 5 posturas, troca a cada 6 meses, guardada como flag `politica-fiscal-*`): a neutra é a regra fiscal de antes; as demais puxam o primário para a própria meta (−2,5% a +2,5%) com multiplicador fiscal (`FISCAL.multiplier`) e custo contínuo nos setores
+  - projeção determinística da dívida em 4 anos para cada postura (gráfico); bate com a simulação com erro < 1 p.p.
+  - calibração (passivo, Normal, 48 meses): gastar para crescer = aprovação +1,3 no 6º mês e −1,5 no fim, dívida 84%; regra fiscal = dívida 77%; choque fiscal = −2,3 no 6º mês, −0,7 no fim, dívida 70%
+- **Plenário** (`engine/plenary.ts`, `VoteSessionOverlay`): ao fim do mês com votações, a sessão abre sozinha — hemiciclo com 513 deputados acendendo voto a voto, placar, carimbo APROVADA/REJEITADA, "por que passou/caiu" (partida de 50% + base aliada, aprovação, negociação, habilidade, militância, MP, em p.p.) e o voto de cada bancada. O placar deriva da chance e do sorteio (votações apertadas saem por poucos votos), sem gastar o PRNG; os 9 partidos ganharam `seats` (somam 513). A decisão mostra o porquê da chance antes de votar, e o resumo tem "Rever no plenário".
+- **Viagens pelo Brasil** (`engine/travel.ts`, aba "🗺️ Viagens", vaga própria `viagem`):
+  - mapa das 27 UFs (malha do IBGE, `data/brazilMap.ts`) colorido pela popularidade estimada: aprovação nacional + afinidade ideológica do eleitorado (`lean`) + bônus de visita recente
+  - `data/states.ts`: população (Censo 2022), bancadas (513), inclinação e 3 cidades por estado (81) com perfil; `data/visitKinds.ts`: 12 perfis de agenda (capital, periferia, agro, sertão, Amazônia, porto, festa, inovação, fronteira, mineração, romaria...)
+  - a bancada vira base aliada (0,025 por deputado), a população amplia o efeito nos setores e um eleitorado hostil aumenta o risco de vaias; cada estado só pode ser revisitado após 6 meses
+
 ## Decisões de design tomadas no engine
 
 - **Aprovação:** cada setor converge 20%/mês para um equilíbrio formado por:
@@ -152,5 +175,7 @@ Diagnóstico, antes da correção, com um jogador 100% focado na meta: Infraestr
 - **Animações em aba oculta:** com a aba do navegador oculta, o Framer Motion pausa e as transições de tela só completam quando a aba volta a ficar visível. Comportamento normal do navegador, sem impacto para quem está jogando.
 - **Repetição no Mandato Completo:** o 2º mandato do modo Completo ainda repete ~2/3 das decisões (são ~170 vagas de decisão). Mais conteúdo, sobretudo repetível com variações, reduziria isso.
 - **Placar do populista:** a estratégia gulosa ainda pontua mais que a aleatória no legado. Se quiser punir mais o populismo, aumentar o peso de eventos de crise fiscal (gatilhos por dívida/déficit) ou o componente econômico do score.
-- **Cores do Recharts** em `constants/theme.ts` espelham `tailwind.config.js` à mão.
-- **Git:** o projeto ainda não é um repositório (o CLAUDE.md define os padrões de commit). Rodar `git init` quando quiser versionar.
+- **Cores do Recharts** em `constants/theme.ts` espelham `tailwind.config.js` à mão (agora também usadas no mapa e no plenário).
+- **Chunk `content`** em ~497 kB: novos dados grandes devem ir para um grupo próprio em `vite.config.ts` (como `brazil`).
+- **Viagens e eventos regionais:** desastres naturais ainda não têm estado; ligar eventos a UFs permitiria "visita de solidariedade" com bônus extra.
+- **Popularidade por estado:** é estimada a cada mês (não persiste); se quiser estados com memória própria, guardar um humor por UF no estado da simulação.
