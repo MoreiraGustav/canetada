@@ -5,14 +5,14 @@
 
 ## Estado atual
 
-O jogo está **completo e jogável** de ponta a ponta: menu → setup → candidato → campanha → eleição → metas → (turno → evento → resumo [→ sessão no plenário])* → reeleição → 2º mandato → resultado.
+O jogo está **completo e jogável** de ponta a ponta: menu → setup (Brasil fictício ou real) → candidato → campanha → eleição (apuração no mapa) → metas → (turno → evento → resumo [→ sessão no Congresso])* → reeleição (apuração no mapa) → 2º mandato → resultado.
 
 - `npm run typecheck`: limpo
-- `npm test`: 240 testes em 21 arquivos, todos passando
+- `npm test`: 255 testes em 22 arquivos, todos passando
   - engine com fixtures próprias em `src/engine/__fixtures__/`
   - integridade e simulação do conteúdo real em `src/data/content.test.ts`
 - `npm run lint`: limpo
-- `npm run build`: ok, todos os chunks abaixo de 500 kB (vendors, mapa/estados e conteúdo separados em `vite.config.ts`; o chunk `content` está em ~497 kB)
+- `npm run build`: ok, todos os chunks abaixo de 500 kB (vendors, mapa/estados, elenco, eventos e conteúdo separados em `vite.config.ts`; o maior, `content`, tem ~332 kB)
 - `npm run dev`: abre em `http://localhost:5173`
 
 ## Feito ✅
@@ -146,6 +146,27 @@ Diagnóstico (24 partidas por estratégia, Mandato Completo): a economia em si n
   - `data/states.ts`: população (Censo 2022), bancadas (513), inclinação e 3 cidades por estado (81) com perfil; `data/visitKinds.ts`: 12 perfis de agenda (capital, periferia, agro, sertão, Amazônia, porto, festa, inovação, fronteira, mineração, romaria...)
   - a bancada vira base aliada (0,025 por deputado), a população amplia o efeito nos setores e um eleitorado hostil aumenta o risco de vaias; cada estado só pode ser revisitado após 6 meses
 
+## Rodada de feedback (22/10, parte 2) — "momentos animados" e "personagens com rosto", com políticos reais
+
+- **Brasil real** (opcional no setup; o fictício segue como padrão):
+  - `data/real/parties.ts`: 18 partidos com as bancadas eleitas para a Câmara em 4/10/2026 (somam 513; PV 7 e Rede 1 deduzidos por subtração)
+  - `data/real/candidates.ts`: 7 candidatos da eleição de 2026 (1º turno: Flávio Bolsonaro 47,03%, Lula 45,16%; 2º turno em 25/10/2026), com fotos oficiais de licença livre em `public/portraits/` (créditos em `CREDITS.md` e na UI)
+  - Jair Bolsonaro entra como cenário hipotético (`note`), porque é inelegível e cumpre pena; ele nunca é escolhido como adversário se houver outro
+  - **regras de segurança:** pessoas reais só têm cargos e propostas públicas. A oposição real aparece nas manchetes como "Oposição liderada pelo PL", nunca com falas. Ministros e governadores são sempre fictícios. No Brasil real, as propostas de corrupção (que fariam o próprio presidente cometer crime) ficam de fora (`getWorldContent`)
+  - o conteúdo de cada mundo é filtrado nas stores (`stores/content.ts`, `world` em partidos e candidatos); o engine recebe só o mundo da partida
+- **Elenco político** (`engine/cast.ts`, tipos em `types/cast.ts`, estado em `SimulationState.cast`):
+  - **ministros:** 9, sempre fictícios, gerados pela semente (`data/names.ts`). Técnicos dão +15% nos ganhos da pasta. Políticos (dos 4 partidos mais próximos) deslocam a base aliada e o risco de escândalo em relação à composição padrão (4 políticos), então a calibração não muda. Aba "👥 Ministério" com troca (custo de aprovação e espera de 6 meses por pasta). A decisão mostra quem leva a pauta. Escândalos políticos geram "Oposição pede a saída de [ministro]"
+  - **oposição:** o adversário do 2º turno. Cartão na lateral, com foto quando é pessoa real, e reações nas manchetes (`data/oppositionLines.ts`, uma por mês no máximo)
+  - **governadores:** fictícios, derivados da semente. O partido segue o eleitorado do estado, a relação segue o espectro do governo. Aliado reduz o risco da visita e traz base; oposição aumenta o risco
+  - **rostos:** `PortraitImage` mostra a foto livre ou o retrato ilustrado em SVG (`IllustratedFace` + `utils/illustratedFace.ts`, determinístico; usa `utils/prng.ts`, que agora também é a base do PRNG do engine)
+- **Momentos animados:**
+  - **noite da eleição** (`engine/electionMap.ts`, `ElectionNight`): na posse e na reeleição, os estados divulgam a apuração aos poucos, com a parcial nacional e o carimbo no fim. Quem vence vê primeiro os estados onde vai pior (virada). O resultado da tela só aparece depois da contagem
+  - **Senado:** PECs passam pela Câmara (308) e pelo Senado (49). Se uma PEC é rejeitada, ela cai em uma das duas Casas. Bancadas do Senado proporcionais às da Câmara (`senateParties`)
+  - **impeachment no plenário:** a Câmara autoriza com 342 votos e o Senado julga com 54. As sessões entram nas votações do mês, com "por que avançou/caiu" (aprovação e base diante dos limites). A folga do impeachment tem teto realista
+  - **Copom:** cartão no resumo quando a Selic muda, com os 9 diretores votando
+  - `engine/voteChance.ts` saiu de `congress.ts`, para o plenário usar a chance sem dependência circular
+- **Calibração** (Normal, Completo, 24 partidas): passiva 38%, ao acaso 44%, populista 63% (cerca de 2 pontos acima, pelo bônus dos ministros técnicos)
+
 ## Decisões de design tomadas no engine
 
 - **Aprovação:** cada setor converge 20%/mês para um equilíbrio formado por:
@@ -178,4 +199,5 @@ Diagnóstico (24 partidas por estratégia, Mandato Completo): a economia em si n
 - **Cores do Recharts** em `constants/theme.ts` espelham `tailwind.config.js` à mão (agora também usadas no mapa e no plenário).
 - **Chunk `content`** em ~497 kB: novos dados grandes devem ir para um grupo próprio em `vite.config.ts` (como `brazil`).
 - **Viagens e eventos regionais:** desastres naturais ainda não têm estado; ligar eventos a UFs permitiria "visita de solidariedade" com bônus extra.
+- **Brasil real desatualiza:** bancadas, candidatos e fotos refletem 22/10/2026 (antes do 2º turno de 25/10). Revisar quando a política real mudar.
 - **Popularidade por estado:** é estimada a cada mês (não persiste); se quiser estados com memória própria, guardar um humor por UF no estado da simulação.

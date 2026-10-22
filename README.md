@@ -14,9 +14,11 @@
 
 ## O que dá para fazer
 
-- **Escolher ou criar seu candidato** — do centro aos extremos — e fazer campanha num debate na TV.
+- **Escolher ou criar seu candidato** — do centro aos extremos — e fazer campanha num debate na TV. No modo **Brasil real** (opcional), os candidatos e as bancadas são os da eleição de 2026, em cenários hipotéticos.
+- **Viver a noite da eleição:** os estados apuram aos poucos no mapa, na posse e na reeleição.
+- **Montar o ministério:** nove ministros com rosto, técnicos ou políticos, que você pode trocar. A oposição reage nas manchetes, e cada estado tem um governador aliado ou rival.
 - **Governar mês a mês:** 3–4 decisões por mês em nove ministérios, cada uma com trade-offs reais.
-- **Lidar com o Congresso:** leis ordinárias e PECs, negociação de cargos e emendas, medidas provisórias, CPIs e impeachment. Cada votação passa no plenário, com o placar dos 513 deputados, o voto de cada bancada e o porquê do resultado.
+- **Lidar com o Congresso:** leis ordinárias e PECs, negociação de cargos e emendas, medidas provisórias, CPIs e impeachment. Cada votação passa no plenário, com o placar dos 513 deputados (e dos 81 senadores nas PECs e no impeachment), o voto de cada bancada e o porquê do resultado. O Copom decide a Selic à vista.
 - **Cuidar das contas públicas:** toda escolha mostra quanto custa em reais e o que faz com a dívida em 4 anos; a política fiscal (de "gastar para crescer" a "choque fiscal") é sua, com a projeção da dívida na tela.
 - **Viajar pelo Brasil:** um mapa dos 27 estados com a popularidade do governo em cada um e agendas em 81 cidades — da Fiesp ao sertão, da fronteira à Amazônia.
 - **Enfrentar o imprevisto:** enchentes, crises econômicas, escândalos, pandemias, Copa do Mundo e eleições municipais. Quando um indicador entra no vermelho, o gabinete de crise libera medidas de emergência, e o termômetro da aprovação mostra o que está puxando sua popularidade.
@@ -81,6 +83,10 @@ Contribuições são muito bem-vindas — especialmente **conteúdo** (decisões
 React 18 · TypeScript (strict) · Vite · Tailwind CSS · Zustand · Recharts · Framer Motion. Todo o motor da simulação (`src/engine/`) é feito de funções puras e testadas; o conteúdo (`src/data/`) é data-driven — novas decisões e eventos entram sem mexer no motor.
 
 Documentação de design: [`game-design-document.md`](game-design-document.md) · contrato técnico: [`docs/SPEC.md`](docs/SPEC.md) · estado do projeto: [`PROGRESS.md`](PROGRESS.md).
+
+## Fotos
+
+As fotos de pessoas reais em `public/portraits/` não estão sob a licença MIT: cada uma mantém a própria licença livre (CC BY), com autoria e origem em [`public/portraits/CREDITS.md`](public/portraits/CREDITS.md). O jogo é uma obra de ficção; pessoas reais aparecem só com cargos e propostas públicas, em cenários hipotéticos.
 
 ## Licença
 

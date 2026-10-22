@@ -159,6 +159,18 @@ funções compostas recebem o `SimulationState` (que tem `seed`) e devolvem esta
 `engine/approvalOutlook.ts`
 - `explainApproval(state, difficulty): ApprovalOutlook` — aprovação de equilíbrio e fatores (sinais × sensibilidades ponderados pelos setores, afinidade, militância, confiança, lua de mel, desgaste).
 
+`engine/cast.ts` (elenco; tipos em `types/cast.ts`; `SimulationState.cast`)
+- `createCast(seed, candidate, election, parties, names, opponentIsReal, turn): PoliticalCast` — 9 ministros fictícios (técnicos e políticos dos partidos aliados) e a oposição (adversário do 2º turno).
+- `replaceMinister(state, ministry, profile, partyId, names): StateWithNews`, `getMinisterCooldownLeft`, `ministryGainMultiplier`, `cabinetSupportShift`, `cabinetScandalMultiplier`, `alliedParties`, `getGovernors(state, states, parties, names, playerPartyId)`.
+
+`engine/opposition.ts`: `oppositionLabel(leader, parties)` (pessoa real → "Oposição liderada pelo PARTIDO"), `generateOppositionNews(before, after, lines, parties, rng)`.
+
+`engine/electionMap.ts`: `computeStateVotes(nationalShare, ideology, states, visitBonus?)`, `reportedFraction`, `nationalPartial` (noite da eleição).
+
+`engine/voteChance.ts`: `calculateVoteChance`, `getVoteBonus`, `hasProvisionalMeasure` e as flags do mês (reexportados por `congress.ts`).
+
+Plenário: `tallyBill(type, chance, roll)` (PEC → Câmara e Senado), `tallyImpeachment(chamber, approved, facts, turn)`, `senateParties(parties)`, `splitVotesByParty(..., against)`. `stepCongress` devolve também `votes` (sessões de impeachment), que o turno junta às votações do mês. `VoteRecord` ganhou `kind`, `senateTally` e `impeachment`.
+
 Vagas mensais de iniciativa (`InitiativeSlot`, `presidentialActions.ts`): `AGENDA_SLOT`, `PROGRAM_SLOT`, `TRAVEL_SLOT` ('viagem') e `CRISIS_SLOT` ('gabinete-de-crise'). `getInitiativeLastTurn(state, actionId, slot)`.
 
 Anti-bola de neve: gatilhos de eventos inclinam o sorteio condicional (peso × produto dos gatilhos, teto `MAX_TRIGGER_MULTIPLIER`; eventos sem gatilho ficam com ×1); `CRISIS_RESPITE` reduz crises logo após uma crise; `APPROVAL_FLOOR` encolhe perdas de setores muito insatisfeitos. Condição nova: `{ kind: 'any', conditions }` (OU).
@@ -198,7 +210,10 @@ Arquivos e exports (nomes exatos):
 - `data/states.ts` → `BRAZILIAN_STATES: BrazilianState[]` (27 UFs, bancadas somam 513, 3 cidades cada, a 1ª é a capital)
 - `data/visitKinds.ts` → `VISIT_KINDS: VisitKind[]` (um por `CityKind`; textos com `{city}`/`{uf}`)
 - `data/brazilMap.ts` → `BRAZIL_MAP`, `BRAZIL_MAP_VIEWBOX` (malha do IBGE simplificada; só a UI usa, via `stores/content.ts`)
-- `Party.seats`: bancada na Câmara (os partidos somam 513).
+- `Party.seats`: bancada na Câmara (os partidos de cada mundo somam 513).
+- `Party.world` / `Candidate.world`: `'ficticio'` (padrão) ou `'real'`. `Candidate.portrait` (foto livre com crédito ou traços do retrato ilustrado) e `Candidate.note` (aviso de cenário hipotético).
+- `data/real/parties.ts`, `data/real/candidates.ts` → `REAL_PARTIES`, `REAL_CANDIDATES` (Brasil real: só fatos públicos; fotos em `public/portraits/` com créditos).
+- `data/names.ts` → `NAME_POOL` (ministros e governadores fictícios); `data/oppositionLines.ts` → `OPPOSITION_LINES`.
 
 Regras: IDs kebab-case únicos; tom sério e institucional (sem humor); PT-BR; manchetes estilo Folha/G1;
 números realistas (IBGE, BCB, INPE, IPEA); toda decisão com trade-off (sem ação "grátis");
