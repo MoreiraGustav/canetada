@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_EVENT_COOLDOWN, DIFFICULTY_CONFIGS, RANDOM_EVENT_SHARE } from '@/constants/balance';
+import { DEFAULT_EVENT_COOLDOWN, DIFFICULTY_CONFIGS, MAX_TRIGGER_MULTIPLIER, RANDOM_EVENT_SHARE } from '@/constants/balance';
 import type { SimulationState } from '@/types';
 import { getTurnFromDate } from '@/utils/calendar';
 import {
@@ -84,14 +84,17 @@ describe('selectEvent — sorteio misto aleatório/condicional', () => {
     expect(first.state.seed).not.toBe(99);
   });
 
-  it('favorece estatisticamente o evento com gatilho satisfeito', () => {
+  it('favorece estatisticamente o evento com gatilho satisfeito, sem excluir os outros', () => {
     const untriggeredShare = frequency(calm, 'fx-crise-cambial');
     const triggeredShare = frequency(triggered, 'fx-crise-cambial');
-    expect(triggeredShare).toBeGreaterThan(untriggeredShare + 0.3);
-    // Ramo condicional (1 − RANDOM_EVENT_SHARE) sempre escolhe o único evento disparado;
-    // o ramo aleatório mantém a proporção base.
-    const expected = 1 - RANDOM_EVENT_SHARE + RANDOM_EVENT_SHARE * untriggeredShare;
+    expect(triggeredShare).toBeGreaterThan(untriggeredShare + 0.15);
+    // Ramo aleatório: proporção base p. Ramo condicional: o peso do evento disparado é
+    // multiplicado por m (teto MAX_TRIGGER_MULTIPLIER) e os demais continuam no sorteio.
+    const m = Math.min(4, MAX_TRIGGER_MULTIPLIER);
+    const p = untriggeredShare;
+    const expected = RANDOM_EVENT_SHARE * p + (1 - RANDOM_EVENT_SHARE) * ((m * p) / (1 + (m - 1) * p));
     expect(Math.abs(triggeredShare - expected)).toBeLessThan(0.05);
+    expect(triggeredShare).toBeLessThan(0.95);
   });
 
   it('sem eventos elegíveis devolve null', () => {

@@ -5,8 +5,10 @@
 import {
   CORRUPTION_OFFER_CHANCE,
   CORRUPTION_OFFER_MIN_TURN,
+  CRISIS_RESPITE,
   DEFAULT_EVENT_COOLDOWN,
   EVENT_FREQUENCY_WEIGHTS,
+  MAX_TRIGGER_MULTIPLIER,
   RANDOM_EVENT_SHARE,
   SEEN_EVENT_WEIGHT,
 } from '@/constants/balance';
@@ -45,45 +47,66 @@ export const getEligibleEvents = (state: SimulationState, events: readonly GameE
   );
 };
 
-/** Peso base: frequência × agressividade de crises (dificuldade) × propensão a escândalos (habilidade) × novidade. */
-const baseWeight = (state: SimulationState, event: GameEvent, difficulty: DifficultyConfig): number => {
-  const crisis = EVENT_CATEGORY_INFO[event.category].isCrisis ? difficulty.crisisWeightMultiplier : 1;
+const isCrisisEvent = (event: GameEvent): boolean => EVENT_CATEGORY_INFO[event.category].isCrisis;
+
+/** Último turno em que houve uma crise (ou null), a partir do histórico de eventos. */
+const lastCrisisTurn = (state: SimulationState, events: readonly GameEvent[]): number | null =>
+  events.reduce<number | null>((latest, event) => {
+    const turn = state.eventHistory[event.id];
+    if (turn === undefined || !isCrisisEvent(event)) return latest;
+    return latest === null ? turn : Math.max(latest, turn);
+  }, null);
+
+/** Trégua: logo depois de uma crise, outras crises pesam menos no sorteio. */
+const inCrisisRespite = (state: SimulationState, events: readonly GameEvent[]): boolean => {
+  const last = lastCrisisTurn(state, events);
+  return last !== null && state.turn - last <= CRISIS_RESPITE.turns;
+};
+
+/** Contexto do sorteio do mês (calculado uma vez por turno). */
+interface DrawContext {
+  state: SimulationState;
+  difficulty: DifficultyConfig;
+  respite: boolean;
+}
+
+/** Peso base: frequência × agressividade de crises (dificuldade, trégua) × propensão a escândalos (habilidade) × novidade. */
+const baseWeight = ({ state, difficulty, respite }: DrawContext, event: GameEvent): number => {
+  const crisis = isCrisisEvent(event) ? difficulty.crisisWeightMultiplier * (respite ? CRISIS_RESPITE.weightMultiplier : 1) : 1;
   const scandal = event.category === 'political-scandal' ? state.modifiers.scandalWeightMultiplier : 1;
   const novelty = state.eventHistory[event.id] === undefined ? 1 : SEEN_EVENT_WEIGHT;
   return EVENT_FREQUENCY_WEIGHTS[event.frequency] * crisis * scandal * novelty;
 };
 
-/** Peso condicional: base × produto dos multiplicadores dos gatilhos satisfeitos (0 se nenhum). */
-const conditionalWeight = (state: SimulationState, event: GameEvent, difficulty: DifficultyConfig): number => {
+/** Produto dos multiplicadores dos gatilhos satisfeitos, com teto (null se nenhum gatilho vale). */
+const triggerMultiplier = (state: SimulationState, event: GameEvent): number | null => {
   const satisfied = (event.triggers ?? []).filter((trigger) => evaluateCondition(state, trigger.condition));
-  if (satisfied.length === 0) return 0;
-  return satisfied.reduce((acc, trigger) => acc * trigger.multiplier, baseWeight(state, event, difficulty));
+  if (satisfied.length === 0) return null;
+  return Math.min(MAX_TRIGGER_MULTIPLIER, satisfied.reduce((acc, trigger) => acc * trigger.multiplier, 1));
 };
 
-/** Peso de uma proposta reservada: base × gatilhos satisfeitos (sem exigir gatilho). */
-const offerWeight = (state: SimulationState, event: GameEvent, difficulty: DifficultyConfig): number =>
-  (event.triggers ?? [])
-    .filter((trigger) => evaluateCondition(state, trigger.condition))
-    .reduce((acc, trigger) => acc * trigger.multiplier, baseWeight(state, event, difficulty));
+/**
+ * Peso condicional: base × gatilhos satisfeitos (1 se nenhum). Indicadores ruins
+ * inclinam o sorteio para as crises ligadas a eles, sem excluir o resto do noticiário
+ * (antes, só entravam eventos com gatilho — e com o país mal, só sobravam crises).
+ */
+const conditionalWeight = (ctx: DrawContext, event: GameEvent): number => baseWeight(ctx, event) * (triggerMultiplier(ctx.state, event) ?? 1);
 
 /**
  * Propostas reservadas (categoria "corruption") têm canal próprio: a cada mês,
  * com chance CORRUPTION_OFFER_CHANCE, uma delas chega no lugar do evento sorteado.
  */
-const drawOffer = (rng: Rng, state: SimulationState, offers: readonly GameEvent[], difficulty: DifficultyConfig): GameEvent | null => {
-  if (offers.length === 0 || state.turn < CORRUPTION_OFFER_MIN_TURN || rng.next() >= CORRUPTION_OFFER_CHANCE) return null;
-  return pickWeighted(rng, offers.map((event) => ({ item: event, weight: offerWeight(state, event, difficulty) })));
+const drawOffer = (rng: Rng, ctx: DrawContext, offers: readonly GameEvent[]): GameEvent | null => {
+  if (offers.length === 0 || ctx.state.turn < CORRUPTION_OFFER_MIN_TURN || rng.next() >= CORRUPTION_OFFER_CHANCE) return null;
+  return pickWeighted(rng, offers.map((event) => ({ item: event, weight: conditionalWeight(ctx, event) })));
 };
 
-const drawEvent = (rng: Rng, state: SimulationState, eligible: readonly GameEvent[], difficulty: DifficultyConfig): GameEvent | null => {
-  const offer = drawOffer(rng, state, eligible.filter((event) => event.category === 'corruption'), difficulty);
+const drawEvent = (rng: Rng, ctx: DrawContext, eligible: readonly GameEvent[]): GameEvent | null => {
+  const offer = drawOffer(rng, ctx, eligible.filter((event) => event.category === 'corruption'));
   if (offer) return offer;
   const regular = eligible.filter((event) => event.category !== 'corruption');
-  const random = (): GameEvent | null =>
-    pickWeighted(rng, regular.map((event) => ({ item: event, weight: baseWeight(state, event, difficulty) })));
-  if (rng.next() < RANDOM_EVENT_SHARE) return random();
-  const conditional = pickWeighted(rng, regular.map((event) => ({ item: event, weight: conditionalWeight(state, event, difficulty) })));
-  return conditional ?? random();
+  const weightOf = rng.next() < RANDOM_EVENT_SHARE ? baseWeight : conditionalWeight;
+  return pickWeighted(rng, regular.map((event) => ({ item: event, weight: weightOf(ctx, event) })));
 };
 
 export const selectEvent = (state: SimulationState, events: readonly GameEvent[], difficulty: DifficultyConfig): EventSelection => {
@@ -93,7 +116,8 @@ export const selectEvent = (state: SimulationState, events: readonly GameEvent[]
   // Desdobramentos obrigatórios (ex.: esquema que veio à tona) saem antes do sorteio.
   const urgent = eligible.find((event) => event.priority);
   if (urgent) return { state, eventId: urgent.id };
-  const { result, seed } = withStateRng(state, (rng) => drawEvent(rng, state, eligible, difficulty));
+  const ctx: DrawContext = { state, difficulty, respite: inCrisisRespite(state, events) };
+  const { result, seed } = withStateRng(state, (rng) => drawEvent(rng, ctx, eligible));
   return { state: { ...state, seed }, eventId: result?.id ?? null };
 };
 
@@ -108,7 +132,7 @@ export const resolveEventOption = (
   difficulty: DifficultyConfig,
   rng?: Rng,
 ): { state: SimulationState; news: NewsItem[] } => {
-  const isCrisis = EVENT_CATEGORY_INFO[event.category].isCrisis;
+  const isCrisis = isCrisisEvent(event);
   const scaling = {
     positive: difficulty.positiveImpactMultiplier,
     negative: difficulty.negativeImpactMultiplier * (isCrisis ? state.modifiers.crisisImpactMultiplier : 1),

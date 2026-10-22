@@ -1,4 +1,4 @@
-import { APPROVAL_SATURATION, DEBT_IMPACT_SCALE, MAX_SECTOR_AFFINITY, POLICY_MEMORY_SHARE } from '@/constants/balance';
+import { APPROVAL_FLOOR, APPROVAL_SATURATION, DEBT_IMPACT_SCALE, MAX_SECTOR_AFFINITY, POLICY_MEMORY_SHARE } from '@/constants/balance';
 import { INDICATOR_INFO, METRIC_BOUNDS } from '@/constants/metrics';
 import { SECTOR_INFO, SECTOR_KEYS } from '@/constants/sectors';
 import type {
@@ -86,13 +86,17 @@ const applyMetricDeltas = (metrics: GameMetrics, impact: Impact): GameMetrics =>
 const saturation = (current: number): number =>
   clamp(1 - (current - APPROVAL_SATURATION.start) / APPROVAL_SATURATION.span, APPROVAL_SATURATION.minFactor, 1);
 
+/** Fator de núcleo fiel para perdas de um setor já muito insatisfeito. */
+const lossFloor = (current: number): number =>
+  clamp(1 - (APPROVAL_FLOOR.start - current) / APPROVAL_FLOOR.span, APPROVAL_FLOOR.minFactor, 1);
+
 const applySectorDeltas = (sectors: SectorApproval, impact: Impact): SectorApproval => {
   const uniform = impact.approval ?? 0;
   return Object.fromEntries(
     SECTOR_KEYS.map((key) => {
       const delta = uniform + (impact.sectors?.[key] ?? 0);
-      // Perdas valem integralmente; ganhos encolhem conforme o setor já está satisfeito.
-      const effective = delta > 0 ? delta * saturation(sectors[key]) : delta;
+      // Ganhos encolhem conforme o setor já está satisfeito; perdas, conforme ele já está no fundo do poço.
+      const effective = delta > 0 ? delta * saturation(sectors[key]) : delta * lossFloor(sectors[key]);
       return [key, clamp(sectors[key] + effective, SCORE_MIN, SCORE_MAX)];
     }),
   ) as SectorApproval;

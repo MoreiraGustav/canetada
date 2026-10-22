@@ -107,6 +107,22 @@ export const EVENT_FREQUENCY_WEIGHTS: Record<EventFrequency, number> = {
 export const CORRUPTION_OFFER_CHANCE = 0.3;
 export const CORRUPTION_OFFER_MIN_TURN = 2;
 
+/**
+ * Trégua entre crises (anti-bola de neve): nos meses seguintes a uma crise, o
+ * peso de outras crises no sorteio cai, para o governo ter tempo de reagir.
+ */
+export const CRISIS_RESPITE = {
+  turns: 2,
+  weightMultiplier: 0.35,
+} as const;
+
+/**
+ * Teto do produto dos gatilhos de um evento no sorteio condicional: indicadores
+ * ruins tornam crises mais prováveis, mas sem empilhar multiplicadores até
+ * que só reste crise no sorteio.
+ */
+export const MAX_TRIGGER_MULTIPLIER = 4;
+
 /** Turnos de espera padrão antes de um evento repetível voltar. */
 export const DEFAULT_EVENT_COOLDOWN = 12;
 
@@ -391,6 +407,16 @@ export const APPROVAL_SATURATION = {
   start: 45,
   span: 40,
   minFactor: 0.1,
+} as const;
+/**
+ * Núcleo fiel (anti-bola de neve): perdas de aprovação de um setor encolhem
+ * quando ele já está muito insatisfeito — fator = 1 − (início − aprovação) / faixa,
+ * com piso mínimo. Quem ainda apoia o governo no fundo do poço é a base fiel.
+ */
+export const APPROVAL_FLOOR = {
+  start: 30,
+  span: 25,
+  minFactor: 0.35,
 } as const;
 export const MAX_SECTOR_AFFINITY = 30;
 
