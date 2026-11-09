@@ -1,18 +1,20 @@
 # Progresso — Presidente Simulator
 
-> Atualizado em **22/10/2026**. Para retomar, peça: *"continue o simulador a partir do PROGRESS.md"*.
+> Atualizado em **09/11/2026**. Para retomar, peça: *"continue o simulador a partir do PROGRESS.md"*.
 > Contrato de APIs entre engine/data/stores/ui: **`docs/SPEC.md`**.
 
 ## Estado atual
 
 O jogo está **completo e jogável** de ponta a ponta: menu → setup (Brasil fictício ou real) → candidato → campanha → eleição (apuração no mapa) → metas → (turno → evento → resumo [→ sessão no Congresso])* → reeleição (apuração no mapa) → 2º mandato → resultado.
 
+**Modo carreira:** menu → criação do personagem → filiação → (semestre: agenda → acontecimento → balanço | convenção → apuração)* → aposentadoria (legado) — ou, vencendo a Presidência, debate → noite da eleição → metas → jogo presidencial → resultado com a trajetória.
+
 - `npm run typecheck`: limpo
-- `npm test`: 255 testes em 22 arquivos, todos passando
+- `npm test`: 294 testes em 25 arquivos, todos passando
   - engine com fixtures próprias em `src/engine/__fixtures__/`
-  - integridade e simulação do conteúdo real em `src/data/content.test.ts`
+  - integridade e simulação do conteúdo real em `src/data/content.test.ts` e `src/data/careerContent.test.ts`
 - `npm run lint`: limpo
-- `npm run build`: ok, todos os chunks abaixo de 500 kB (vendors, mapa/estados, elenco, eventos e conteúdo separados em `vite.config.ts`; o maior, `content`, tem ~332 kB)
+- `npm run build`: ok, todos os chunks abaixo de 500 kB (vendors, mapa/estados, elenco, eventos, carreira e conteúdo separados em `vite.config.ts`; o maior, `content`, tem ~329 kB; `career` ~235 kB, com os 5.571 municípios)
 - `npm run dev`: abre em `http://localhost:5173`
 
 ## Feito ✅
@@ -167,6 +169,51 @@ Diagnóstico (24 partidas por estratégia, Mandato Completo): a economia em si n
   - `engine/voteChance.ts` saiu de `congress.ts`, para o plenário usar a chance sem dependência circular
 - **Calibração** (Normal, Completo, 24 partidas): passiva 38%, ao acaso 44%, populista 63% (cerca de 2 pontos acima, pelo bônus dos ministros técnicos)
 
+## Rodada de feedback (09/11) — "modo carreira"
+
+Pedido: montar um político do zero (nome, nome de urna, idade, profissão, perfil, cidade), filiar-se, trabalhar em gabinetes e secretarias, crescer no partido e disputar de vereador a presidente conforme idade e indicadores; a gestão pesa menos, mas ajuda na reeleição.
+
+- **Turno = semestre** desde o 1º semestre de 2027; municipais em 2028/2032…, gerais em 2030/2034… Aposentadoria aos 85 ou quando o jogador quiser.
+- **Personagem:** 11 profissões (pontos iniciais, uma ação própria e a trajetória no Planalto), rosto ilustrado (sexo + sorteio), ideologia e base eleitoral em qualquer um dos 5.571 municípios (busca por estado e nome). Brasília e Fernando de Noronha não têm Câmara Municipal: sem prefeito nem vereador.
+- **Indicadores (0–100):** influência partidária, popularidade local, reconhecimento nacional, base eleitoral, reputação. Ganhos com retornos decrescentes (`CAREER.saturation`), deriva e custo de manutenção acima de 40, reputação ruim se recupera devagar. Influência cresce mais rápido em partido pequeno e afinado com a ideologia.
+- **Partidos reais ou fictícios** (escolha na criação; padrão: reais): os 28 partidos que disputaram a Câmara em 2026, com número de urna e bancada conferidos nos dados abertos do TSE (513 eleitos; o antigo "Outros" virou PRD 5, Solidariedade 2 e Rede 1; o PMB agora é Democrata). O número do candidato segue a Lei 9.504/97: partido (2 dígitos) para Executivo, 3 para senador, 4 para deputado federal e 5 para estadual e vereador. Pessoas continuam sempre inventadas, e nenhum texto de escândalo cita a legenda.
+- **Partido:** filiação obrigatória; troca custa 60% da influência e reputação. Com mandato proporcional, só na janela partidária. Posição no partido é um rótulo pela influência (filiado → cacique).
+- **Cargos de nomeação** (assessor, coordenador, chefe de gabinete, secretário municipal/estadual, ministro): exigem influência, idade e governo do próprio partido ou aliado. Perde-se o cargo quando o governo vira oposição ou ao disputar eleição.
+- **Eleições:** 10 cargos (idades da CF; vereador no registro), legenda pela influência, filiação 6 meses antes, Ficha Limpa e limite de reeleição do Executivo. Quem tem cargo e disputa outro se **licencia** na campanha: perdendo, volta ao cargo (prefeito que tenta o governo continua prefeito); vencendo, deixa o cargo na posse e o vice (fictício) assume o Executivo. Na lei real, chefes do Executivo renunciam 6 meses antes; aqui vale a regra pedida pelo jogador. Chance logística com o porquê em pontos (indicadores ponderados, tamanho do partido, afinidade com o eleitorado do estado, reeleição/aprovação da gestão, partido no poder, rejeição por reputação baixa). Estratégia de campanha mostra a chance com cada uma. Votos válidos = eleitorado apto (TSE 2026) × 72,1% (proporção real de 2026). Proporcional com vagas reais (vereadores do TSE 2024 por município; CF art. 27 para as Assembleias: SP 70 federais, 94 estaduais, 55 vereadores na capital), lista do partido, linha de corte e suplência (pode ser chamado depois). Vice entra na chapa de um titular fictício e pode suceder.
+- **Mundo:** prefeitura, governo do estado e governo federal mudam a cada eleição (bancada × afinidade com o eleitorado); define aliado/oposição para secretarias e verbas.
+- **Gestão (prefeito e governador):** aprovação + saúde, educação, obras, segurança e contas; um programa por semestre (16 programas); a popularidade local converge para a aprovação; contas no vermelho derrubam tudo.
+- **Conteúdo:** 38 ações, 16 programas, 50 eventos (convites, brigas no partido, escândalos em cadeia com cassação e inelegibilidade, sucessão do titular), 5 estratégias de campanha.
+- **Presidência:** a candidatura vai ao debate do jogo presidencial; a força da carreira define o 2º turno (pode perder). Vencendo, a noite da eleição no mapa e o governo começam no janeiro certo (`startTurn`, `firstTurn`, `getGameTurn`). Influência vira base aliada, reputação vira aprovação, o indicador mais forte vira a habilidade. O resultado mostra o legado da trajetória.
+- **Calibração** (simulações de 30 anos começando aos 25): primeira candidatura a vereador com ~35–55% de chance; carreira focada chega a deputado federal/senador por volta dos 40 e a governador perto dos 50; a chance no Planalto passa de 50% entre os 52 e os 70 anos para quem acumula reconhecimento nacional e influência ≥ 70. Ficar parado não elege.
+- **Testes:** `engine/career.test.ts` e `engine/careerPresidency.test.ts` (fixtures em `engine/__fixtures__/career.ts`), `data/careerContent.test.ts` (integridade e calibração curta).
+- **Playtest no navegador:** criação → filiação → semestres → convenção → apuração proporcional (suplente) → candidatura presidencial → debate → noite da eleição → posse em jan/2031 → fim do mandato → resultado com a trajetória; gestão de prefeita conferida com save editado.
+
+## Rodada de feedback (09/11, parte 2) — "elenco persistente" e "campanha de verdade"
+
+Pedido: itens 1 e 2 das recomendações. Personagens que acompanham a carreira inteira e uma campanha com pesquisas, decisões e 2º turno.
+
+- **Elenco** (`engine/career/characters.ts`): três personagens inventados, com rosto, partido, idade, cargo, **força** (0–100), **relação** (−100 a 100, com rótulo de "Inimigo" a "Aliado fiel") e **memória** dos episódios marcantes.
+  - **Padrinho:** cacique do seu partido. Com boa relação, acelera a influência (até +20%), pesa na prévia e aumenta o fundo partidário. Pode se aposentar e deixar o grupo político para você.
+  - **Rival:** do seu partido e com influência parecida. Disputa a **prévia** quando mira o mesmo cargo (o titular que tenta a reeleição tem a legenda garantida; uma trégua acertada num evento evita a prévia). Aparece ao seu lado na lista proporcional.
+  - **Adversário:** de outro partido (o prefeito da sua cidade, se for de oposição). Vira o seu oponente na urna quando mira o mesmo cargo: forte, tira força; fraco, dá.
+  - Os três disputam as eleições de fundo pelo cargo mais alto ao alcance (o mais forte primeiro; uma vaga majoritária por vez), ganham força com mandato e perdem fora dele. A relação esfria devagar.
+  - Trocar de partido deixa padrinho e rival para trás (−25 de relação) e traz outros. Entrar no partido do adversário encerra a rivalidade.
+  - Saves antigos ganham o elenco na carga.
+- **Conteúdo do elenco:** 12 eventos (`data/career/castEvents.ts`: lealdade, portas em Brasília, padrinho investigado, sucessão, dossiê do rival, trégua, pedido de apoio, rival porta-voz, ataques, desafio para debate, trégua improvável e denúncia contra o adversário). Ações e eventos antigos passaram a mexer nas relações (ex.: aproximar-se do cacique agrada o padrinho e irrita o rival; liderar CPI irrita o adversário). Marcadores `{padrinho}`, `{rival}` e `{adversario}` usam o nome curto.
+- **Pré-campanha** (`polls.ts`): até dois semestres antes da eleição, o painel deixa lançar uma pré-candidatura. Sai uma pesquisa no lançamento e outra no fim de cada semestre. No majoritário, mostra você contra o oponente provável; no proporcional, a projeção de votos contra o quociente.
+- **Campanha** (`campaign.ts`, nova tela entre a convenção e a apuração): chance total ao vivo (prévia × urna) e o porquê em pontos.
+  - **Chapa** (majoritário): vice do partido, de um aliado grande, popular de fora da política (risco) ou o próprio rival.
+  - **Dobradinha** (proporcional): com o padrinho, solo ou com o rival.
+  - **Dinheiro:** 30%, 65% ou 100% do teto. O teto segue a ordem de grandeza da resolução do TSE de 2024 (por eleitor no município e no estado, com piso). O dinheiro disponível é o fundo do partido (pelo tamanho, pela influência e pelo padrinho) mais as doações (base + popularidade). Gastar além disso pode levar a **contas rejeitadas**.
+  - **Debate na TV / sabatina na rádio:** propostas, ataque (com risco de gafe) ou ausência.
+  - **Tom:** as estratégias de antes.
+- **2º turno** (`rounds.ts`, um candidato por partido no 1º turno): prefeito só em municípios com mais de 200 mil eleitores (101 cidades); governador sempre; senador nunca (a Presidência segue com o 2º turno do jogo presidencial).
+  - O 1º turno mostra todos os candidatos.
+  - Entre os turnos, você escolhe: apoio do 3º colocado, frente ampla, manter o discurso ou ofensiva final. A tela mostra a chance de cada escolha, com a vantagem do 1º turno contando.
+  - Calibração (20 mil sorteios por faixa): a chance mostrada é a da eleição inteira (50% → 50%, 80% → 79%, 93% → 88%). Há 2º turno em 60–80% das disputas, e quem lidera o 1º turno vence o 2º em ~81% dos casos.
+  - A apuração mostra a prévia perdida, o 1º turno e o 2º turno.
+- **Testes:** `engine/careerCast.test.ts` (elenco, troca de partido, prévia, trégua, 2º turno, dinheiro e pesquisas); integridade das decisões de campanha em `data/careerContent.test.ts`.
+
 ## Decisões de design tomadas no engine
 
 - **Aprovação:** cada setor converge 20%/mês para um equilíbrio formado por:
@@ -192,6 +239,12 @@ Diagnóstico (24 partidas por estratégia, Mandato Completo): a economia em si n
 - **Score:** aprovação final pontua de 20% (0) a 75% (máximo).
 
 ## Pendências e ideias
+
+- **Carreira depois do Planalto:** a Presidência encerra a carreira. Voltar à carreira como ex-presidente (Senado, por exemplo) exigiria restaurar o estado da carreira depois do `result`.
+- **Vice-presidente que assume** vai direto às metas, sem uma tela própria de posse; o mandato é a fração restante na escala do modo escolhido.
+- **Carreira no Brasil real:** usa os partidos reais, mas as pessoas (inclusive padrinho, rival e adversário) são sempre inventadas: pessoas reais não podem virar personagens de escândalo nem rivais.
+- **Próximas recomendações para a carreira** (o jogador escolheu fazer 1 e 2): (3) força real dos partidos por cidade/estado e federações; (4) mapa de votos por município na apuração; (5) mandato legislativo ativo (projetos, votações, emendas para a base); (6) gestão concreta (obras com prazo, orçamento da prefeitura); (7) conquistas; (8) pós-Presidência e herdeiro político; (9) gráfico da trajetória dos indicadores.
+- **Dados eleitorais:** `data/career/cities.ts` é gerado dos dados abertos do TSE (detalhe da votação 2026 e consulta de vagas 2024, só eleição ordinária) e da API de localidades do IBGE. Atualizar depois das eleições municipais de 2028 (vagas) e das próximas gerais (eleitorado).
 
 - **Animações em aba oculta:** com a aba do navegador oculta, o Framer Motion pausa e as transições de tela só completam quando a aba volta a ficar visível. Comportamento normal do navegador, sem impacto para quem está jogando.
 - **Repetição no Mandato Completo:** o 2º mandato do modo Completo ainda repete ~2/3 das decisões (são ~170 vagas de decisão). Mais conteúdo, sobretudo repetível com variações, reduziria isso.

@@ -25,6 +25,7 @@
 - **Escolher seu lado:** o governo se move no espectro político; posições radicais destravam pautas radicais e uma militância fiel.
 - **Ceder (ou não) à corrupção:** propostas reservadas trazem ganhos imediatos — e riscos que crescem até virarem escândalo, inclusive depois do mandato.
 - **Deixar um legado:** metas de governo, reeleição e uma pontuação final com título histórico.
+- **Fazer carreira (modo carreira):** crie um político do zero — nome de urna, idade, profissão, ideologia e cidade —, filie-se a um partido e suba degrau por degrau: gabinetes e secretarias, vereador, prefeito, deputado, senador, governador. Idades mínimas da Constituição, eleições municipais e gerais a cada dois anos, legenda do partido, janela partidária, Ficha Limpa e gestão de prefeitura e estado. Partidos reais com número de urna e os 5.571 municípios com o eleitorado do TSE. Um padrinho, um rival no partido e um adversário acompanham a trajetória e lembram do que você fez; cada eleição tem pré-campanha com pesquisas, prévia, chapa, dinheiro com teto de gastos, debate e 2º turno. Se chegar ao Planalto, a carreira vira o jogo presidencial.
 
 A economia é simulada mês a mês (PIB, inflação, Selic, câmbio, dívida, desemprego), calibrada com dados públicos de IBGE, Banco Central, Tesouro, INPE e IPEA.
 
@@ -58,6 +59,8 @@ A economia é simulada mês a mês (PIB, inflação, Selic, câmbio, dívida, de
 | 🏛️ Mandato Completo | 4 anos (48 meses) | ~90–120 min |
 
 Três níveis de dificuldade e reeleição para um segundo mandato.
+
+No **modo carreira**, cada turno é um semestre (a partir de 2027) e a trajetória vai até a aposentadoria. O modo acima define só a duração da Presidência, se o seu político chegar lá.
 
 ## Rodando localmente
 

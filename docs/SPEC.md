@@ -292,3 +292,79 @@ Stores (Zustand 5, `useShallow` de `zustand/react/shallow`):
 
 ---------------------------------------------------------------------------------------------------
 ## 4. UI — ver seção própria no prompt do agent ui.
+
+---------------------------------------------------------------------------------------------------
+## 5. MODO CARREIRA
+
+Tipos em `src/types/career.ts` (estado e conteúdo) e `src/types/careerViews.ts` (views da UI).
+Um turno da carreira é um **semestre** (turno 1 = 1º semestre de 2027). Eleições no 2º semestre dos anos
+pares: municipais em 2028, 2032…; gerais em 2030, 2034… (`utils/careerCalendar.ts`).
+
+### Conteúdo (`src/data/career/`, registrado em `CAREER_CONTENT`)
+- `offices.ts` (10 cargos): idade mínima da Constituição (`ageCheck`: vereador no registro, os demais na posse),
+  mandato, limite de reeleição, `headOffice` (vices), `nominationInfluence` (legenda), `weights` (somam 1),
+  `difficulty`, `perks` por semestre, `rank` (legado) e `resignToRun` (executivos).
+- `appointments.ts` (6 cargos de nomeação): `government` = nível que precisa ser do partido ou aliado (null = gabinete).
+- `actions.ts` (agenda, 2 por semestre), `adminPrograms.ts` (gestão, 1 por semestre para prefeito/governador),
+  `events.ts`, `strategies.ts` (campanha), `professions.ts`, `legacy.ts` e `cities.ts`: os 5.571 municípios com eleitorado apto
+  (TSE 2026) e vagas de vereador (TSE 2024), `stateVoters` = soma por UF.
+- Partidos: os fictícios e os 28 reais (`data/real/parties.ts`, com `number` de urna); `getCareerContent(world)` filtra pelo mundo
+  do personagem (`CareerState.world`).
+- `campaign.ts`: `CAMPAIGN_DECISIONS` (chapa e debate no majoritário, dobradinha e sabatina no proporcional, dinheiro em todos;
+  `headOnly` some para vices; `spendShare` = fração do teto) e `RUNOFF_OPTIONS` (decisão entre os turnos). `castEvents.ts`: eventos do elenco.
+- Manchetes aceitam `{nome}`, `{cidade}`, `{uf}`, `{estado}`, `{partido}`, `{cargo}`, `{padrinho}`, `{rival}`, `{adversario}` (≤ 85 caracteres preenchidas).
+- Impactos aceitam `relations` (por papel do elenco); condições `relation` e `character` (presente, com mandato); efeito `retire-character`.
+- Pessoas sempre inventadas; textos de escândalo não citam `{partido}`. Onde `councilSeats` = 0 (Brasília, Fernando de Noronha) não há eleição municipal.
+
+### Engine (`src/engine/career/`, exportado por `@/engine`)
+- `setup`: `createCareer`, `joinParty` (troca: sobra 40% da influência, −4 de reputação; convite garante a legenda),
+  `canSwitchParty` (mandato proporcional só na janela), `checkAppointment`, `takeAppointment`, `leaveAppointment`.
+- `actions`: `getOpenActions`, `getOpenAdminPrograms`, `applyCareerAgenda` (máx. 2 ações + 1 programa, com espera).
+- `events`: `drawCareerEvent` (75% de chance por semestre), `resolveCareerEvent`, `applyCareerEffect`
+  (`appoint`, `leave-appointment`, `succeed`, `switch-party`, `ineligible`, `lose-office`).
+- `candidacy`: `listCandidacies`/`evaluateCandidacy` → requisitos (`checks`), fatores da força (`factors`), dificuldade e
+  `chance` logística (`CAREER.election.spread`). Vice: força da chapa mistura um titular fictício e o jogador.
+- `elections`: `runCareerElection` (licença do cargo atual, estratégia, votos coerentes com a chance; proporcional com lista do
+  partido e suplência; perdendo, volta ao cargo), `resolveBackgroundElections` (quem governa cidade/estado/país),
+  `electorateFor` (eleitorado × `VALID_VOTES_PER_VOTER`), `seatsFor` (vagas do TSE e art. 27 da CF).
+- `candidacy`: também `ballotNumber` (número do partido + dígitos do cargo, estáveis na carreira) e `takesLeave`.
+- `positions`: `vacatePosition` (sai do cargo; no Executivo, o vice fictício assume aquele governo).
+- `turn`: `closeCareerSemester` (ganhos do cargo, deriva + manutenção, gestão, chamada de suplente) e `advanceCareerTurn`
+  (eleições de fundo, fim de mandato, posse).
+- `presidency`: `buildCareerCandidate` (trajetória pela profissão, habilidade pelo indicador mais forte, influência → base
+  aliada, reputação → aprovação), `calculateCareerPresidentialElection` (força da carreira + debate; pode perder),
+  `enterPresidency`, `successionElectionResult` (vice que assume).
+- `characters`: elenco (`CareerState.cast`): `ensureCareerCast` (cria o que falta: padrinho e rival do partido, adversário de outro),
+  `changeRelation` (memória se |Δ| ≥ 4), `stepCareerCast` (relação esfria, força com/sem mandato, aposentadoria), `characterTarget`
+  (cargo mais alto ao alcance), `leaveCastBehind` (troca de partido), `padrinhoInfluenceMultiplier`. `background`: o elenco disputa as
+  eleições de fundo antes do resto; quem venceu o jogador na urna governa.
+- `candidacy`: `primaryFor` (prévia contra o rival que mira o mesmo cargo; sem prévia na reeleição e na trégua), `adversaryFor`, fator do
+  adversário e `runoffPossible`. `elections`: `runPrimary`, `runCareerElection(state, content, officeId, choices)` (prévia → campanha →
+  1º turno; `runoffPending` quando há 2º turno), `resolveRunoff`, `runoffChance`.
+- `campaign`: `campaignCap` (teto por cargo e eleitorado), `campaignFinance` (fundo + doações), `planCampaign` (pontos e gasto),
+  `rollCampaignRisks` (gafes antes da urna), `applyCampaignMarks` (impactos, tom, contas rejeitadas). `rounds`: `hasRunoff` (prefeito
+  acima de `RUNOFF_MIN_VOTERS`, governador sempre; a Presidência usa o jogo presidencial), `rollFirstRound` (desempenho d = chance − sorteio vira a vantagem sobre o
+  adversário, como num turno único), `runoffChanceFromLead` (vantagem do 1º turno + efeito da escolha contra ruído uniforme: sem a
+  escolha, a eleição toda fica na chance mostrada), `firstRoundOutcome`, `decisiveShare`.
+- `polls`: `declarePreCandidacy`, `stepPolls` (uma pesquisa por semestre até `CAREER.polls.horizon` antes da eleição), `pollFor`.
+- `legacy`: `calculateCareerLegacy` (anos × hierarquia, eleições vencidas, reputação e bônus da Presidência).
+- Balanceamento em `CAREER` (`constants/balance.ts`); calendário, idades, vagas e rótulos em `constants/career.ts`.
+
+### Presidência a partir da carreira
+- `NewGameParams.startTurn`/`termLength` e `SimulationState.firstTurn`: o governo começa em qualquer janeiro (turno mensal
+  absoluto desde jan/2027). `getGameTurn(state)` conta a partir da posse e vale para `minTurn` e `{ kind: 'turn' }`.
+- Fluxo: convenção → `campaign` (debate presidencial) → `finishCampaign` (ramo da carreira) → `election-result` → `goals`
+  → jogo presidencial → `result` (com o legado da trajetória). Vice que assume vai direto a `goals`, com o resto do mandato.
+
+### Stores
+- `useCareerStore` (`CareerData`): estado da carreira, agenda planejada, acontecimento, balanço, última eleição, jornal,
+  `presidentialRun`, `legacy`, `campaignOfficeId` (campanha em montagem) e `pendingRunoff` (eleição parada no 2º turno). Salvo junto no
+  mesmo save (`SaveFile.career`).
+- Fluxo da eleição: `career-election` (convenção, `chooseCandidacy`) → `career-campaign` (`runCampaign(choices)`) → `career-runoff`
+  (`chooseRunoff`, só com 2º turno) → `career-election-result`. A Presidência passa pela prévia e vai ao debate.
+- Ações na `useGameStore` (`stores/careerActions.ts`): `goToCareerSetup`, `startCareer`, `chooseCareerParty`,
+  `switchCareerParty`, `takeCareerAppointment`, `leaveCareerAppointment`, `endCareerSemester`, `resolveCareerEvent`,
+  `advanceCareer`, `runForOffice`, `skipElection`, `retireCareer`.
+- Fases: `career-setup`, `career-party`, `career-turn`, `career-event`, `career-summary`, `career-election`,
+  `career-election-result`, `career-result`.
+- Selectors: `careerSelectors.ts`, `careerTurnSelectors.ts`, `careerElectionSelectors.ts` (todos reexportados por `selectors.ts`).
