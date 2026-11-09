@@ -50,6 +50,8 @@ export interface Party {
   congressBase: number;
   /** Deputados federais do partido (as bancadas de cada mundo somam 513), usados no placar por partido. */
   seats: number;
+  /** Número de urna da legenda (ex.: 13); os candidatos usam o número do partido mais os próprios dígitos. */
+  number?: number;
   /** Mundo a que o partido pertence (padrão: fictício). */
   world?: WorldId;
 }
@@ -135,4 +137,6 @@ export interface PlayerCandidate {
   modifiers: ModifierSet;
   color: string;
   emblem: string;
+  /** Rosto do candidato criado no modo carreira (os demais usam o do arquétipo ou o ilustrado pelo nome). */
+  portrait?: Portrait;
 }

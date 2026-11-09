@@ -13,6 +13,7 @@ import { PageContainer } from '@/components/ui/PageContainer';
 /** Primeira página do jornal: apresentação, novo jogo e partida salva. */
 export const MenuScreen = () => {
   const goToSetup = useGameStore((state) => state.goToSetup);
+  const goToCareerSetup = useGameStore((state) => state.goToCareerSetup);
   const continueSavedGame = useGameStore((state) => state.continueSavedGame);
   const abandonGame = useGameStore((state) => state.abandonGame);
   const [summary, setSummary] = useState(() => getSavedGameSummary());
@@ -48,6 +49,15 @@ export const MenuScreen = () => {
             </p>
             <Button size="lg" fullWidth className="mt-4" onClick={goToSetup}>
               Novo jogo
+            </Button>
+          </Card>
+          <Card>
+            <p className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Modo carreira</p>
+            <p className="mt-2 font-serif text-sm leading-relaxed text-ink-soft">
+              Crie um político do zero, filie-se a um partido e suba de vereador(a) a presidente.
+            </p>
+            <Button variant="secondary" size="lg" fullWidth className="mt-4" onClick={goToCareerSetup}>
+              Começar carreira
             </Button>
           </Card>
           {summary && <MenuSavedGameCard summary={summary} onContinue={handleContinue} onDelete={() => setConfirmOpen(true)} />}

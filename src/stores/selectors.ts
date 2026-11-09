@@ -20,6 +20,7 @@ import type {
 } from '@/types';
 import { formatTurnLong, formatTurnShort } from '@/utils/calendar';
 import { formatIndicator, formatIndicatorDelta } from '@/utils/format';
+import { getCareerSaveSummary } from './careerSelectors';
 import { peekSave } from './persistence';
 import { useCongressStore } from './useCongressStore';
 import { useGameStore } from './useGameStore';
@@ -115,6 +116,7 @@ export const useTurnInfo = (): TurnInfoView => {
 /** Série histórica (máx. 48 pontos) para gráficos. */
 export const useHistorySeries = (): Array<{ turn: number; label: string } & Record<IndicatorKey, number>> => {
   const history = useMetricsStore((state) => state.history);
+  const posseTurn = useGameStore((state) => state.firstTurn) - 1;
   return useMemo(
     () =>
       history.slice(-MAX_HISTORY_POINTS).map((snapshot) => ({
@@ -122,16 +124,18 @@ export const useHistorySeries = (): Array<{ turn: number; label: string } & Reco
         approval: snapshot.approval,
         congressSupport: snapshot.congressSupport,
         turn: snapshot.turn,
-        label: snapshot.turn === 0 ? 'Posse' : formatTurnShort(snapshot.turn),
+        label: snapshot.turn === posseTurn ? 'Posse' : formatTurnShort(snapshot.turn),
       })),
-    [history],
+    [history, posseTurn],
   );
 };
 
 /** Resumo do save para o botão "Continuar" do menu (null se não houver partida em andamento). */
 export const getSavedGameSummary = (): SavedGameSummary | null => {
   const save = peekSave();
-  if (!save || save.game.phase === 'result' || save.game.phase === 'menu') return null;
+  if (!save || save.game.phase === 'result' || save.game.phase === 'menu' || save.game.phase === 'career-result') return null;
+  const career = save.career?.state;
+  if (career && save.game.phase.startsWith('career')) return getCareerSaveSummary(career, save.game.difficulty, save.savedAt);
   return {
     candidateName: save.player.candidate?.name ?? 'Candidato em campanha',
     dateLabel: formatTurnShort(save.game.turn),
@@ -150,3 +154,8 @@ export * from './outlookSelectors';
 export * from './congressSelectors';
 export * from './castSelectors';
 export * from './electionSelectors';
+export * from './careerSelectors';
+export * from './careerTurnSelectors';
+export * from './careerElectionSelectors';
+export * from './careerCastSelectors';
+export * from './careerCampaignSelectors';

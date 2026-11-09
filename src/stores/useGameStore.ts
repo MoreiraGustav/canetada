@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { createCareerActions } from './careerActions';
 import { createInitialGameData, pickGameData } from './gameData';
 import type { GameStore, GameStoreApi } from './gameStoreTypes';
 import { createLifecycleActions } from './lifecycleActions';
@@ -25,6 +26,7 @@ export const useGameStore = create<GameStore>()((set, get) => {
     ...createSetupActions(api),
     ...createTurnActions(api),
     ...createLifecycleActions(api),
+    ...createCareerActions(api),
   };
 });
 

@@ -26,6 +26,7 @@ export const createInitialGameData = (): GameData => ({
   mode: DEFAULT_MODE,
   difficulty: 'normal',
   turn: 1,
+  firstTurn: 1,
   totalTurns: GAME_MODES[DEFAULT_MODE].turns,
   termNumber: 1,
   termStartTurn: 1,
@@ -65,6 +66,7 @@ export const pickGameData = (store: GameData): GameData => {
 
 export const pickSimulationSlice = (data: GameData): GameSimulationSlice => ({
   turn: data.turn,
+  firstTurn: data.firstTurn,
   totalTurns: data.totalTurns,
   termNumber: data.termNumber,
   termStartTurn: data.termStartTurn,

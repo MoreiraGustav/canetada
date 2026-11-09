@@ -12,8 +12,13 @@ import type { Party } from '@/types';
  *
  * Federações: os partidos federados aparecem separados com a própria bancada
  * (PT 70 + PCdoB 11 + PV 7 = 88 da Brasil da Esperança; União 46 + PP 41 = 87 da
- * União Progressista; PSOL 14 da federação PSOL-Rede, que somou 15; PSDB 11 e
- * Cidadania 0). As legendas mínimas (Solidariedade-PRD, 7, e Rede, 1) estão em "Outros".
+ * União Progressista; PSOL 14 + Rede 1 da federação PSOL-Rede; PSDB 11 e Cidadania 0;
+ * PRD 5 + Solidariedade 2 da Renovação Solidária).
+ *
+ * A lista traz os 28 partidos que disputaram a Câmara em 2026, com o número de urna
+ * (`number`) e a bancada conferidos nos dados abertos do TSE: "consulta de candidatos"
+ * (situação de totalização ELEITO POR QP/MÉDIA, 513 eleitos) e "votação por partido".
+ * O PMB passou a se chamar Democrata em 2025 (TSE).
  *
  * Ideologias são aproximações para o jogo; `congressBase` segue o tamanho da bancada.
  */
@@ -29,6 +34,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 2006 como PR, da fusão do antigo PL com o Prona, retomou a sigla PL em 2019. De direita conservadora, abriga Jair e Flávio Bolsonaro e elegeu a maior bancada da Câmara em 2026.',
     congressBase: 6,
     seats: 121,
+    number: 22,
     world: 'real',
   },
   {
@@ -42,6 +48,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 1980 por sindicalistas, intelectuais e movimentos sociais, é o principal partido da esquerda brasileira. Defende transferência de renda, valorização do salário mínimo e Estado indutor; lidera a federação Brasil da Esperança.',
     congressBase: 4,
     seats: 70,
+    number: 13,
     world: 'real',
   },
   {
@@ -55,6 +62,7 @@ export const REAL_PARTIES: Party[] = [
       'Criado em 2022 pela fusão do DEM com o PSL, é de centro-direita e liberal na economia. Em 2026 disputou a eleição federado com o PP, na União Progressista.',
     congressBase: 2,
     seats: 46,
+    number: 44,
     world: 'real',
   },
   {
@@ -68,6 +76,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 2011 por Gilberto Kassab, é um partido de centro, pragmático e com grande presença nas prefeituras. Lançou Ronaldo Caiado à Presidência em 2026.',
     congressBase: 2,
     seats: 43,
+    number: 55,
     world: 'real',
   },
   {
@@ -81,6 +90,7 @@ export const REAL_PARTIES: Party[] = [
       'Herdeiro da Arena e do PDS, é de centro-direita e um dos pilares do centrão, com forte presença no interior. Em 2026 disputou a eleição federado com o União Brasil.',
     congressBase: 1,
     seats: 41,
+    number: 11,
     world: 'real',
   },
   {
@@ -94,6 +104,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 2005 como PRB e renomeado em 2019, é de centro-direita, conservador nos costumes e com forte base entre eleitores evangélicos.',
     congressBase: 1,
     seats: 41,
+    number: 10,
     world: 'real',
   },
   {
@@ -107,6 +118,7 @@ export const REAL_PARTIES: Party[] = [
       'Nascido em 1966 como a oposição legal ao regime militar, é um partido de centro com enorme capilaridade municipal. Pragmático, integrou a maioria dos governos desde a redemocratização.',
     congressBase: 1,
     seats: 36,
+    number: 15,
     world: 'real',
   },
   {
@@ -120,6 +132,7 @@ export const REAL_PARTIES: Party[] = [
       'Antigo PTN, adotou o nome Podemos em 2017. De centro-direita, defende mecanismos de participação direta e foi um dos partidos que mais cresceram na Câmara em 2026.',
     congressBase: 0,
     seats: 27,
+    number: 20,
     world: 'real',
   },
   {
@@ -133,6 +146,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 1947 e refundado em 1985, é um partido de centro-esquerda. É a legenda do vice-presidente Geraldo Alckmin e integra a coligação de Lula em 2026.',
     congressBase: -2,
     seats: 15,
+    number: 40,
     world: 'real',
   },
   {
@@ -146,6 +160,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 2004 por dissidentes do PT, é de esquerda, com pautas de direitos humanos, meio ambiente e taxação de grandes fortunas. Disputa eleições em federação com a Rede.',
     congressBase: -3,
     seats: 14,
+    number: 50,
     world: 'real',
   },
   {
@@ -159,6 +174,7 @@ export const REAL_PARTIES: Party[] = [
       'Organizado em 1962 a partir de uma cisão do PCB, é um partido comunista e aliado histórico do PT, com quem forma a federação Brasil da Esperança desde 2022.',
     congressBase: -3,
     seats: 11,
+    number: 65,
     world: 'real',
   },
   {
@@ -172,6 +188,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 1988 por dissidentes do PMDB, governou o país com Fernando Henrique Cardoso (1995–2002). De centro, social-democrata na origem e defensor de reformas liberais; é federado com o Cidadania.',
     congressBase: -3,
     seats: 11,
+    number: 45,
     world: 'real',
   },
   {
@@ -185,6 +202,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 2011 e registrado em 2015, defende Estado enxuto, privatizações e corte de gastos. Liberal na economia e linha-dura na segurança, lançou Romeu Zema à Presidência em 2026.',
     congressBase: -4,
     seats: 10,
+    number: 30,
     world: 'real',
   },
   {
@@ -198,6 +216,7 @@ export const REAL_PARTIES: Party[] = [
       'Fundado em 1986, é o partido ambientalista brasileiro, com pautas de sustentabilidade e energia limpa. Integra a federação Brasil da Esperança com PT e PCdoB.',
     congressBase: -4,
     seats: 7,
+    number: 43,
     world: 'real',
   },
   {
@@ -211,6 +230,7 @@ export const REAL_PARTIES: Party[] = [
       'Criado por Leonel Brizola na redemocratização, herdeiro do trabalhismo de Getúlio Vargas e João Goulart. De centro-esquerda, defende educação pública em tempo integral e desenvolvimentismo.',
     congressBase: -4,
     seats: 6,
+    number: 12,
     world: 'real',
   },
   {
@@ -224,6 +244,7 @@ export const REAL_PARTIES: Party[] = [
       'Antigo PTdoB, adotou o nome Avante em 2017. Legenda de centro e bancada pequena, lançou o escritor Augusto Cury à Presidência em 2026.',
     congressBase: -5,
     seats: 5,
+    number: 70,
     world: 'real',
   },
   {
@@ -237,19 +258,154 @@ export const REAL_PARTIES: Party[] = [
       'Criado por integrantes do Movimento Brasil Livre (MBL) e registrado pelo TSE em 2025, é de direita e liberal na economia. Lançou Renan Santos à Presidência e elegeu um deputado em 2026.',
     congressBase: -6,
     seats: 1,
+    number: 14,
     world: 'real',
   },
   {
-    id: 'real-outros',
-    name: 'Outros partidos',
-    acronym: 'OUT',
-    color: '#6D6A75',
-    economicIdeology: 5,
-    socialIdeology: 10,
+    id: 'real-prd',
+    name: 'Partido Renovação Democrática',
+    acronym: 'PRD',
+    color: '#1B4F9C',
+    economicIdeology: 35,
+    socialIdeology: 45,
     description:
-      'Legendas com bancadas mínimas eleitas em 2026: a federação Solidariedade-PRD (Renovação Solidária) e a Rede Sustentabilidade, federada ao PSOL.',
+      'Nasceu em 2023 da fusão do PTB com o Patriota. De centro-direita, forma com o Solidariedade a federação Renovação Solidária e elegeu 5 deputados em 2026.',
     congressBase: -5,
-    seats: 8,
+    seats: 5,
+    number: 25,
+    world: 'real',
+  },
+  {
+    id: 'real-solidariedade',
+    name: 'Solidariedade',
+    acronym: 'SOLIDARIEDADE',
+    color: '#F26B21',
+    economicIdeology: 0,
+    socialIdeology: 15,
+    description:
+      'Fundado em 2013 por lideranças da Força Sindical. De centro, forma com o PRD a federação Renovação Solidária e elegeu 2 deputados em 2026.',
+    congressBase: -6,
+    seats: 2,
+    number: 77,
+    world: 'real',
+  },
+  {
+    id: 'real-rede',
+    name: 'Rede Sustentabilidade',
+    acronym: 'REDE',
+    color: '#00A19A',
+    economicIdeology: -25,
+    socialIdeology: -45,
+    description:
+      'Criada em 2015 em torno de Marina Silva, com bandeira ambientalista. Federada ao PSOL, elegeu 1 deputado em 2026.',
+    congressBase: -6,
+    seats: 1,
+    number: 18,
+    world: 'real',
+  },
+  {
+    id: 'real-cidadania',
+    name: 'Cidadania',
+    acronym: 'CIDADANIA',
+    color: '#E5007E',
+    economicIdeology: 5,
+    socialIdeology: -10,
+    description:
+      'Herdeiro do antigo PPS, adotou o nome Cidadania em 2019. De centro, é federado ao PSDB e não elegeu deputados federais em 2026.',
+    congressBase: -6,
+    seats: 0,
+    number: 23,
+    world: 'real',
+  },
+  {
+    id: 'real-dc',
+    name: 'Democracia Cristã',
+    acronym: 'DC',
+    color: '#2A6AB3',
+    economicIdeology: 25,
+    socialIdeology: 60,
+    description: 'Antigo PSDC, adotou o nome Democracia Cristã em 2017. Conservador nos costumes, não elegeu deputados federais em 2026.',
+    congressBase: -6,
+    seats: 0,
+    number: 27,
+    world: 'real',
+  },
+  {
+    id: 'real-up',
+    name: 'Unidade Popular',
+    acronym: 'UP',
+    color: '#B71C1C',
+    economicIdeology: -90,
+    socialIdeology: -60,
+    description: 'Registrada pelo TSE em 2019, de esquerda socialista e ligada a movimentos de luta por moradia. Não tem bancada na Câmara.',
+    congressBase: -6,
+    seats: 0,
+    number: 80,
+    world: 'real',
+  },
+  {
+    id: 'real-mobiliza',
+    name: 'Mobilização Nacional',
+    acronym: 'MOBILIZA',
+    color: '#E3A21A',
+    economicIdeology: 15,
+    socialIdeology: 25,
+    description: 'Antigo PMN (Partido da Mobilização Nacional), hoje com a sigla Mobiliza. De centro, não tem bancada na Câmara.',
+    congressBase: -6,
+    seats: 0,
+    number: 33,
+    world: 'real',
+  },
+  {
+    id: 'real-democrata',
+    name: 'Democrata',
+    acronym: 'DEMOCRATA',
+    color: '#3B5BA9',
+    economicIdeology: 35,
+    socialIdeology: 50,
+    description: 'Antigo Partido da Mulher Brasileira (PMB), passou a se chamar Democrata em 2025 com aval do TSE. Não tem bancada na Câmara.',
+    congressBase: -6,
+    seats: 0,
+    number: 35,
+    world: 'real',
+  },
+  {
+    id: 'real-pstu',
+    name: 'Partido Socialista dos Trabalhadores Unificado',
+    acronym: 'PSTU',
+    color: '#C62828',
+    economicIdeology: -95,
+    socialIdeology: -65,
+    description: 'Partido trotskista fundado em 1994, defende o socialismo revolucionário. Não tem bancada na Câmara.',
+    congressBase: -6,
+    seats: 0,
+    number: 16,
+    world: 'real',
+  },
+  {
+    id: 'real-agir',
+    name: 'Agir',
+    acronym: 'AGIR',
+    color: '#0E8A6F',
+    economicIdeology: 25,
+    socialIdeology: 45,
+    description: 'Antigo PTC (Partido Trabalhista Cristão), adotou o nome Agir em 2022. De centro-direita, não tem bancada na Câmara.',
+    congressBase: -6,
+    seats: 0,
+    number: 36,
+    world: 'real',
+  },
+  {
+    id: 'real-pco',
+    name: 'Partido da Causa Operária',
+    acronym: 'PCO',
+    color: '#D32F2F',
+    economicIdeology: -95,
+    socialIdeology: -30,
+    description: 'Partido trotskista registrado nos anos 1990, de extrema esquerda. Não tem bancada na Câmara.',
+    congressBase: -6,
+    seats: 0,
+    number: 29,
     world: 'real',
   },
 ];

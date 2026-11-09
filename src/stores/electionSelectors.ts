@@ -17,10 +17,16 @@ import { usePlayerStore } from './usePlayerStore';
 const NEUTRAL_COLOR = '#7A766C';
 const HALF_OF_VOTES = 50;
 
-const contender = (name: string, partyId: string, candidateId: string | null | undefined, fallbackColor?: string): ElectionContender => {
+const contender = (
+  name: string,
+  partyId: string,
+  candidateId: string | null | undefined,
+  fallbackColor?: string,
+  ownPortrait?: Portrait,
+): ElectionContender => {
   const party = getParty(partyId);
   const candidate = candidateId ? getCandidate(candidateId) : undefined;
-  const portrait: Portrait = candidate?.portrait ?? {};
+  const portrait: Portrait = ownPortrait ?? candidate?.portrait ?? {};
   return { name, party: party?.acronym ?? '', color: fallbackColor ?? party?.color ?? NEUTRAL_COLOR, portrait };
 };
 
@@ -59,7 +65,7 @@ export const useFirstElectionNight = (): ElectionNightView | null => {
     return {
       title: 'Apuração do 2º turno',
       viewBox: getBrazilMap().viewBox,
-      player: { ...contender(candidate.name, candidate.partyId, candidate.archetypeId, candidate.color) },
+      player: contender(candidate.name, candidate.partyId, candidate.archetypeId, candidate.color, candidate.portrait),
       opponent: contender(election.opponentName, election.opponentPartyId, election.opponentId),
       nationalShare: election.voteShare,
       won: election.voteShare > HALF_OF_VOTES,
@@ -84,7 +90,7 @@ export const useReelectionNight = (): ElectionNightView | null => {
     return {
       title: 'Apuração da reeleição',
       viewBox: getBrazilMap().viewBox,
-      player: contender(candidate.name, candidate.partyId, candidate.archetypeId, candidate.color),
+      player: contender(candidate.name, candidate.partyId, candidate.archetypeId, candidate.color, candidate.portrait),
       opponent: opposition
         ? contender(opposition.name, opposition.partyId, opposition.candidateId)
         : { name: 'Candidato da oposição', party: '', color: NEUTRAL_COLOR, portrait: {} },

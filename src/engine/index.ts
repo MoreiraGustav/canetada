@@ -55,3 +55,4 @@ export { calculateScore } from './scoring';
 export { computeApprovalSignals, computeSectorEquilibrium, militancyBonus, stepEconomy, stepSectors, stepSocial } from './simulation';
 export { buildVisitAction, fillVisitTemplate, getStateApprovals, getStateCooldownLeft, stateAffinity } from './travel';
 export { advanceTurn, drawEvent, prepareTurn, processTurn } from './turn';
+export * from './career';

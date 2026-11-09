@@ -17,7 +17,7 @@ import type {
 import { getTurnDate } from '@/utils/calendar';
 import { getChoiceAlignment, isAlignedChoice } from './alignment';
 import { ministryGainMultiplier } from './cast';
-import { evaluateConditions } from './conditions';
+import { evaluateConditions, getGameTurn } from './conditions';
 import { FLAG_RECENT_NEGOTIATION, getNegotiationCost } from './congress';
 import { applyImpact, imprintPolicyMemory, scaleImpactByPolarity, scheduleDelayedImpacts, setFlags, toneFromImpact } from './impacts';
 import { createNewsItem } from './news';
@@ -43,7 +43,7 @@ const isHistoryEligible = (state: SimulationState, decision: Decision): boolean 
 export const isDecisionEligible = (state: SimulationState, decision: Decision): boolean => {
   const { month } = getTurnDate(state.turn);
   return (
-    (decision.minTurn === undefined || state.turn >= decision.minTurn) &&
+    (decision.minTurn === undefined || getGameTurn(state) >= decision.minTurn) &&
     (decision.months === undefined || decision.months.includes(month)) &&
     isHistoryEligible(state, decision) &&
     evaluateConditions(state, decision.conditions)

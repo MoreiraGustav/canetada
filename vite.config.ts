@@ -23,6 +23,8 @@ export default defineConfig({
             { name: 'brazil', test: /src[\\/]data[\\/](brazilMap|states|visitKinds)\.ts/ },
             { name: 'cast', test: /src[\\/]data[\\/](real[\\/]|names\.ts|oppositionLines\.ts)/ },
             { name: 'events', test: /src[\\/]data[\\/]events[\\/]/ },
+            // Modo carreira: cargos, ações, eventos e cidades da trajetória.
+            { name: 'career', test: /src[\\/]data[\\/]career[\\/]/ },
             { name: 'content', test: /src[\\/]data[\\/]/ },
           ],
         },

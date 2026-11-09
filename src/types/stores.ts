@@ -1,4 +1,5 @@
 import type { CampaignAnswer, ElectionResult, PlayerPromise, ReelectionResult } from './campaign';
+import type { CareerElectionRecord, CareerLegacy, CareerNews, CareerOfficeId, CareerReport, CareerState } from './career';
 import type { PoliticalCast } from './cast';
 import type { PlayerCandidate } from './candidates';
 import type { CongressState } from './congress';
@@ -27,6 +28,8 @@ export interface GameData {
   mode: GameMode;
   difficulty: Difficulty;
   turn: number;
+  /** Turno da posse do 1º mandato (1 = jan/2027; outro janeiro no modo carreira). */
+  firstTurn: number;
   totalTurns: number;
   termNumber: number;
   termStartTurn: number;
@@ -81,6 +84,34 @@ export interface PlayerData {
   cast: PoliticalCast | null;
 }
 
+/** Dados serializáveis de `useCareerStore` (modo carreira). */
+export interface CareerData {
+  /** Carreira em andamento (null fora do modo carreira). */
+  state: CareerState | null;
+  /** Ações da agenda escolhidas para o semestre. */
+  plannedActionIds: string[];
+  /** Programa de gestão escolhido para o semestre (prefeitos e governadores). */
+  plannedProgramId: string | null;
+  currentEventId: string | null;
+  /** Estado no início do semestre (para o balanço). */
+  semesterStart: CareerState | null;
+  /** Manchetes do semestre em andamento (agenda e acontecimento). */
+  semesterNews: CareerNews[];
+  lastReport: CareerReport | null;
+  /** Última eleição disputada (tela de apuração). */
+  lastElection: CareerElectionRecord | null;
+  /** Cargo escolhido na convenção, enquanto a campanha é montada. */
+  campaignOfficeId: CareerOfficeId | null;
+  /** Eleição que foi ao 2º turno, esperando a decisão entre os turnos. */
+  pendingRunoff: CareerElectionRecord | null;
+  /** Jornal da carreira, mais recentes primeiro. */
+  news: CareerNews[];
+  /** Candidatura à Presidência em andamento (debate do jogo presidencial). */
+  presidentialRun: boolean;
+  /** Legado calculado quando a carreira termina. */
+  legacy: CareerLegacy | null;
+}
+
 /** Preferências de áudio (persistidas separadamente do save). */
 export interface SettingsData {
   /** Volume mestre (0–1). */
@@ -99,4 +130,6 @@ export interface SaveFile {
   congress: CongressData;
   diplomacy: DiplomacyData;
   player: PlayerData;
+  /** Modo carreira (ausente em saves antigos). */
+  career?: CareerData;
 }

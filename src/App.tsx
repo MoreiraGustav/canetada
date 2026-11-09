@@ -25,6 +25,16 @@ const SCREENS: Record<GamePhase, LazyScreen> = {
   summary: lazyScreen(() => import('@/screens/SummaryScreen'), 'SummaryScreen'),
   reelection: lazyScreen(() => import('@/screens/ReelectionScreen'), 'ReelectionScreen'),
   result: lazyScreen(() => import('@/screens/ResultScreen'), 'ResultScreen'),
+  'career-setup': lazyScreen(() => import('@/screens/CareerSetupScreen'), 'CareerSetupScreen'),
+  'career-party': lazyScreen(() => import('@/screens/CareerPartyScreen'), 'CareerPartyScreen'),
+  'career-turn': lazyScreen(() => import('@/screens/CareerDashboardScreen'), 'CareerDashboardScreen'),
+  'career-event': lazyScreen(() => import('@/screens/CareerEventScreen'), 'CareerEventScreen'),
+  'career-summary': lazyScreen(() => import('@/screens/CareerSummaryScreen'), 'CareerSummaryScreen'),
+  'career-election': lazyScreen(() => import('@/screens/CareerElectionScreen'), 'CareerElectionScreen'),
+  'career-campaign': lazyScreen(() => import('@/screens/CareerCampaignScreen'), 'CareerCampaignScreen'),
+  'career-runoff': lazyScreen(() => import('@/screens/CareerRunoffScreen'), 'CareerRunoffScreen'),
+  'career-election-result': lazyScreen(() => import('@/screens/CareerElectionResultScreen'), 'CareerElectionResultScreen'),
+  'career-result': lazyScreen(() => import('@/screens/CareerResultScreen'), 'CareerResultScreen'),
 };
 
 export const App = () => {

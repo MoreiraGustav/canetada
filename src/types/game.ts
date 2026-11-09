@@ -65,7 +65,18 @@ export type GamePhase =
   | 'event'
   | 'summary'
   | 'reelection'
-  | 'result';
+  | 'result'
+  // Modo carreira
+  | 'career-setup'
+  | 'career-party'
+  | 'career-turn'
+  | 'career-event'
+  | 'career-summary'
+  | 'career-election'
+  | 'career-campaign'
+  | 'career-runoff'
+  | 'career-election-result'
+  | 'career-result';
 
 export interface GameStats {
   eventsFaced: number;
@@ -88,6 +99,11 @@ export interface GameStats {
 export interface SimulationState {
   /** Turno atual (1-based). Turno 1 = Jan/2027. */
   turn: number;
+  /**
+   * Turno da posse do 1º mandato (padrão 1). No modo carreira a Presidência começa
+   * em outro janeiro; `minTurn` e as condições `{ kind: 'turn' }` contam a partir daqui.
+   */
+  firstTurn?: number;
   /** Total de turnos da partida (cresce com a reeleição). */
   totalTurns: number;
   termNumber: number;
@@ -169,6 +185,10 @@ export interface NewGameParams {
   campaignOptions: CampaignOption[];
   election: ElectionResult;
   goalIds: string[];
+  /** Turno da posse (padrão 1 = jan/2027); o modo carreira começa em outro janeiro. */
+  startTurn?: number;
+  /** Duração do mandato em turnos (padrão: a do modo). */
+  termLength?: number;
 }
 
 export interface TurnEventChoice {

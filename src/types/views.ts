@@ -217,6 +217,8 @@ export interface TurnInfoView {
 export interface SavedGameSummary {
   candidateName: string;
   dateLabel: string;
+  /** Linha abaixo do nome no modo carreira (ex.: "Vereadora · 31 anos"); no presidencial, o mandato. */
+  careerLine?: string;
   modeLabel: string;
   difficultyLabel: string;
   termNumber: number;

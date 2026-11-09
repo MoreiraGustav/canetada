@@ -11,6 +11,11 @@ const PHASE_CUES: Partial<Record<GamePhase, SoundCue>> = {
   event: 'alert',
   'election-result': 'fanfare',
   result: 'fanfare',
+  'career-summary': 'page',
+  'career-event': 'alert',
+  'career-runoff': 'alert',
+  'career-election-result': 'fanfare',
+  'career-result': 'fanfare',
 };
 
 const UNLOCK_EVENTS = ['pointerdown', 'keydown'] as const;

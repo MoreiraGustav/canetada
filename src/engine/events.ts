@@ -16,7 +16,7 @@ import { EVENT_CATEGORY_INFO } from '@/constants/game';
 import type { DifficultyConfig, EventOption, EventSelection, GameEvent, NewsItem, Rng, SimulationState } from '@/types';
 import { getTurnDate } from '@/utils/calendar';
 import { cabinetScandalMultiplier } from './cast';
-import { evaluateCondition, evaluateConditions } from './conditions';
+import { evaluateCondition, evaluateConditions, getGameTurn } from './conditions';
 import { applyImpact, imprintPolicyMemory, scaleImpactByPolarity, scheduleDelayedImpacts, setFlags, toneFromImpact } from './impacts';
 import { createNewsItem } from './news';
 import { rollOutcomeRisk } from './outcomes';
@@ -41,7 +41,7 @@ export const getEligibleEvents = (state: SimulationState, events: readonly GameE
   return events.filter(
     (event) =>
       !event.scheduled &&
-      (event.minTurn === undefined || state.turn >= event.minTurn) &&
+      (event.minTurn === undefined || getGameTurn(state) >= event.minTurn) &&
       (event.months === undefined || event.months.includes(month)) &&
       isHistoryEligible(state, event) &&
       evaluateConditions(state, event.requires),
@@ -99,7 +99,7 @@ const conditionalWeight = (ctx: DrawContext, event: GameEvent): number => baseWe
  * com chance CORRUPTION_OFFER_CHANCE, uma delas chega no lugar do evento sorteado.
  */
 const drawOffer = (rng: Rng, ctx: DrawContext, offers: readonly GameEvent[]): GameEvent | null => {
-  if (offers.length === 0 || ctx.state.turn < CORRUPTION_OFFER_MIN_TURN || rng.next() >= CORRUPTION_OFFER_CHANCE) return null;
+  if (offers.length === 0 || getGameTurn(ctx.state) < CORRUPTION_OFFER_MIN_TURN || rng.next() >= CORRUPTION_OFFER_CHANCE) return null;
   return pickWeighted(rng, offers.map((event) => ({ item: event, weight: conditionalWeight(ctx, event) })));
 };
 

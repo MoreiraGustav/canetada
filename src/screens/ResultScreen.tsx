@@ -1,6 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
-import { useGameResult, useGoalViews, useHistorySeries } from '@/stores/selectors';
+import { useCareerLegacy, useGameResult, useGoalViews, useHistorySeries } from '@/stores/selectors';
 import { useGameStore } from '@/stores/useGameStore';
+import { CareerTrajectorySection } from '@/components/game/CareerTrajectorySection';
 import { ResultApprovalChart } from '@/components/game/ResultApprovalChart';
 import { ResultGoals } from '@/components/game/ResultGoals';
 import { ResultRevelations } from '@/components/game/ResultRevelations';
@@ -18,17 +19,20 @@ import { formatTurnLong } from '@/utils/calendar';
 /** Fase "resultado": desfecho, legado e pontuação final. */
 export const ResultScreen = () => {
   const { ending, score } = useGameResult();
-  const { stats, abandonGame, goToSetup } = useGameStore(
-    useShallow((state) => ({ stats: state.stats, abandonGame: state.abandonGame, goToSetup: state.goToSetup })),
+  const { stats, abandonGame, goToSetup, goToCareerSetup } = useGameStore(
+    useShallow((state) => ({ stats: state.stats, abandonGame: state.abandonGame, goToSetup: state.goToSetup, goToCareerSetup: state.goToCareerSetup })),
   );
+  const career = useCareerLegacy();
   const goals = useGoalViews();
   const history = useHistorySeries();
 
   if (!ending || !score) return <LoadingScreen />;
 
+  // Presidência vinda do modo carreira: o recomeço é uma nova carreira.
   const startNewGame = (): void => {
     abandonGame();
-    goToSetup();
+    if (career) goToCareerSetup();
+    else goToSetup();
   };
 
   return (
@@ -51,9 +55,11 @@ export const ResultScreen = () => {
         </div>
       </div>
 
+      {career && <CareerTrajectorySection view={career} />}
+
       <div className="mt-10 flex flex-col gap-3 border-t-4 border-double border-ink pt-6 sm:flex-row sm:justify-center">
         <Button size="lg" onClick={startNewGame}>
-          Novo mandato (nova partida)
+          {career ? 'Nova carreira' : 'Novo mandato (nova partida)'}
         </Button>
         <Button variant="secondary" size="lg" onClick={abandonGame}>
           Voltar ao menu

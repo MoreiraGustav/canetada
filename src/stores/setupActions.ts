@@ -7,26 +7,21 @@ import {
   prepareTurn,
   selectCampaignQuestions,
 } from '@/engine';
-import type { CampaignAnswer, CampaignOption, NewGameParams } from '@/types';
-import { getCampaignOption, getWorldContent } from './content';
+import type { NewGameParams } from '@/types';
+import { resolveCampaignOptions } from './campaignOptions';
+import { finishPresidentialRun, getCareerPresidencyParams } from './careerPresidency';
+import { getWorldContent } from './content';
 import { advanceSeed, createInitialGameData, generateSeed } from './gameData';
 import type { GameStoreActions, GameStoreApi } from './gameStoreTypes';
 import { resetDomainStores } from './persistence';
 import { distributeSimulationState, recordSnapshot } from './simulationBridge';
+import { useCareerStore } from './useCareerStore';
 import { usePlayerStore } from './usePlayerStore';
 
 type SetupActions = Pick<
   GameStoreActions,
   'goToSetup' | 'startNewGame' | 'chooseCandidate' | 'answerCampaign' | 'finishCampaign' | 'confirmElection' | 'confirmGoals'
 >;
-
-/** Converte as respostas da campanha nas opções completas, na ordem das perguntas. */
-const resolveCampaignOptions = (questionIds: readonly string[], answers: readonly CampaignAnswer[]): CampaignOption[] =>
-  questionIds.flatMap((questionId) => {
-    const answer = answers.find((entry) => entry.questionId === questionId);
-    const option = answer ? getCampaignOption(questionId, answer.optionId) : undefined;
-    return option ? [option] : [];
-  });
 
 /** Cria o governo (estado inicial), sorteia as decisões do 1º mês e registra a posse. */
 const startGovernment = (api: GameStoreApi, goalIds: string[]): void => {
@@ -41,10 +36,12 @@ const startGovernment = (api: GameStoreApi, goalIds: string[]): void => {
     campaignOptions: resolveCampaignOptions(player.campaignQuestionIds, player.campaignAnswers),
     election: player.election,
     goalIds,
+    // Modo carreira: posse no janeiro do ano certo (ou no meio do mandato, por sucessão).
+    ...getCareerPresidencyParams(useCareerStore.getState().state, game.mode),
   };
   const content = getWorldContent(game.world);
   const initial = createInitialState(params, content);
-  recordSnapshot(initial, 0);
+  recordSnapshot(initial, initial.turn - 1);
   const { state, decisionIds } = prepareTurn(initial, content);
   const headline = `${player.candidate.name} toma posse como Presidente da República em Brasília`;
   api.commit({
@@ -77,6 +74,10 @@ export const createSetupActions = (api: GameStoreApi): SetupActions => ({
     api.commit({});
   },
   finishCampaign: () => {
+    if (useCareerStore.getState().presidentialRun) {
+      finishPresidentialRun(api);
+      return;
+    }
     const player = usePlayerStore.getState();
     if (!player.candidate) return;
     const options = resolveCampaignOptions(player.campaignQuestionIds, player.campaignAnswers);

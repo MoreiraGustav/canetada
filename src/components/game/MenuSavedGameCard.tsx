@@ -28,7 +28,7 @@ export const MenuSavedGameCard = ({ summary, onContinue, onDelete }: MenuSavedGa
     <p className="font-sans text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Partida em andamento</p>
     <h3 className="mt-1 font-display text-2xl font-bold leading-tight">{summary.candidateName}</h3>
     <p className="mt-1 font-serif text-sm text-ink-soft">
-      {summary.dateLabel} · {summary.termNumber}º mandato
+      {summary.dateLabel} · {summary.careerLine ?? `${summary.termNumber}º mandato`}
     </p>
     <div className="mt-3 flex flex-wrap gap-1.5">
       <Badge tone="info">{summary.modeLabel}</Badge>

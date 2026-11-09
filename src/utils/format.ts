@@ -49,6 +49,27 @@ export const formatBillions = (billions: number): string => {
   return `R$ ${formatNumber(magnitude, magnitude < SMALL_BILLIONS ? 1 : 0)} bi`;
 };
 
+const THOUSAND = 1000;
+const MILLION = 1_000_000;
+const SMALL_THOUSANDS = 10_000;
+
+/** Quantidade de pessoas em escala legível: 850 → "850"; 9.400 → "9,4 mil"; 1.962.881 → "2,0 milhões". */
+export const formatPeople = (count: number): string => {
+  if (count < THOUSAND) return formatNumber(count);
+  if (count < MILLION) return `${formatNumber(count / THOUSAND, count < SMALL_THOUSANDS ? 1 : 0)} mil`;
+  return `${formatNumber(count / MILLION, 1)} ${count >= 2 * MILLION ? 'milhões' : 'milhão'}`;
+};
+
+const SMALL_MILLIONS = 10_000_000;
+
+/** Valor em reais em escala legível: 850.000 → "R$ 850 mil"; 3.240.000 → "R$ 3,2 mi"; 90.000.000 → "R$ 90 mi". */
+export const formatMoney = (reais: number): string => {
+  const magnitude = Math.abs(reais);
+  if (magnitude < THOUSAND) return `R$ ${formatNumber(magnitude)}`;
+  if (magnitude < MILLION) return `R$ ${formatNumber(magnitude / THOUSAND)} mil`;
+  return `R$ ${formatNumber(magnitude / MILLION, magnitude < SMALL_MILLIONS ? 1 : 0)} mi`;
+};
+
 /** 0.643 → "64%". */
 export const formatChance = (probability: number): string => `${formatNumber(probability * 100, 0)}%`;
 

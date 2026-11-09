@@ -17,6 +17,7 @@ const EMPTY_CAST: PoliticalCast = { seed: 1, cabinet: [], opposition: null };
 export type GameSimulationSlice = Pick<
   GameData,
   | 'turn'
+  | 'firstTurn'
   | 'totalTurns'
   | 'termNumber'
   | 'termStartTurn'
@@ -68,6 +69,7 @@ export const distributeSimulationState = (state: SimulationState): GameSimulatio
   usePlayerStore.setState({ promises: state.promises, goals: state.goals, cast: state.cast });
   return {
     turn: state.turn,
+    firstTurn: state.firstTurn ?? 1,
     totalTurns: state.totalTurns,
     termNumber: state.termNumber,
     termStartTurn: state.termStartTurn,

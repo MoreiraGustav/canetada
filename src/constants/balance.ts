@@ -674,3 +674,243 @@ export const ENDING_MULTIPLIERS: Record<EndingType, number> = {
   retired: 1,
   'completed-two-terms': 1.15,
 };
+
+// ─── Modo carreira ────────────────────────────────────────────────────────
+
+export const CAREER = {
+  /** Deriva por semestre: sem trabalho, o eleitor esquece e o partido olha para outros. */
+  drift: {
+    localPopularity: -1.5,
+    nationalRecognition: -0.5,
+    electoralBase: -1,
+    partyInfluence: -0.5,
+  },
+  /** Reputação abaixo de `reputationRecoveryCap` se recupera devagar (pontos por semestre). */
+  reputationRecovery: 1,
+  reputationRecoveryCap: 50,
+  /**
+   * Retornos decrescentes: ganhos de um indicador acima de `start` encolhem
+   * linearmente até `minFactor` em 100 (perdas valem integralmente).
+   */
+  saturation: { start: 40, minFactor: 0.25 },
+  /**
+   * Manutenção: acima de `threshold`, cada ponto custa `rate` por semestre (fama,
+   * rede e prestígio no partido exigem trabalho contínuo). Não vale para a reputação.
+   */
+  maintenance: { threshold: 40, rate: 0.04 },
+  party: {
+    /**
+     * Partido pequeno: a influência cresce mais rápido ("cabeça de sardinha"); grande, mais devagar.
+     * O tamanho é medido contra a bancada média dos partidos com deputados (fictícios ≈ 57; reais ≈ 26).
+     */
+    influenceSizeExponent: 0.35,
+    influenceSizeMin: 0.75,
+    influenceSizeMax: 1.35,
+    /** Distância no espectro até a qual o partido é "casa" (ganho pleno de influência)... */
+    fitDistance: 60,
+    /** ...e a partir da qual o ganho cai ao mínimo `misfitFactor`. */
+    misfitDistance: 160,
+    misfitFactor: 0.6,
+    /** Distância no espectro até a qual dois partidos são aliados. */
+    allyDistance: 70,
+    /** Troca de partido: fração da influência que sobra e o custo de imagem. */
+    switchInfluenceKept: 0.4,
+    switchReputationCost: -4,
+    /** Quem troca de partido com convite chega com legenda garantida (influência mínima). */
+    switchInvitedInfluence: 30,
+  },
+  election: {
+    /** Força acima da dificuldade → chance (logística): +10 pontos ≈ 81%, −10 ≈ 19%. */
+    spread: 7,
+    minChance: 0.02,
+    maxChance: 0.93,
+    /** Pontos de força por 100% de bancada acima da média (votos de legenda, tempo de TV, fundo eleitoral). */
+    partySizeProportional: 5,
+    partySizeMajoritarian: 3,
+    partySizeCap: 1.5,
+    /** Afinidade ideológica com o eleitorado do estado: até ± `electorateFitPoints`. */
+    electorateFitPoints: 4,
+    electorateRange: 200,
+    /** Reeleição: parlamentar ganha bônus fixo; chefe do Executivo depende da aprovação da gestão. */
+    incumbentLegislative: 4,
+    incumbentExecutiveBase: 2,
+    incumbentApprovalWeight: 0.35,
+    /** Rejeição: reputação abaixo de `threshold` tira `perPoint` de força por ponto. */
+    rejection: { threshold: 30, perPoint: 0.35 },
+    /** Partido que governa o nível em disputa: máquina e vitrine. */
+    governingPartyBonus: 2,
+    difficultyOffset: { easy: -5, normal: 0, hard: 5 },
+    /** Prefeitura de cidade grande é mais disputada: pontos por unidade de log10(mil eleitores) acima da referência (≈ 150 mil). */
+    cityDifficultyPerLog: 4,
+    cityDifficultyReferenceLog: 2.18,
+    /** Vice: a força da chapa mistura o titular (fictício) e o jogador. */
+    runningMateWeight: 0.35,
+    headStrengthNoise: 6,
+    /** Votos válidos: pontos por unidade de (chance − sorteio), centrados em 50%. */
+    shareSpread: 34,
+    minShare: 6,
+    maxShare: 88,
+    /** Proporcional: quem perde com chance acima disto fica como suplente. */
+    substituteMinChance: 0.25,
+    /** Proporcional: votos do eleito em relação ao quociente (mín. e máx.). */
+    electedQuotientMin: 0.45,
+    electedQuotientMax: 1.6,
+    /** Proporcional: candidatos fictícios exibidos na lista do partido. */
+    listSize: 5,
+    /** Proporcional: fração dos votos válidos que vai para o partido, por bancada relativa. */
+    partyVoteShare: 0.11,
+  },
+  /** Gestão de prefeitos e governadores. */
+  admin: {
+    initialIndicator: 50,
+    initialApproval: 52,
+    /** Fração da distância ao equilíbrio percorrida por semestre. */
+    approvalSpeed: 0.35,
+    /** Bônus de equilíbrio no 1º ano de gestão (lua de mel). */
+    honeymoon: 6,
+    honeymoonTurns: 2,
+    /** Desgaste natural dos serviços e pressão de gastos por semestre. */
+    indicatorDrift: -1,
+    contasDrift: -1.5,
+    /** Contas abaixo disto atrasam salários e obras: cada ponto abaixo tira `debtPenalty` do equilíbrio. */
+    contasCrisis: 30,
+    debtPenalty: 0.5,
+    /** Popularidade local converge para a aprovação da gestão (fração por semestre). */
+    popularityPull: 0.25,
+    /** Governador: reconhecimento nacional por ponto de aprovação acima de 50 (por semestre). */
+    governorNationalPerApproval: 0.06,
+  },
+  events: {
+    /** Chance de haver um acontecimento no semestre. */
+    chancePerTurn: 0.75,
+    defaultCooldown: 6,
+    /** Escala dos efeitos negativos por dificuldade. */
+    negativeScale: { easy: 0.8, normal: 1, hard: 1.2 },
+  },
+  /** Chegada à Presidência: o capital da carreira vira base aliada e aprovação iniciais. */
+  presidency: {
+    /** Base aliada por ponto de influência acima de 50. */
+    influenceToSupport: 0.2,
+    /** Aprovação por ponto de reputação acima de 50. */
+    reputationToApproval: 0.1,
+    /** Força eleitoral → votos no 2º turno: pontos por ponto de força acima da dificuldade. */
+    strengthToShare: 0.6,
+    /** Peso das respostas da campanha presidencial (debate) nos votos. */
+    campaignWeight: 0.6,
+    noise: 3,
+    minShare: 30,
+    maxShare: 68,
+  },
+  /** Elenco: padrinho, rival e adversário recorrente. */
+  cast: {
+    initialRelation: { padrinho: 25, rival: -5, adversario: -25 },
+    /** Força inicial: padrinho veterano; rival um pouco à frente da sua influência; adversário local. */
+    padrinhoStrength: { min: 66, max: 80 },
+    rivalLead: { min: 2, max: 10 },
+    adversaryStrength: { min: 38, max: 50 },
+    /** Adversário que já governa a cidade começa com esta força. */
+    incumbentAdversaryStrength: 55,
+    /** Fração da relação que volta ao neutro por semestre (a memória esfria). */
+    relationDecay: 0.04,
+    /** Força por semestre com mandato e sem mandato. */
+    strengthInOffice: 1.5,
+    strengthOutOfOffice: -0.5,
+    minStrength: 10,
+    maxStrength: 95,
+    /** Força ganha ao vencer e perdida ao perder uma eleição. */
+    winStrength: 8,
+    lossStrength: -4,
+    /** O personagem disputa o maior cargo cuja dificuldade não passe da sua força + margem. */
+    targetMargin: 4,
+    /** Chance de um personagem vencer a eleição dele (logística, como a do jogador). */
+    electionSpread: 7,
+    memorySize: 6,
+    /** Variação mínima de relação para virar lembrança. */
+    memoryMinDelta: 4,
+    retirementAge: 74,
+    retirementChance: 0.15,
+    /** Padrinho amigo acelera a influência; hostil, freia. */
+    padrinhoFriendly: 40,
+    padrinhoHostile: -30,
+    padrinhoInfluenceBonus: 0.2,
+    /** Pontos na prévia por ponto de relação com o padrinho. */
+    padrinhoPrimaryWeight: 0.15,
+    /** Prévia: (influência + padrinho − força do rival + relação × peso) / espalhamento → chance. */
+    primarySpread: 8,
+    rivalRelationWeight: 0.1,
+    primaryMinChance: 0.05,
+    primaryMaxChance: 0.95,
+    /** Trégua com o rival: ele não disputa a prévia por N semestres. */
+    truceTurns: 2,
+    /** Adversário no mesmo cargo: pontos de força perdidos por ponto acima da referência. */
+    adversaryReference: 50,
+    adversaryWeight: 0.2,
+    /** Quem fica no partido que você deixa: relação perdida. */
+    switchRelationCost: -25,
+  },
+  /** Campanha: teto de gastos, fundo do partido, doações e o efeito do dinheiro. */
+  campaign: {
+    /**
+     * Teto de gastos estimado (R$), aproximado dos limites do TSE de 2022 e 2024 (que variam por
+     * município e estado): prefeito ≈ R$ 7,30 por eleitor (São Paulo ≈ R$ 67 mi), com piso; vereador ≈ R$ 0,50.
+     */
+    caps: {
+      prefeitoPerVoter: 7.3,
+      prefeitoFloor: 160_000,
+      vereadorPerVoter: 0.5,
+      vereadorFloor: 16_000,
+      deputadoEstadual: 1_300_000,
+      deputadoFederal: 3_200_000,
+      governadorPerVoter: 0.8,
+      senadorPerVoter: 0.25,
+      statewideFloor: 2_800_000,
+      presidente: 90_000_000,
+    },
+    /** Pontos de força por gastar o teto inteiro. */
+    moneyPoints: 5,
+    /** Fundo do partido (fração do teto): base + tamanho da bancada + influência + padrinho. */
+    fund: { base: 0.15, perSize: 0.2, perInfluence: 0.005, perPadrinho: 0.0025, min: 0.05, max: 0.85 },
+    /** Doações (fração do teto) por ponto de base eleitoral + popularidade local. */
+    donationsPerPoint: 0.002,
+    donationsMax: 0.5,
+    /** Gastar mais do que arrecadou: chance de contas rejeitadas por fração do teto que faltou. */
+    debtRiskPerShare: 0.8,
+    debtImpact: { reputation: -8 },
+  },
+  /** Dois turnos (prefeito acima de 200 mil eleitores, governador e presidente). */
+  runoff: {
+    /**
+     * 1º turno: desempenho d = chance − sorteio (o mesmo de um turno único); a vantagem sobre o
+     * principal adversário é d × leadSpread pontos. Sem 2º turno, vence quem tem d > 0.
+     */
+    leadSpread: 60,
+    /** Votos dos demais candidatos: base ± ruído, entre o mínimo e o máximo. */
+    othersBase: 24,
+    othersNoise: 8,
+    minOthers: 6,
+    maxOthers: 40,
+    otherCandidates: 2,
+    /**
+     * 2º turno: a chance parte da vantagem do 1º turno (d) mais o efeito da escolha, com um
+     * ruído uniforme de ± runoffNoise: chance = (runoffNoise + d + efeito) / (2 × runoffNoise).
+     */
+    runoffNoise: 0.3,
+    minChance: 0.02,
+    maxChance: 0.98,
+  },
+  /** Pesquisas da pré-candidatura. */
+  polls: {
+    noise: 3,
+    history: 6,
+    /** Semestres antes da eleição em que as pesquisas saem. */
+    horizon: 2,
+  },
+  legacy: {
+    /** Pontos de legado por ano no cargo, multiplicados pelo `rank`. */
+    pointsPerRankYear: 10,
+    electionWonPoints: 20,
+    /** Pontos por ponto de reputação final acima (ou abaixo) de 50. */
+    reputationPoints: 2,
+    presidencyBonus: 1000,
+  },
+} as const;

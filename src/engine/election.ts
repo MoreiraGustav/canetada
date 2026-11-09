@@ -23,6 +23,7 @@ import type {
   PlayerCandidate,
   ReelectionResult,
   Relations,
+  Rng,
   SectorAffinity,
   SectorApproval,
   SectorKey,
@@ -167,6 +168,43 @@ const capitalFor = (margin: number): ElectionResult['capital'] => {
   return 'baixo';
 };
 
+/** Pontos de votos da campanha: respostas do debate + coerência com a ideologia do candidato. */
+export const campaignVoteDelta = (candidate: PlayerCandidate, options: readonly CampaignOption[]): number =>
+  options.reduce((acc, option) => acc + option.voteShareDelta, 0) + coherenceBonus(candidate, options);
+
+/** Adversário do 2º turno, já resolvido (nome, partido e, se houver, o candidato da lista). */
+export interface ElectionOpponent {
+  name: string;
+  partyId: string;
+  candidateId?: string;
+}
+
+/**
+ * Resultado de um 2º turno vencido com `voteShare`: margem, 1º turno, base aliada inicial
+ * (margem alta → mais capital político) e capital político.
+ */
+export const buildElectionResult = (
+  candidate: PlayerCandidate,
+  voteShare: number,
+  opponent: ElectionOpponent,
+  content: GameContent,
+  rng: Rng,
+): ElectionResult => {
+  const margin = 2 * voteShare - 100;
+  const partyBase = findById(content.parties, candidate.partyId)?.congressBase ?? 0;
+  const support = INITIAL_CONGRESS_SUPPORT + ELECTION.supportMarginWeight * (margin - ELECTION.referenceMargin) + partyBase;
+  return {
+    voteShare,
+    margin,
+    firstRoundShare: voteShare - randomBetween(rng, ELECTION.firstRoundGapMin, ELECTION.firstRoundGapMax),
+    opponentName: opponent.name,
+    opponentPartyId: opponent.partyId,
+    opponentId: opponent.candidateId,
+    initialCongressSupport: clamp(support, ELECTION.minInitialSupport, ELECTION.maxInitialSupport),
+    capital: capitalFor(margin),
+  };
+};
+
 export const calculateElectionResult = (
   candidate: PlayerCandidate,
   options: readonly CampaignOption[],
@@ -174,24 +212,16 @@ export const calculateElectionResult = (
   seed: number,
 ): ElectionResult => {
   const rng = createRng(seed);
-  const campaignDelta = options.reduce((acc, option) => acc + option.voteShareDelta, 0);
   const noise = randomBetween(rng, -ELECTION.noise, ELECTION.noise);
-  const voteShare = clamp(ELECTION.baseVoteShare + campaignDelta + coherenceBonus(candidate, options) + noise, ELECTION.minVoteShare, ELECTION.maxVoteShare);
-  const margin = 2 * voteShare - 100;
-  const partyBase = findById(content.parties, candidate.partyId)?.congressBase ?? 0;
-  // Margem alta → mais capital político (base aliada inicial maior).
-  const support = INITIAL_CONGRESS_SUPPORT + ELECTION.supportMarginWeight * (margin - ELECTION.referenceMargin) + partyBase;
+  const voteShare = clamp(ELECTION.baseVoteShare + campaignVoteDelta(candidate, options) + noise, ELECTION.minVoteShare, ELECTION.maxVoteShare);
   const opponent = findOpponent(candidate, content.candidates);
-  return {
+  return buildElectionResult(
+    candidate,
     voteShare,
-    margin,
-    firstRoundShare: voteShare - randomBetween(rng, ELECTION.firstRoundGapMin, ELECTION.firstRoundGapMax),
-    opponentName: opponent?.name ?? 'Candidato da oposição',
-    opponentPartyId: opponent?.partyId ?? '',
-    opponentId: opponent?.id,
-    initialCongressSupport: clamp(support, ELECTION.minInitialSupport, ELECTION.maxInitialSupport),
-    capital: capitalFor(margin),
-  };
+    { name: opponent?.name ?? 'Candidato da oposição', partyId: opponent?.partyId ?? '', candidateId: opponent?.id },
+    content,
+    rng,
+  );
 };
 
 const initialSectors = (affinity: SectorAffinity): SectorApproval =>
@@ -222,14 +252,17 @@ const createStats = (approval: number): GameStats => ({
 
 /** Estado da posse antes dos impactos do candidato e da campanha. */
 const createBaseState = (params: NewGameParams, content: GameContent): SimulationState => {
-  const termLength = GAME_MODES[params.mode].turns;
+  const termLength = params.termLength ?? GAME_MODES[params.mode].turns;
+  // Modo carreira: a posse pode cair em qualquer janeiro (turno absoluto desde jan/2027).
+  const startTurn = params.startTurn ?? 1;
   const sectors = initialSectors(params.candidate.sectorAffinity);
   const approval = calculateApproval(sectors);
   return {
-    turn: 1,
-    totalTurns: termLength,
+    turn: startTurn,
+    firstTurn: startTurn,
+    totalTurns: startTurn - 1 + termLength,
     termNumber: 1,
-    termStartTurn: 1,
+    termStartTurn: startTurn,
     termLength,
     mode: params.mode,
     difficulty: params.difficulty,
@@ -257,7 +290,7 @@ const createBaseState = (params: NewGameParams, content: GameContent): Simulatio
       content.parties,
       content.names,
       findById(content.candidates, params.election.opponentId ?? '')?.world === 'real',
-      1,
+      startTurn,
     ),
   };
 };
@@ -274,7 +307,7 @@ export const createInitialState = (params: NewGameParams, content: GameContent):
   const scaling = { baseline: impacted, scale: GAME_MODES[params.mode].goalScale, countryNames };
   return {
     ...impacted,
-    promises: createPromises(promiseDefinitions, 1, impacted.termLength, scaling),
+    promises: createPromises(promiseDefinitions, impacted.termStartTurn, impacted.termLength, scaling),
     goals: createGoalProgress(params.goalIds, content.goals, impacted.metrics, params.mode),
     stats: { ...impacted.stats, peakApproval: impacted.approval, lowestApproval: impacted.approval },
   };

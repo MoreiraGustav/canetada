@@ -17,6 +17,7 @@ export const PARTIES: Party[] = [
       'Partido de centro-esquerda ligado ao movimento sindical. Defende o desenvolvimentismo, a valorização do salário mínimo e programas de transferência de renda.',
     congressBase: 4,
     seats: 78,
+    number: 31,
   },
   {
     id: 'alianca-liberal-democratica',
@@ -29,6 +30,7 @@ export const PARTIES: Party[] = [
       'Partido de centro-direita com forte presença nos estados do Sul e do Centro-Oeste. Liberal na economia, conservador nos costumes e próximo do agronegócio.',
     congressBase: 5,
     seats: 82,
+    number: 41,
   },
   {
     id: 'partido-liberdade-inovacao',
@@ -41,6 +43,7 @@ export const PARTIES: Party[] = [
       'Legenda jovem e urbana, liberal na economia e nos costumes. Defende privatizações, abertura comercial e agenda digital, mas tem bancada pequena.',
     congressBase: -4,
     seats: 30,
+    number: 47,
   },
   {
     id: 'uniao-nacional-soberana',
@@ -53,6 +56,7 @@ export const PARTIES: Party[] = [
       'Partido nacionalista e soberanista. Defende Estado forte em setores estratégicos, ampliação do orçamento de defesa e política externa de não alinhamento.',
     congressBase: 0,
     seats: 52,
+    number: 39,
   },
   {
     id: 'movimento-renova-brasil',
@@ -65,6 +69,7 @@ export const PARTIES: Party[] = [
       'Movimento anti-establishment surgido nas redes sociais. Promete renovar a política e combater privilégios, mas quase não tem representação no Congresso.',
     congressBase: -6,
     seats: 23,
+    number: 34,
   },
   {
     id: 'coalizao-democratica-centro',
@@ -77,6 +82,7 @@ export const PARTIES: Party[] = [
       'Maior bancada do Congresso, pragmática e com forte capilaridade municipal. Costuma integrar qualquer governo em troca de ministérios e emendas.',
     congressBase: 6,
     seats: 98,
+    number: 51,
   },
   {
     id: 'frente-socialista-ecologica',
@@ -89,6 +95,7 @@ export const PARTIES: Party[] = [
       'Partido de esquerda com pautas ambientais, de direitos humanos e de taxação de grandes fortunas. Bancada combativa, porém minoritária.',
     congressBase: -5,
     seats: 40,
+    number: 53,
   },
   {
     id: 'alianca-conservadora-republicana',
@@ -101,6 +108,7 @@ export const PARTIES: Party[] = [
       'Partido de direita conservadora com base em movimentos religiosos. Prioriza segurança pública, pauta de costumes e redução de impostos.',
     congressBase: 2,
     seats: 64,
+    number: 42,
   },
   {
     id: 'frente-patriotica-conservadora',
@@ -113,5 +121,6 @@ export const PARTIES: Party[] = [
       'Partido de direita radical, liberal na economia e linha-dura nos costumes e na segurança. Mobiliza as redes e as ruas, mas tem bancada pequena e isolada.',
     congressBase: -3,
     seats: 46,
+    number: 38,
   },
 ];

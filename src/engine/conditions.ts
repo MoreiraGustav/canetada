@@ -6,6 +6,12 @@ export const getIndicatorValue = (state: SimulationState, key: IndicatorKey): nu
   return state.metrics[key];
 };
 
+/**
+ * Mês da partida (1 = posse do 1º mandato). Igual a `turn` quando a partida começa em jan/2027;
+ * no modo carreira a posse pode cair em outro ano, e o conteúdo conta a partir dela.
+ */
+export const getGameTurn = (state: Pick<SimulationState, 'turn' | 'firstTurn'>): number => state.turn - (state.firstTurn ?? 1) + 1;
+
 const compare = (value: number, comparator: Comparator, target: number): boolean => {
   switch (comparator) {
     case 'lt':
@@ -41,7 +47,7 @@ export const evaluateCondition = (state: SimulationState, condition: Condition):
     case 'flag':
       return evaluateFlag(state, condition);
     case 'turn':
-      return compare(state.turn, condition.comparator, condition.value);
+      return compare(getGameTurn(state), condition.comparator, condition.value);
     case 'term':
       return compare(state.termNumber, condition.comparator, condition.value);
     case 'any':

@@ -1,4 +1,4 @@
-import type { CandidateSelection, CountryId, Difficulty, GameData, GameMode, MinisterProfile, MinistryId, WorldId } from '@/types';
+import type { CampaignChoices, CandidateSelection, CareerOfficeId, CareerSetupInput, CountryId, Difficulty, GameData, GameMode, MinisterProfile, MinistryId, WorldId } from '@/types';
 
 export interface GameStoreActions {
   /** Menu → configuração da partida (modo e dificuldade). */
@@ -44,6 +44,38 @@ export interface GameStoreActions {
   continueSavedGame: () => boolean;
   /** Apaga o save e volta ao menu. */
   abandonGame: () => void;
+
+  // ─── Modo carreira ───────────────────────────────────────────────────
+  /** Menu → criação do personagem. */
+  goToCareerSetup: () => void;
+  /** Cria o personagem (apaga o save anterior) e vai para a ficha de filiação. */
+  startCareer: (input: CareerSetupInput) => void;
+  /** Primeira filiação: começa o 1º semestre. */
+  chooseCareerParty: (partyId: string) => void;
+  /** Troca de partido no meio da carreira (respeitando a janela partidária). */
+  switchCareerParty: (partyId: string) => void;
+  /** Assume um cargo de nomeação (se cumprir os requisitos). */
+  takeCareerAppointment: (appointmentId: string) => void;
+  leaveCareerAppointment: () => void;
+  /** Executa a agenda do semestre e sorteia o acontecimento. */
+  endCareerSemester: () => void;
+  resolveCareerEvent: (optionId: string) => void;
+  /** Balanço/apuração → próximo semestre (posse, fim de mandato, convenção). */
+  advanceCareer: () => void;
+  /** Convenção: escolhe o cargo e vai montar a campanha (a Presidência vai ao debate, depois da prévia). */
+  chooseCandidacy: (officeId: CareerOfficeId) => void;
+  /** Volta da campanha para a convenção (trocar de cargo). */
+  backToConvention: () => void;
+  /** Campanha montada: vai às urnas (com 2º turno, para na decisão entre os turnos). */
+  runCampaign: (choices: CampaignChoices) => void;
+  /** Decisão entre os turnos: disputa o 2º turno. */
+  chooseRunoff: (optionId: string) => void;
+  /** Lança (ou retira, com null) a pré-candidatura que as pesquisas acompanham. */
+  declarePreCandidacy: (officeId: CareerOfficeId | null) => void;
+  /** Não concorre neste ano: o semestre segue com a agenda normal. */
+  skipElection: () => void;
+  /** Encerra a carreira por vontade própria. */
+  retireCareer: () => void;
 }
 
 export type GameStore = GameData & GameStoreActions;

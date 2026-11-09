@@ -4,10 +4,11 @@
  */
 import { SAVE_STORAGE_KEY, SAVE_VERSION } from '@/constants/game';
 import { INITIAL_METRICS } from '@/constants/metrics';
-import { createCast } from '@/engine';
+import { createCast, ensureCareerCast } from '@/engine';
 import type { GameData, SaveFile } from '@/types';
 import { debugLog } from '@/utils/debug';
-import { getWorldContent } from './content';
+import { getCareerContent, getWorldContent } from './content';
+import { getCareerData, useCareerStore } from './useCareerStore';
 import { getCongressData, useCongressStore } from './useCongressStore';
 import { getDiplomacyData, useDiplomacyStore } from './useDiplomacyStore';
 import { getMetricsData, useMetricsStore } from './useMetricsStore';
@@ -43,6 +44,7 @@ export const saveGame = (game: GameData): void => {
     congress: getCongressData(),
     diplomacy: getDiplomacyData(),
     player: getPlayerData(),
+    career: getCareerData(),
   };
   try {
     localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(save));
@@ -72,6 +74,17 @@ export const loadGame = (): GameData | null => {
   useCongressStore.getState().hydrate(save.congress);
   useDiplomacyStore.getState().hydrate(save.diplomacy);
   usePlayerStore.getState().hydrate(save.player);
+  useCareerStore.getState().reset();
+  if (save.career) {
+    const state = save.career.state;
+    const migrated = state ? { ...state, world: state.world ?? 'ficticio', cast: state.cast ?? [], preCandidacy: state.preCandidacy ?? null, polls: state.polls ?? [] } : null;
+    useCareerStore.getState().hydrate({
+      ...save.career,
+      campaignOfficeId: save.career.campaignOfficeId ?? null,
+      pendingRunoff: save.career.pendingRunoff ?? null,
+      state: migrated ? ensureCareerCast(migrated, getCareerContent(migrated.world)) : null,
+    });
+  }
   // Saves de antes do elenco político: monta ministros e oposição a partir da eleição salva.
   const { candidate, election, cast } = save.player;
   if (!cast && candidate && election) {
@@ -95,4 +108,5 @@ export const resetDomainStores = (): void => {
   useCongressStore.getState().reset();
   useDiplomacyStore.getState().reset();
   usePlayerStore.getState().reset();
+  useCareerStore.getState().reset();
 };

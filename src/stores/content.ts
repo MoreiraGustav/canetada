@@ -4,12 +4,14 @@
 import { EVENT_CATEGORY_INFO, MINISTRY_INFO } from '@/constants/game';
 import { GAME_CONTENT } from '@/data';
 import { BRAZIL_MAP, BRAZIL_MAP_VIEWBOX } from '@/data/brazilMap';
+import { CAREER_CONTENT } from '@/data/career';
 import type {
   Ability,
   BackgroundDefinition,
   Bloc,
   BrazilianState,
   CampaignOption,
+  CareerContent,
   CampaignQuestion,
   Candidate,
   Country,
@@ -68,6 +70,12 @@ export const getWorldContent = (world: WorldId): GameContent => WORLD_CONTENT[wo
 
 /** O Brasil real só aparece no setup se houver candidatos reais cadastrados. */
 export const hasRealWorld = (): boolean => WORLD_CONTENT.real.candidates.length > 0;
+
+const buildCareerContent = (world: WorldId): CareerContent => ({ ...CAREER_CONTENT, parties: CAREER_CONTENT.parties.filter(inWorld(world)) });
+const CAREER_WORLD_CONTENT: Record<WorldId, CareerContent> = { ficticio: buildCareerContent('ficticio'), real: buildCareerContent('real') };
+
+/** Conteúdo do modo carreira no mundo do personagem: partidos reais (com número de urna) ou fictícios. */
+export const getCareerContent = (world: WorldId = DEFAULT_WORLD): CareerContent => CAREER_WORLD_CONTENT[world];
 
 /** Nomes dos personagens fictícios (ministros e governadores). */
 export const NAME_POOL = GAME_CONTENT.names;

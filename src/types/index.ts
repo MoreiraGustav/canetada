@@ -1,5 +1,6 @@
 export type * from './campaign';
 export type * from './candidates';
+export type * from './career';
 export type * from './cast';
 export type * from './conditions';
 export type * from './congress';
@@ -18,3 +19,4 @@ export type * from './travel';
 export type * from './views';
 export type * from './world';
 export type * from './engine';
+export type * from './careerViews';
