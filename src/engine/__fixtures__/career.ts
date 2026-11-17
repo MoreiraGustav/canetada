@@ -9,6 +9,16 @@ import { FIXTURE_CONTENT } from './content';
 export const FX_LEFT_PARTY = 'fx-partido-trabalhista';
 export const FX_RIGHT_PARTY = 'fx-partido-liberal';
 export const FLAG_POLEMIC = 'fx-polemica';
+export const FX_BILL_POPULAR = 'fx-lei-popular';
+export const FX_BILL_POLEMIC = 'fx-lei-polemica';
+export const FX_VOTE_GOVERNMENT = 'fx-votacao-governo';
+export const FX_VOTE_FREE = 'fx-votacao-livre';
+export const FX_WORK_QUICK = 'fx-creche';
+export const FX_WORK_SLOW = 'fx-metro';
+export const FX_CASE = 'fx-caso';
+export const FX_CHARGE_FLAG = 'fx-acusacao';
+export const FX_MISSION = 'fx-missao';
+export const FX_VICE_MISSION = 'fx-missao-vice';
 const FX_PARTY_NUMBERS = [45, 13];
 
 /** Legendas nanicas (sem cadeiras): completam o 1º turno majoritário, com um candidato por partido. */
@@ -141,7 +151,7 @@ export const CAREER_FIXTURE: CareerContent = {
       icon: '⚖️',
       description: '',
       conditions: [{ kind: 'flag', flag: FLAG_POLEMIC, present: true }],
-      options: [{ id: 'recorrer', label: 'Recorrer', description: '', impact: { reputation: -10 }, headline: '{nome} condenada', effect: { kind: 'ineligible', semesters: 16 } }],
+      options: [{ id: 'recorrer', label: 'Recorrer', description: '', impact: { reputation: -10 }, headline: '{nome} condenada', flags: ['ficha-suja'], effect: { kind: 'appeal', semesters: 16 } }],
     },
     {
       id: 'fx-cassacao',
@@ -204,6 +214,102 @@ export const CAREER_FIXTURE: CareerContent = {
     { id: 'alto', minScore: 1000, title: 'Alto', description: '' },
     { id: 'medio', minScore: 100, title: 'Médio', description: '' },
     { id: 'baixo', minScore: 0, title: 'Baixo', description: '' },
+  ],
+  bills: [
+    // Afinado com o partido de esquerda da fixture, popular e sem polêmica.
+    { id: FX_BILL_POPULAR, name: 'Lei popular', icon: '📜', description: '', levels: ['municipal', 'federal'], economic: -40, social: -20, popularity: 80, controversy: 0, impact: { localPopularity: 3 }, headline: 'Lei de {nome} aprovada' },
+    { id: FX_BILL_POLEMIC, name: 'Lei polêmica', icon: '📜', description: '', levels: ['municipal'], economic: 80, social: 80, popularity: 20, controversy: 20, impact: { electoralBase: 2 }, headline: 'Lei polêmica de {nome}' },
+    { id: 'fx-lei-terceira', name: 'Terceira lei', icon: '📜', description: '', levels: ['municipal'], economic: 0, social: 0, popularity: 50, controversy: 5, impact: {}, headline: 'Terceira lei de {nome}' },
+  ],
+  floorVotes: [
+    { id: FX_VOTE_GOVERNMENT, title: 'Pauta do governo', icon: '🏛️', description: '', levels: ['municipal'], economic: -40, social: -20, publicSupport: 30, government: true },
+    { id: FX_VOTE_FREE, title: 'Pauta livre', icon: '🗳️', description: '', levels: ['municipal'], economic: 60, social: 60, publicSupport: 70, government: false },
+  ],
+  amendmentTargets: [
+    { id: 'fx-emenda-base', name: 'Base', icon: '🏥', description: '', impact: { electoralBase: 3 }, headline: 'Emenda de {nome} leva {valor}' },
+    {
+      id: 'fx-emenda-risco',
+      name: 'ONG',
+      icon: '🤲',
+      description: '',
+      impact: { electoralBase: 4 },
+      risk: { chance: 1, impact: { reputation: -5 }, headline: 'Emenda de {nome} some', flags: ['emendas-suspeitas'] },
+      headline: 'Emenda de {nome} para ONG',
+    },
+    { id: 'fx-emenda-federal', name: 'Prefeitos', icon: '🤝', description: '', levels: ['federal'], impact: { partyInfluence: 2 }, headline: 'Emenda de {nome}' },
+  ],
+  works: [
+    { id: FX_WORK_QUICK, name: 'Creche', icon: '🧸', description: '', offices: ['prefeito'], cost: 6, duration: 2, delivery: { admin: { educacao: 8 }, approval: 4 }, delayChance: 0, headline: '{nome} inaugura creche' },
+    { id: 'fx-escola', name: 'Escola', icon: '🏫', description: '', offices: ['prefeito'], cost: 8, duration: 2, delivery: { admin: { educacao: 6 } }, delayChance: 0, headline: '{nome} inaugura escola' },
+    { id: 'fx-posto', name: 'Posto', icon: '🩺', description: '', offices: ['prefeito'], cost: 6, duration: 2, delivery: { admin: { saude: 6 } }, delayChance: 0, headline: '{nome} inaugura posto' },
+    { id: FX_WORK_SLOW, name: 'Metrô', icon: '🚇', description: '', offices: ['prefeito'], cost: 20, duration: 4, delivery: { admin: { infraestrutura: 15 }, approval: 6 }, delayChance: 1, minElectorate: 1_000_000, headline: '{nome} inaugura metrô' },
+    { id: 'fx-ponte-rural', name: 'Ponte', icon: '🌉', description: '', offices: ['prefeito'], cost: 4, duration: 1, delivery: {}, delayChance: 0, minElectorate: 50_000_000, headline: '{nome} inaugura ponte' },
+  ],
+  missions: [
+    {
+      id: FX_MISSION,
+      title: 'Missão de teste',
+      icon: '📎',
+      description: '',
+      posts: ['assessor-parlamentar', 'secretario-municipal'],
+      options: [
+        { id: 'caprichar', label: 'Caprichar', description: '', impact: { electoralBase: 2 }, trust: 10, headline: '{nome} capricha' },
+        {
+          id: 'arriscar',
+          label: 'Arriscar',
+          description: '',
+          impact: {},
+          trust: 5,
+          risk: { chance: 1, impact: { reputation: -2 }, trust: -20, headline: '{nome} se dá mal' },
+          headline: '{nome} arrisca',
+        },
+      ],
+    },
+    {
+      id: 'fx-missao-gabinete',
+      title: 'Outra missão',
+      icon: '📎',
+      description: '',
+      posts: ['assessor-parlamentar'],
+      options: [{ id: 'cumprir', label: 'Cumprir', description: '', impact: {}, trust: 3, headline: '{nome} cumpre' }],
+    },
+    {
+      id: FX_VICE_MISSION,
+      title: 'Interinidade de teste',
+      icon: '🔑',
+      description: '{titular} viaja',
+      posts: ['vice-prefeito'],
+      options: [
+        { id: 'lealdade', label: 'Lealdade', description: '', impact: { partyInfluence: 2 }, trust: 6, headline: '{nome} cobre a ausência de {titular}' },
+        { id: 'vitrine', label: 'Vitrine', description: '', impact: { localPopularity: 2 }, trust: -4, headline: '{nome} aparece' },
+      ],
+    },
+  ],
+  cases: [
+    {
+      id: FX_CASE,
+      name: 'Caso de teste',
+      steps: [
+        { flag: FLAG_POLEMIC, text: 'Você causou uma polêmica.' },
+        { flag: FX_CHARGE_FLAG, text: 'Você virou réu.' },
+      ],
+      charge: { flag: FX_CHARGE_FLAG, closedBy: ['ficha-suja'] },
+      appealChance: 0.3,
+    },
+  ],
+  achievements: [
+    { id: 'fx-primeiro-mandato', name: 'Primeiro mandato', icon: '🗳️', description: '', criterion: { kind: 'stat', stat: 'electionsWon', min: 1 }, tier: 'bronze' },
+    { id: 'fx-autor-de-lei', name: 'Autor de lei', icon: '📜', description: '', criterion: { kind: 'stat', stat: 'lawsPassed', min: 1 }, tier: 'bronze' },
+    { id: 'fx-jovem', name: 'Jovem', icon: '🌱', description: '', criterion: { kind: 'office', offices: ['vereador'], maxAge: 24 }, tier: 'bronze' },
+    { id: 'fx-planalto', name: 'Planalto', icon: '⭐', description: '', criterion: { kind: 'office', offices: ['presidente'] }, tier: 'ouro' },
+    {
+      id: 'fx-dinastia',
+      name: 'Dinastia',
+      icon: '👑',
+      description: '',
+      criterion: { kind: 'all', criteria: [{ kind: 'stat', stat: 'generation', min: 2 }, { kind: 'stat', stat: 'electionsWon', min: 1 }] },
+      tier: 'ouro',
+    },
   ],
 };
 

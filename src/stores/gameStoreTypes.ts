@@ -1,4 +1,4 @@
-import type { CampaignChoices, CandidateSelection, CareerOfficeId, CareerSetupInput, CountryId, Difficulty, GameData, GameMode, MinisterProfile, MinistryId, WorldId } from '@/types';
+import type { CampaignChoices, CandidateSelection, CareerOfficeId, CareerSetupInput, CountryId, Difficulty, GameData, GameMode, HeirInput, MinisterProfile, MinistryId, WorldId } from '@/types';
 
 export interface GameStoreActions {
   /** Menu → configuração da partida (modo e dificuldade). */
@@ -76,6 +76,14 @@ export interface GameStoreActions {
   skipElection: () => void;
   /** Encerra a carreira por vontade própria. */
   retireCareer: () => void;
+  /** Depois do Planalto: volta à carreira como ex-presidente, no semestre seguinte ao governo. */
+  resumeCareer: () => void;
+  /** Fim da carreira → formulário do(a) herdeiro(a). */
+  goToHeirSetup: () => void;
+  /** Formulário do(a) herdeiro(a) → de volta ao resultado. */
+  leaveHeirSetup: () => void;
+  /** Passa o bastão: a carreira do(a) herdeiro(a) começa no semestre seguinte. */
+  startHeirCareer: (input: HeirInput) => void;
 }
 
 export type GameStore = GameData & GameStoreActions;

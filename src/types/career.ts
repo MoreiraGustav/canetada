@@ -5,10 +5,12 @@
  *
  * Um turno da carreira é um semestre (turno 1 = 1º semestre de 2027).
  */
+import type { Achievement } from './achievements';
 import type { BackgroundId, Party } from './candidates';
+import type { AmendmentTarget, BillRecord, CareerBill, CareerLegislature, CareerMission, CareerPost, FloorVote, FloorVoteRecord, PublicWork, PublicWorkTemplate, WorkRecord } from './careerMandate';
 import type { Comparator } from './conditions';
 import type { NamePool } from './cast';
-import type { Difficulty, GameMode, LegacyTier } from './game';
+import type { Difficulty, EndingType, GameMode, LegacyTier } from './game';
 import type { NewsTone } from './news';
 import type { BrazilianState } from './travel';
 import type { FaceSex, WorldId } from './world';
@@ -37,6 +39,8 @@ export type CareerImpact = Partial<Record<CareerMetricKey, number>> & {
   approval?: number;
   /** Pontos de relação com os personagens do elenco (padrinho, rival, adversário). */
   relations?: Partial<Record<CareerCharacterRole, number>>;
+  /** Pontos de confiança do titular (vice) ou do chefe (cargo de nomeação); sem efeito fora deles. */
+  trust?: number;
 };
 
 /** Desfecho incerto de uma ação ou opção (somado ao impacto normal). */
@@ -228,6 +232,8 @@ export type CareerCondition =
   | { kind: 'relation'; role: CareerCharacterRole; comparator: Comparator; value: number }
   /** O personagem está em cena (e, com `inOffice`, tem ou não mandato). */
   | { kind: 'character'; role: CareerCharacterRole; present: boolean; inOffice?: boolean }
+  /** Confiança do titular (vice) ou do chefe (cargo de nomeação); falso fora desses cargos. */
+  | { kind: 'trust'; comparator: Comparator; value: number }
   | { kind: 'any'; conditions: CareerCondition[] };
 
 // ─── Agenda, gestão e eventos ─────────────────────────────────────────────
@@ -275,7 +281,12 @@ export type CareerEffect =
   /** Perde o mandato (cassação ou renúncia forçada). */
   | { kind: 'lose-office' }
   /** O personagem sai de cena (aposenta, cai, rompe); um novo assume o papel. */
-  | { kind: 'retire-character'; role: CareerCharacterRole };
+  | { kind: 'retire-character'; role: CareerCharacterRole }
+  /**
+   * Condenação com recurso: fica inelegível já (Ficha Limpa) e o tribunal superior julga
+   * o recurso alguns semestres depois, podendo anular a condenação.
+   */
+  | { kind: 'appeal'; semesters: number };
 
 export interface CareerEventOption {
   id: string;
@@ -304,7 +315,38 @@ export interface CareerEvent {
   oneTime?: boolean;
   /** Semestres até poder voltar (padrão em balance.ts). */
   cooldown?: number;
+  /** Casos na Justiça cuja história a tela mostra (as etapas já vividas, com a data). */
+  cases?: string[];
   options: CareerEventOption[];
+}
+
+/** Etapa de um caso na Justiça: a flag que marca a etapa e a explicação em linguagem simples. */
+export interface CareerCaseStep {
+  flag: string;
+  /** ≤ 120 caracteres. */
+  text: string;
+}
+
+/** Caso na Justiça: da tentação à acusação (e, nos crimes, ao recurso). */
+export interface CareerCase {
+  id: string;
+  /** Ex.: "Caixa 2". */
+  name: string;
+  steps: CareerCaseStep[];
+  /** Acusação em andamento: a flag que a abre e as que a encerram. */
+  charge?: { flag: string; closedBy: string[] };
+  /** Chance-base de o recurso anular a condenação (só nos casos que levam à Ficha Limpa). */
+  appealChance?: number;
+}
+
+/** Recurso contra a condenação, esperando o julgamento no tribunal superior. */
+export interface CareerAppeal {
+  /** Casos da condenação. */
+  caseIds: string[];
+  filedTurn: number;
+  decisionTurn: number;
+  /** Chance de anular (0–1). */
+  chance: number;
 }
 
 /** Estratégia de campanha: muda a força eleitoral e deixa marcas depois da eleição. */
@@ -346,6 +388,17 @@ export interface CareerContent {
   names: NamePool;
   /** Títulos de legado da carreira, por pontuação. */
   legacyTiers: LegacyTier[];
+  /** Mandato legislativo: temas de projetos, votações em plenário e destinos das emendas. */
+  bills: CareerBill[];
+  floorVotes: FloorVote[];
+  amendmentTargets: AmendmentTarget[];
+  /** Obras que prefeitos e governadores podem lançar. */
+  works: PublicWorkTemplate[];
+  achievements: Achievement[];
+  /** Casos na Justiça (cadeias de escândalo), para explicar a origem de cada acusação. */
+  cases: CareerCase[];
+  /** Missões dos cargos de nomeação. */
+  missions: CareerMission[];
 }
 
 // ─── Estado ───────────────────────────────────────────────────────────────
@@ -367,6 +420,8 @@ export interface CareerAdministration {
   /** Aprovação da gestão (0–100). */
   approval: number;
   indicators: AdminIndicators;
+  /** Obras em andamento (passam ao sucessor se o mandato acabar antes da entrega). */
+  works: PublicWork[];
 }
 
 /** Quem governa a cidade, o estado e o país. */
@@ -397,6 +452,11 @@ export type CareerTimelineKind =
   | 'retorno'
   | 'inelegivel'
   | 'presidencia'
+  | 'ex-presidente'
+  | 'lei'
+  | 'obra'
+  | 'heranca'
+  | 'recurso'
   | 'aposentadoria';
 
 export interface CareerTimelineEntry {
@@ -487,6 +547,14 @@ export interface CareerState {
   polls: CareerPoll[];
   /** Flag → semestre em que foi definida. */
   flags: Record<string, number>;
+  /** Flag → o que a marcou (a escolha ou o desfecho), para explicar a origem dos casos na Justiça. */
+  flagNotes: Record<string, string>;
+  /** Recurso contra condenação esperando julgamento (null sem recurso). */
+  appeal: CareerAppeal | null;
+  /** Cargo de nomeação ou de vice em andamento: confiança do chefe (ou do titular) e missão do semestre (null fora deles). */
+  post: CareerPost | null;
+  /** ID da missão → último semestre em que foi cumprida. */
+  missionLog: Record<string, number>;
   /** ID da ação/programa → último semestre em que foi usada. */
   actionHistory: Record<string, number>;
   /** ID do evento → último semestre em que ocorreu. */
@@ -495,7 +563,88 @@ export interface CareerState {
   elections: CareerElectionRecord[];
   /** Último semestre de inelegibilidade (Ficha Limpa), ou null. */
   ineligibleUntil: number | null;
+  /** Projetos, votações e emendas de toda a carreira. */
+  legislature: CareerLegislature;
+  /** Obras entregues ou deixadas inacabadas. */
+  worksHistory: WorkRecord[];
+  /** ID da conquista → semestre em que foi conquistada. */
+  achievements: Record<string, number>;
+  /** Passagens pelo Planalto (jogadas no modo presidencial). */
+  presidencies: PresidencyRecord[];
+  /** Família política (null na 1ª geração). */
+  dynasty: CareerDynasty | null;
   seed: number;
+}
+
+/** Uma passagem pelo Planalto, como terminou no jogo presidencial. */
+export interface PresidencyRecord {
+  startTurn: number;
+  /** Último semestre exercido. */
+  endTurn: number;
+  /** Mandatos (1 ou 2). */
+  terms: number;
+  ending: EndingType;
+  /** Aprovação no fim do governo (%). */
+  finalApproval: number;
+  /** Esquemas de corrupção revelados. */
+  scandals: number;
+  /** Pontuação e título do jogo presidencial. */
+  score: number;
+  legacyTitle: string;
+}
+
+/** Como o governo terminou no jogo presidencial (entrada de `leavePresidency`). */
+export interface PresidencyOutcome {
+  ending: EndingType;
+  /** Meses jogados (somando os dois mandatos) e a duração de um mandato no modo escolhido. */
+  monthsPlayed: number;
+  termLength: number;
+  terms: number;
+  finalApproval: number;
+  scandals: number;
+  score: number;
+  legacyTitle: string;
+}
+
+/** Laço com quem passou o bastão. */
+export type HeirBond = 'filho' | 'afilhado';
+
+/** Antepassado político (quem veio antes na família). */
+export interface DynastyMember {
+  name: string;
+  politicalName: string;
+  sex: FaceSex;
+  portraitSeed: number;
+  birthYear: number;
+  highestOfficeId: CareerOfficeId | null;
+  legacyTitle: string;
+  legacyScore: number;
+  /** Primeiro e último semestre da carreira. */
+  fromTurn: number;
+  toTurn: number;
+}
+
+export interface CareerDynasty {
+  /** 2 = herdeiro(a) de quem começou. */
+  generation: number;
+  /** Do fundador ao antecessor direto. */
+  ancestors: DynastyMember[];
+  /** Laço com o antecessor direto. */
+  bond: HeirBond;
+}
+
+/** Formulário do(a) herdeiro(a). */
+export interface HeirInput {
+  name: string;
+  politicalName: string;
+  sex: FaceSex;
+  portraitSeed: number;
+  /** Idade no semestre em que começa. */
+  startingAge: number;
+  professionId: ProfessionId;
+  economicIdeology: number;
+  socialIdeology: number;
+  bond: HeirBond;
 }
 
 /** Notícia da carreira (manchete do jornal da cidade). */
@@ -516,6 +665,16 @@ export interface CareerReport {
   approvalDelta: number | null;
   eventId: string | null;
   eventOptionId: string | null;
+  /** Votação em plenário do semestre (null fora do Legislativo). */
+  vote: FloorVoteRecord | null;
+  /** Projetos que terminaram a tramitação no semestre. */
+  bills: BillRecord[];
+  /** Obras entregues (ou deixadas inacabadas) no semestre. */
+  works: WorkRecord[];
+  /** Conquistas do semestre. */
+  achievements: string[];
+  /** Recurso julgado no semestre: condenação anulada ou mantida (null sem julgamento). */
+  appeal: 'anulada' | 'mantida' | null;
 }
 
 /** Resultado de uma verificação (pode fazer X agora?) com o motivo quando não pode. */
@@ -572,9 +731,14 @@ export interface CareerLegacy {
   yearsInOffice: number;
   electionsWon: number;
   electionsLost: number;
+  lawsPassed: number;
+  worksDelivered: number;
+  achievements: number;
   score: number;
   title: string;
   description: string;
+  /** Soma do legado da família (antepassados + este), ou null na 1ª geração. */
+  familyScore: number | null;
 }
 
 // ─── Elenco da carreira ───────────────────────────────────────────────────
@@ -612,6 +776,8 @@ export interface CareerCharacter {
   memory: CareerMemory[];
   /** Em cena (falso: aposentou, caiu ou ficou no partido que você deixou). */
   active: boolean;
+  /** Já deixou as urnas (ex.: quem passou o bastão): aconselha, mas não disputa eleições. */
+  retiredFromPolitics?: boolean;
 }
 
 // ─── Campanha ─────────────────────────────────────────────────────────────

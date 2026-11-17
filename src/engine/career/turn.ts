@@ -8,13 +8,19 @@ import { ADMIN_INDICATOR_KEYS, CAREER_RETIREMENT_AGE, SEMESTERS_PER_YEAR } from 
 import type { AdminIndicatorKey, CareerAdministration, CareerContent, CareerMetrics, CareerNews, CareerOffice, CareerReport, CareerState } from '@/types';
 import { clamp } from '@/utils/math';
 import { createRng } from '../random';
+import { unlockAchievements } from './achievements';
 import { resolveBackgroundElections } from './background';
+import { stepBills } from './bills';
+import { appealVerdictAt, stepAppeal } from './justice';
+import { stepPost } from './post';
 import { stepCareerCast } from './characters';
 import { stepPolls } from './polls';
 import { ageAt, closePosition, currentOffice, findAppointment, findOffice } from './helpers';
 import { administrationFor, applyCareerImpact, metricDeltas } from './impacts';
+import { withLegislature } from './legislature';
 import { vacatePosition } from './positions';
 import { createCareerNews, getPositionTitle } from './text';
+import { stepWorks } from './works';
 
 /** Chance, por semestre, de um suplente ser chamado a assumir a vaga. */
 const SUBSTITUTE_CALL_CHANCE = 0.1;
@@ -60,7 +66,7 @@ const stepAdministration = (state: CareerState, content: CareerContent): CareerS
   const debt = Math.max(0, rules.contasCrisis - indicators.contas) * rules.debtPenalty;
   const equilibrium = average + honeymoon - debt;
   const approval = clamp(admin.approval + (equilibrium - admin.approval) * rules.approvalSpeed, 0, 100);
-  const administration: CareerAdministration = { approval, indicators };
+  const administration: CareerAdministration = { ...admin, approval, indicators };
   // A cidade (ou o estado) julga o político pela gestão.
   const pull = office.level === 'municipal' ? rules.popularityPull : rules.popularityPull / 2;
   const metrics = {
@@ -113,16 +119,28 @@ const approvalNews = (state: CareerState): CareerNews[] =>
     ? [createCareerNews(state.turn, `Pesquisa: gestão de ${state.profile.politicalName} tem ${Math.round(state.administration.approval)}% de aprovação`, state.administration.approval >= 50 ? 'positive' : 'negative', 'pesquisa-gestao')]
     : [];
 
-/** Fim do semestre (depois da agenda e do acontecimento). */
+/**
+ * Fim do semestre (depois da agenda, do mandato e do acontecimento): ganhos do cargo,
+ * esquecimento, gestão e obras, tramitação dos projetos, julgamento de recurso, suplência, elenco, pesquisas
+ * e conquistas. A votação que não foi votada (semestre de campanha) sai da pauta.
+ */
 export const closeCareerSemester = (state: CareerState, content: CareerContent): { state: CareerState; news: CareerNews[] } => {
   const worked = stepAdministration(applyDrift(positionPerks(state, content)), content);
-  const substitute = callSubstitute(worked, content);
+  const works = stepWorks(worked, content);
+  const bills = stepBills(withLegislature(works.state, { floorVoteId: null }), content);
+  const appeal = stepAppeal(bills.state, content);
+  const post = stepPost(appeal.state, content);
+  const substitute = callSubstitute(post.state, content);
   const cast = stepCareerCast(substitute.state, content);
   const polls = stepPolls(cast.state, content);
-  return { state: polls.state, news: [...approvalNews(substitute.state), ...substitute.news, ...cast.news, ...polls.news] };
+  const achievements = unlockAchievements(polls.state, content);
+  return {
+    state: achievements.state,
+    news: [...works.news, ...bills.news, ...appeal.news, ...post.news, ...approvalNews(achievements.state), ...substitute.news, ...cast.news, ...polls.news, ...achievements.news],
+  };
 };
 
-/** Balanço do semestre: variações entre o início e o fim. */
+/** Balanço do semestre: variações entre o início e o fim, a votação, os projetos, as obras e as conquistas. */
 export const buildCareerReport = (
   before: CareerState,
   after: CareerState,
@@ -136,6 +154,11 @@ export const buildCareerReport = (
   approvalDelta: before.administration && after.administration ? after.administration.approval - before.administration.approval : null,
   eventId,
   eventOptionId,
+  vote: after.legislature.voteHistory.find((record) => record.turn === before.turn) ?? null,
+  bills: after.legislature.billHistory.filter((record) => record.closedTurn === before.turn),
+  works: after.worksHistory.filter((record) => record.closedTurn === before.turn),
+  achievements: Object.keys(after.achievements).filter((id) => before.achievements[id] === undefined),
+  appeal: appealVerdictAt(after, before.turn),
 });
 
 // ─── Virada do semestre ───────────────────────────────────────────────────
@@ -158,6 +181,8 @@ const takeOffice = (state: CareerState, content: CareerContent, office: CareerOf
     pendingOffice: null,
     position: { kind: 'office', id: office.id, startTurn, endTurn, consecutiveTerms: reelected && position ? position.consecutiveTerms + 1 : 1 },
     administration: reelected ? state.administration : administrationFor(office),
+    // Vice reeleito entra na chapa de outro titular: a confiança recomeça.
+    post: null,
   };
   const title = getPositionTitle(next, content);
   const text = reelected ? `${state.profile.politicalName} toma posse para novo mandato de ${title}` : `${state.profile.politicalName} toma posse como ${title}`;

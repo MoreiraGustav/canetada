@@ -9,7 +9,8 @@ import type { CareerEvent } from '@/types';
  * - `caixa-2-campanha` → `caixa-2-revelado` (`caixa-2-exposto`, `condenacao-eleitoral`)
  * - `emendas-suspeitas` → `emendas-investigadas` (`emendas-expostas`, `emendas-condenacao`)
  * - `candidatura-laranja` → `laranja-investigada` (`laranja-exposta`)
- * - qualquer condenação → `condenacao-ficha-limpa` (inelegível por 8 anos, `ficha-suja`)
+ * - qualquer condenação → `condenacao-ficha-limpa` (inelegível por 8 anos, `ficha-suja`; recorrer leva o caso ao tribunal superior)
+ * As etapas de cada cadeia, com a explicação mostrada na tela, ficam em `cases.ts`.
  */
 export const CAREER_EVENTS: CareerEvent[] = [
   // ─── Sem cargo: começo de carreira e vida partidária ────────────────────
@@ -248,6 +249,7 @@ export const CAREER_EVENTS: CareerEvent[] = [
   {
     id: 'laranja-investigada',
     category: 'escandalo',
+    cases: ['laranja'],
     title: 'Justiça Eleitoral investiga laranjas',
     icon: '🔎',
     description:
@@ -642,39 +644,6 @@ export const CAREER_EVENTS: CareerEvent[] = [
 
   // ─── Mandato legislativo ────────────────────────────────────────────────
   {
-    id: 'votacao-polemica',
-    category: 'mandato',
-    title: 'Votação que divide a sua base',
-    icon: '🗳️',
-    description:
-      'Um projeto polêmico chega ao plenário. O {partido} fechou questão a favor, mas os eleitores que votaram em você estão contra.',
-    conditions: [{ kind: 'role', roles: ['legislativo'] }],
-    cooldown: 4,
-    options: [
-      {
-        id: 'votar-com-partido',
-        label: 'Votar com o partido',
-        description: 'A liderança agradece. A base eleitoral reclama nas redes.',
-        impact: { partyInfluence: 4, localPopularity: -2, electoralBase: -1 },
-        headline: '{nome} segue o {partido} e vota a favor de projeto polêmico',
-      },
-      {
-        id: 'votar-com-base',
-        label: 'Votar com os seus eleitores',
-        description: 'O eleitor reconhece a coerência, mas o partido pode punir quem desobedece.',
-        impact: { localPopularity: 3, electoralBase: 2, partyInfluence: -4 },
-        headline: '{nome} contraria o {partido} e vota contra projeto polêmico',
-      },
-      {
-        id: 'abster-se',
-        label: 'Se ausentar da votação',
-        description: 'Evita o desgaste com os dois lados, mas pega mal com todo mundo.',
-        impact: { reputation: -2 },
-        headline: '{nome} falta à votação mais polêmica do ano',
-      },
-    ],
-  },
-  {
     id: 'cargo-em-troca-de-voto',
     category: 'mandato',
     title: 'Cargos em troca de voto',
@@ -813,37 +782,6 @@ export const CAREER_EVENTS: CareerEvent[] = [
         impact: { electoralBase: 4, partyInfluence: 2 },
         headline: 'Gabinete de {nome} contrata novos assessores',
         flags: ['rachadinha'],
-      },
-    ],
-  },
-  {
-    id: 'projeto-na-pauta',
-    category: 'mandato',
-    title: 'Seu projeto entra na pauta',
-    icon: '📜',
-    description:
-      'Um projeto de sua autoria finalmente vai a votação. O governo topa apoiar, desde que você aceite mudanças que diluem a ideia original.',
-    conditions: [{ kind: 'role', roles: ['legislativo'] }],
-    cooldown: 4,
-    options: [
-      {
-        id: 'ceder-e-aprovar',
-        label: 'Aceitar as mudanças e aprovar',
-        description: 'Lei aprovada com seu nome, ainda que mais fraca. O governo fica devendo.',
-        impact: { localPopularity: 3, partyInfluence: 2, reputation: 1 },
-        headline: 'Projeto de {nome} é aprovado com mudanças',
-      },
-      {
-        id: 'manter-texto',
-        label: 'Manter o texto original',
-        description: 'Se passar, é uma vitória grande. Sem o apoio do governo, pode cair.',
-        impact: { localPopularity: 5, reputation: 3 },
-        risk: {
-          chance: 0.45,
-          impact: { localPopularity: -5, reputation: -2, partyInfluence: -1 },
-          headline: 'Projeto de {nome} é derrotado em plenário',
-        },
-        headline: 'Projeto de {nome} é aprovado sem alterações',
       },
     ],
   },
@@ -1309,28 +1247,32 @@ export const CAREER_EVENTS: CareerEvent[] = [
     icon: '🪑',
     description:
       'Você não é mais chamado para as reuniões importantes e soube das últimas decisões pelo jornal. O titular parece ter escolhido outros conselheiros.',
-    conditions: [{ kind: 'role', roles: ['vice'] }],
+    // A relação com o titular já esfriou (abaixo da confiança inicial).
+    conditions: [
+      { kind: 'role', roles: ['vice'] },
+      { kind: 'trust', comparator: 'lt', value: 50 },
+    ],
     cooldown: 6,
     options: [
       {
         id: 'aceitar-papel-discreto',
         label: 'Aceitar um papel discreto',
         description: 'Mantém a paz na chapa e a vaga garantida, mas some do noticiário.',
-        impact: { partyInfluence: 2, localPopularity: -2 },
+        impact: { partyInfluence: 2, localPopularity: -2, trust: 8 },
         headline: '{nome} minimiza afastamento e diz que chapa está unida',
       },
       {
         id: 'agenda-propria',
         label: 'Criar uma agenda própria',
         description: 'Aparece por conta própria. O titular vê ambição e esfria a relação.',
-        impact: { localPopularity: 3, nationalRecognition: 1, partyInfluence: -3 },
+        impact: { localPopularity: 3, nationalRecognition: 1, partyInfluence: -3, trust: -5 },
         headline: '{nome} percorre bairros com agenda própria',
       },
       {
         id: 'romper-publicamente',
         label: 'Romper publicamente com o titular',
         description: 'Vira notícia e mostra independência, mas pode perder espaço de vez.',
-        impact: { nationalRecognition: 3, localPopularity: 2, partyInfluence: -6 },
+        impact: { nationalRecognition: 3, localPopularity: 2, partyInfluence: -6, trust: -15 },
         risk: {
           chance: 0.35,
           impact: { reputation: -3, electoralBase: -2 },
@@ -1520,6 +1462,7 @@ export const CAREER_EVENTS: CareerEvent[] = [
   {
     id: 'operacao-propina',
     category: 'escandalo',
+    cases: ['propina'],
     title: 'Operação da Polícia Federal',
     icon: '🚔',
     description:
@@ -1557,6 +1500,7 @@ export const CAREER_EVENTS: CareerEvent[] = [
   {
     id: 'cassacao-executivo',
     category: 'escandalo',
+    cases: ['propina'],
     title: 'Pedido de cassação do seu mandato',
     icon: '🔨',
     description:
@@ -1603,6 +1547,7 @@ export const CAREER_EVENTS: CareerEvent[] = [
   {
     id: 'rachadinha-denunciada',
     category: 'escandalo',
+    cases: ['rachadinha'],
     title: 'Ex-assessor denuncia rachadinha',
     icon: '📰',
     description:
@@ -1654,6 +1599,7 @@ export const CAREER_EVENTS: CareerEvent[] = [
   {
     id: 'processo-de-cassacao',
     category: 'escandalo',
+    cases: ['rachadinha'],
     title: 'Conselho de Ética pede cassação',
     icon: '🔨',
     description:
@@ -1734,6 +1680,7 @@ export const CAREER_EVENTS: CareerEvent[] = [
   {
     id: 'caixa-2-revelado',
     category: 'escandalo',
+    cases: ['caixa-2'],
     title: 'Delação cita caixa 2 na sua campanha',
     icon: '🗂️',
     description:
@@ -1785,6 +1732,7 @@ export const CAREER_EVENTS: CareerEvent[] = [
   {
     id: 'emendas-investigadas',
     category: 'escandalo',
+    cases: ['emendas'],
     title: 'Auditoria nas suas emendas',
     icon: '🧾',
     description:
@@ -1836,10 +1784,11 @@ export const CAREER_EVENTS: CareerEvent[] = [
   {
     id: 'condenacao-ficha-limpa',
     category: 'escandalo',
+    cases: ['propina', 'caixa-2', 'emendas'],
     title: 'Condenação em segunda instância',
     icon: '⛔',
     description:
-      'O tribunal confirmou a condenação. Pela Lei da Ficha Limpa, você fica inelegível por oito anos, mesmo que ainda caibam recursos.',
+      'O tribunal de segunda instância confirmou a condenação no caso abaixo. Pela Lei da Ficha Limpa, a inelegibilidade de oito anos vale já, mesmo com recurso.',
     conditions: [
       {
         kind: 'any',
@@ -1855,17 +1804,17 @@ export const CAREER_EVENTS: CareerEvent[] = [
     options: [
       {
         id: 'recorrer',
-        label: 'Recorrer aos tribunais superiores',
-        description: 'A inelegibilidade vale já. Recorrer mantém a base mobilizada, mas o nome segue no noticiário policial.',
+        label: 'Recorrer ao tribunal superior',
+        description: 'Fica inelegível já, mas o recurso é julgado em cerca de um ano e meio e pode anular a condenação. O nome segue no noticiário.',
         impact: { reputation: -5, electoralBase: 2 },
-        headline: '{nome} fica inelegível após condenação e promete recorrer',
+        headline: '{nome} fica inelegível após condenação e recorre ao tribunal superior',
         flags: ['ficha-suja'],
-        effect: { kind: 'ineligible', semesters: 16 },
+        effect: { kind: 'appeal', semesters: 16 },
       },
       {
         id: 'aceitar-e-se-afastar',
         label: 'Aceitar a decisão e se afastar da vida pública',
-        description: 'A imagem se recupera aos poucos, mas a máquina política esquece de você.',
+        description: 'Não recorre: a inelegibilidade vai até o fim. A imagem se recupera aos poucos, mas a máquina política esquece de você.',
         impact: { reputation: -1, partyInfluence: -8, electoralBase: -4 },
         headline: 'Inelegível, {nome} anuncia afastamento da política',
         flags: ['ficha-suja'],

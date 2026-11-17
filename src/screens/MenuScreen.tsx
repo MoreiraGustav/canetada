@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { getSavedGameSummary } from '@/stores/selectors';
 import { useGameStore } from '@/stores/useGameStore';
+import { MenuAchievementsCard } from '@/components/game/MenuAchievementsCard';
 import { MenuLeadStory } from '@/components/game/MenuLeadStory';
 import { MenuSavedGameCard } from '@/components/game/MenuSavedGameCard';
 import { Button } from '@/components/ui/Button';
@@ -61,6 +62,7 @@ export const MenuScreen = () => {
             </Button>
           </Card>
           {summary && <MenuSavedGameCard summary={summary} onContinue={handleContinue} onDelete={() => setConfirmOpen(true)} />}
+          <MenuAchievementsCard />
           <p className="font-sans text-[11px] leading-relaxed text-ink-muted">
             O progresso é salvo automaticamente neste navegador. Obra de ficção: no Brasil real, pessoas reais aparecem só em cenários hipotéticos.
           </p>

@@ -10,7 +10,7 @@ import {
   startSecondTerm,
 } from '@/engine';
 import type { EndingType, GameEnding } from '@/types';
-import { recordPresidencyLegacy } from './careerPresidency';
+import { recordPresidencyEnd } from './careerPresidency';
 import { createInitialGameData, pickSimulationSlice } from './gameData';
 import type { GameStoreActions, GameStoreApi } from './gameStoreTypes';
 import { clearSave, loadGame, resetDomainStores } from './persistence';
@@ -36,8 +36,17 @@ const finishGame = (api: GameStoreApi, type: EndingType): void => {
     reelectionVoteShare: game.reelection?.voteShare ?? null,
   };
   const score = calculateScore(state, ending, GAME_CONTENT.legacyTiers, GAME_CONTENT.latentRisks);
-  // Modo carreira: a Presidência entra no legado da trajetória.
-  recordPresidencyLegacy(game.turn - game.firstTurn + 1, game.termLength);
+  // Modo carreira: a Presidência entra na trajetória (e a carreira pode continuar depois).
+  recordPresidencyEnd({
+    ending: type,
+    monthsPlayed: game.turn - game.firstTurn + 1,
+    termLength: game.termLength,
+    terms: game.termNumber,
+    finalApproval: state.approval,
+    scandals: score.revelations.length,
+    score: score.total,
+    legacyTitle: score.legacyTitle,
+  });
   api.commit({ ...distributeSimulationState(state), phase: 'result', ending, score });
 };
 

@@ -4,11 +4,11 @@
  */
 import { SAVE_STORAGE_KEY, SAVE_VERSION } from '@/constants/game';
 import { INITIAL_METRICS } from '@/constants/metrics';
-import { createCast, ensureCareerCast } from '@/engine';
+import { createCast, ensureCareerCast, migrateLegacyConviction, openCareerSemester, withCareerDefaults } from '@/engine';
 import type { GameData, SaveFile } from '@/types';
 import { debugLog } from '@/utils/debug';
 import { getCareerContent, getWorldContent } from './content';
-import { getCareerData, useCareerStore } from './useCareerStore';
+import { createInitialCareerData, getCareerData, useCareerStore } from './useCareerStore';
 import { getCongressData, useCongressStore } from './useCongressStore';
 import { getDiplomacyData, useDiplomacyStore } from './useDiplomacyStore';
 import { getMetricsData, useMetricsStore } from './useMetricsStore';
@@ -77,12 +77,18 @@ export const loadGame = (): GameData | null => {
   useCareerStore.getState().reset();
   if (save.career) {
     const state = save.career.state;
-    const migrated = state ? { ...state, world: state.world ?? 'ficticio', cast: state.cast ?? [], preCandidacy: state.preCandidacy ?? null, polls: state.polls ?? [] } : null;
+    const migrated = state
+      ? withCareerDefaults({ ...state, world: state.world ?? 'ficticio', cast: state.cast ?? [], preCandidacy: state.preCandidacy ?? null, polls: state.polls ?? [] })
+      : null;
+    const withCast = migrated ? migrateLegacyConviction(ensureCareerCast(migrated, getCareerContent(migrated.world)), getCareerContent(migrated.world)) : null;
+    // Save no meio do semestre, de antes do mandato ativo: a votação do semestre entra na pauta agora.
+    const opened = withCast && save.game.phase === 'career-turn' ? openCareerSemester(withCast, getCareerContent(withCast.world)) : withCast;
     useCareerStore.getState().hydrate({
+      ...createInitialCareerData(),
       ...save.career,
       campaignOfficeId: save.career.campaignOfficeId ?? null,
       pendingRunoff: save.career.pendingRunoff ?? null,
-      state: migrated ? ensureCareerCast(migrated, getCareerContent(migrated.world)) : null,
+      state: opened,
     });
   }
   // Saves de antes do elenco político: monta ministros e oposição a partir da eleição salva.
@@ -102,11 +108,16 @@ export const clearSave = (): void => {
   }
 };
 
-/** Reinicia todas as stores de domínio. */
-export const resetDomainStores = (): void => {
+/** Reinicia as stores do jogo presidencial (a carreira continua). */
+export const resetPresidentialStores = (): void => {
   useMetricsStore.getState().reset();
   useCongressStore.getState().reset();
   useDiplomacyStore.getState().reset();
   usePlayerStore.getState().reset();
+};
+
+/** Reinicia todas as stores de domínio. */
+export const resetDomainStores = (): void => {
+  resetPresidentialStores();
   useCareerStore.getState().reset();
 };

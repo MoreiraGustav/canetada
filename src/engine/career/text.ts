@@ -1,9 +1,10 @@
 /**
  * Manchetes da carreira: preenche `{nome}`, `{cidade}`, `{uf}`, `{estado}`,
- * `{partido}` e `{cargo}` (título no gênero do personagem).
+ * `{partido}`, `{cargo}` (título no gênero do personagem), o elenco e `{titular}`
+ * (quem governa o nível do cargo: o titular da chapa do vice ou o chefe da nomeação).
  */
 import type { CareerCharacterRole, CareerContent, CareerNews, CareerState, NewsTone } from '@/types';
-import { findAppointment, findCity, findOffice, findParty, getCharacter, shortName } from './helpers';
+import { findAppointment, findCity, findOffice, findParty, getCareerLevel, getCharacter, shortName } from './helpers';
 
 const NO_POSITION_TITLE = { f: 'militante', m: 'militante' } as const;
 
@@ -25,6 +26,13 @@ const castName = (state: CareerState, role: CareerCharacterRole, fallback: strin
   return character ? shortName(character.name) : fallback;
 };
 
+/** Nome curto de quem governa o nível do cargo atual (o titular, para o vice). */
+const titularName = (state: CareerState, content: CareerContent): string => {
+  const level = getCareerLevel(state, content);
+  const government = level ? state.governments[level] : null;
+  return government && !government.isPlayer ? shortName(government.leaderName) : 'o titular';
+};
+
 export const fillCareerText = (template: string, state: CareerState, content: CareerContent): string => {
   const city = findCity(content, state.profile.baseCityId);
   const uf = content.states.find((entry) => entry.id === state.profile.baseStateId);
@@ -38,6 +46,7 @@ export const fillCareerText = (template: string, state: CareerState, content: Ca
     padrinho: castName(state, 'padrinho', 'o padrinho'),
     rival: castName(state, 'rival', 'o rival'),
     adversario: castName(state, 'adversario', 'o adversário'),
+    titular: titularName(state, content),
   };
   return template.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
 };

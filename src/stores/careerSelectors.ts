@@ -4,8 +4,8 @@
  */
 import { useMemo } from 'react';
 import { DIFFICULTY_CONFIGS } from '@/constants/balance';
-import { CAREER_LEVEL_LABELS, CAREER_METRIC_INFO, CAREER_METRIC_KEYS, PARTY_RANKS } from '@/constants/career';
-import { ageAt, findCity, findParty, getGovernmentRelation, getPositionTitle, hasMunicipalElections } from '@/engine';
+import { CAREER_LEVEL_LABELS, CAREER_METRIC_INFO, CAREER_METRIC_KEYS, EX_PRESIDENT_FLAG, PARTY_RANKS } from '@/constants/career';
+import { ageAt, findCity, findParty, getGovernmentRelation, getPositionTitle, hasMunicipalElections, pendingCharges } from '@/engine';
 import type {
   CareerContent,
   BrazilianState,
@@ -27,6 +27,7 @@ import type {
   SavedGameSummary,
 } from '@/types';
 import { formatCareerTurn, getCareerDate, getElectionAt, getNextElectionTurn } from '@/utils/careerCalendar';
+import { formatChance } from '@/utils/format';
 import { getCareerContent } from './content';
 import { useCareerStore } from './useCareerStore';
 
@@ -54,6 +55,11 @@ const TIMELINE_ICONS: Record<CareerTimelineKind, string> = {
   retorno: '↩️',
   inelegivel: '⛔',
   presidencia: '⭐',
+  'ex-presidente': '🎖️',
+  lei: '📜',
+  obra: '🏗️',
+  heranca: '👑',
+  recurso: '⚖️',
   aposentadoria: '🌅',
 };
 
@@ -80,6 +86,22 @@ const positionDetail = (state: CareerState): string | null => {
   return `${end}${terms}${succession}`;
 };
 
+/** "2ª geração · filha de Fulana" (null na 1ª geração). */
+const dynastyLabel = (state: CareerState): string | null => {
+  const { dynasty, profile } = state;
+  const parent = dynasty?.ancestors.at(-1);
+  if (!dynasty || !parent) return null;
+  const female = profile.sex === 'f';
+  const bond = dynasty.bond === 'filho' ? (female ? 'filha' : 'filho') : female ? 'afilhada' : 'afilhado';
+  return `${dynasty.generation}ª geração · ${bond} de ${parent.politicalName}`;
+};
+
+/** Acusações em andamento e recurso esperando julgamento. */
+const legalLabels = (state: CareerState): string[] => [
+  ...pendingCharges(state, contentOf(state)).map((entry) => `Réu: ${entry.name.toLowerCase()} (a decisão pode sair a qualquer semestre)`),
+  ...(state.appeal ? [`Recurso no tribunal superior: decisão no ${formatCareerTurn(state.appeal.decisionTurn)} (${formatChance(state.appeal.chance)} de anular)`] : []),
+];
+
 export const buildCareerProfile = (state: CareerState): CareerProfileView => {
   const uf = contentOf(state).states.find((entry) => entry.id === state.profile.baseStateId);
   return {
@@ -97,6 +119,9 @@ export const buildCareerProfile = (state: CareerState): CareerProfileView => {
     stateName: uf?.name ?? '',
     dateLabel: formatCareerTurn(state.turn),
     ineligibleLabel: state.ineligibleUntil !== null && state.ineligibleUntil >= state.turn ? `Inelegível até o ${formatCareerTurn(state.ineligibleUntil)}` : null,
+    dynastyLabel: dynastyLabel(state),
+    legalLabels: legalLabels(state),
+    exPresidentLabel: state.flags[EX_PRESIDENT_FLAG] === undefined ? null : state.profile.sex === 'f' ? 'Ex-presidenta' : 'Ex-presidente',
   };
 };
 

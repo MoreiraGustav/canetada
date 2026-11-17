@@ -2,7 +2,7 @@
  * Selectors das eleições da carreira (convenção e apuração) e do legado final.
  */
 import { useMemo } from 'react';
-import { electorateFor, findAppointment, findOffice, findParty, getPositionTitle, listCandidacies, seatsFor } from '@/engine';
+import { electorateFor, findAppointment, findOffice, findParty, getPositionTitle, hasReachedRetirement, listCandidacies, seatsFor } from '@/engine';
 import type {
   CareerContent,
   CandidacyOption,
@@ -17,6 +17,7 @@ import type {
 } from '@/types';
 import { formatCareerTurn } from '@/utils/careerCalendar';
 import { formatPeople } from '@/utils/format';
+import { buildCareerAchievements, buildDynastyView } from './careerAchievementSelectors';
 import { buildCareerProfile, buildTimeline, careerPortrait, electionLabel, useCareerState } from './careerSelectors';
 import { getCareerContent } from './content';
 import { useCareerStore } from './useCareerStore';
@@ -106,6 +107,10 @@ export const buildCareerLegacyView = (state: CareerState, legacy: NonNullable<Ca
   highestAppointment: legacy.highestAppointmentId ? findAppointment(contentOf(state), legacy.highestAppointmentId) ?? null : null,
   timeline: buildTimeline(state),
   elections: state.elections.map((record) => ({ record, office: findOffice(contentOf(state), record.officeId) ?? null, dateLabel: formatCareerTurn(record.turn) })),
+  achievements: buildCareerAchievements(state),
+  dynasty: buildDynastyView(state, legacy),
+  // Só quem saiu do Planalto (sem ter anunciado a aposentadoria) volta à carreira.
+  canResume: state.presidencies.length > 0 && state.position === null && state.timeline.at(-1)?.kind !== 'aposentadoria' && !hasReachedRetirement(state),
 });
 
 /** Legado da carreira (tela final da carreira ou bloco no resultado da Presidência). */

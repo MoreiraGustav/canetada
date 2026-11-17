@@ -9,6 +9,8 @@ import { createRng } from '../random';
 import { ageAt, closePosition, findAppointment, findCity, findParty, getGovernmentRelation } from './helpers';
 import { createCareerNews, getPositionTitle } from './text';
 import { ensureCareerCast, leaveCastBehind } from './characters';
+import { createLegislature } from './legislature';
+import { createPost, referralDiscount } from './post';
 import { createInitialGovernments } from './world';
 
 /** Semestres mínimos entre duas trocas de partido. */
@@ -56,14 +58,38 @@ export const createCareer = (input: CareerSetupInput, content: CareerContent, se
     governments,
     pendingOffice: null,
     flags: {},
+    flagNotes: {},
+    appeal: null,
+    post: null,
+    missionLog: {},
     actionHistory: {},
     eventHistory: {},
     timeline: [{ turn: 1, kind: 'inicio', text: `${profile.politicalName} entra para a política em ${city.name}, aos ${input.startingAge} anos` }],
     elections: [],
     ineligibleUntil: null,
+    legislature: createLegislature(),
+    worksHistory: [],
+    achievements: {},
+    presidencies: [],
+    dynasty: null,
     seed: rng.getSeed(),
   };
 };
+
+/** Saves de antes do mandato ativo, das obras e das conquistas: completa com os valores iniciais. */
+export const withCareerDefaults = (state: CareerState): CareerState => ({
+  ...state,
+  legislature: { ...createLegislature(), ...state.legislature },
+  worksHistory: state.worksHistory ?? [],
+  achievements: state.achievements ?? {},
+  presidencies: state.presidencies ?? [],
+  dynasty: state.dynasty ?? null,
+  flagNotes: state.flagNotes ?? {},
+  appeal: state.appeal ?? null,
+  post: state.post ?? null,
+  missionLog: state.missionLog ?? {},
+  administration: state.administration ? { ...state.administration, works: state.administration.works ?? [] } : null,
+});
 
 /**
  * Pode trocar de partido agora? Mandato proporcional (vereador, deputado) só na
@@ -133,7 +159,9 @@ export const checkAppointment = (state: CareerState, content: CareerContent, app
   if (state.position?.id === appointment.id) return { ok: false, reason: 'É o seu cargo atual.' };
   if (state.partyId === null) return { ok: false, reason: 'Exige filiação a um partido.' };
   if (appointment.minAge !== undefined && ageAt(state) < appointment.minAge) return { ok: false, reason: `Idade mínima: ${appointment.minAge} anos.` };
-  if (state.metrics.partyInfluence < appointment.minInfluence) return { ok: false, reason: `Exige influência partidária ${appointment.minInfluence}.` };
+  // Com a confiança do chefe alta, a indicação dele baixa a exigência de influência.
+  const minInfluence = appointment.minInfluence - referralDiscount(state);
+  if (state.metrics.partyInfluence < minInfluence) return { ok: false, reason: `Exige influência partidária ${minInfluence}.` };
   if (appointment.minReputation !== undefined && state.metrics.reputation < appointment.minReputation) {
     return { ok: false, reason: `Exige reputação ${appointment.minReputation}.` };
   }
@@ -151,6 +179,7 @@ export const takeAppointment = (state: CareerState, content: CareerContent, appo
   const next: CareerState = {
     ...freed,
     position: { kind: 'appointment', id: appointment.id, startTurn: state.turn, endTurn: null, consecutiveTerms: 1 },
+    post: createPost(),
   };
   const verb = state.profile.sex === 'f' ? 'nomeada' : 'nomeado';
   const text = `${state.profile.politicalName} é ${verb} ${getPositionTitle(next, content)}`;

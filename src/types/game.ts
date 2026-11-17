@@ -76,7 +76,8 @@ export type GamePhase =
   | 'career-campaign'
   | 'career-runoff'
   | 'career-election-result'
-  | 'career-result';
+  | 'career-result'
+  | 'career-heir';
 
 export interface GameStats {
   eventsFaced: number;

@@ -62,6 +62,7 @@ const EVALUATORS: { [K in CareerCondition['kind']]: Evaluator<K> } = {
     const matches = character !== undefined && (condition.inOffice === undefined || (character.officeId !== null) === condition.inOffice);
     return matches === condition.present;
   },
+  trust: (state, _content, condition) => state.post !== null && compare(state.post.trust, condition.comparator, condition.value),
   any: (state, content, condition) => condition.conditions.some((entry) => evaluateCareerCondition(state, content, entry)),
 };
 

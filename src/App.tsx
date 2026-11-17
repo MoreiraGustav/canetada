@@ -35,6 +35,7 @@ const SCREENS: Record<GamePhase, LazyScreen> = {
   'career-runoff': lazyScreen(() => import('@/screens/CareerRunoffScreen'), 'CareerRunoffScreen'),
   'career-election-result': lazyScreen(() => import('@/screens/CareerElectionResultScreen'), 'CareerElectionResultScreen'),
   'career-result': lazyScreen(() => import('@/screens/CareerResultScreen'), 'CareerResultScreen'),
+  'career-heir': lazyScreen(() => import('@/screens/CareerHeirScreen'), 'CareerHeirScreen'),
 };
 
 export const App = () => {

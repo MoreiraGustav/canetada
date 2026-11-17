@@ -224,7 +224,7 @@ export const characterTarget = (
   difficultyOf: (office: CareerOffice) => number,
 ): CareerOffice | undefined => {
   const cycle = getElectionAt(state.turn);
-  if (cycle === null || !character.active) return undefined;
+  if (cycle === null || !character.active || character.retiredFromPolitics) return undefined;
   return content.offices
     .filter((office) => office.cycle === cycle && !office.headOffice && office.id !== 'presidente')
     .filter((office) => characterCanRun(state, content, character, office, state.turn))

@@ -155,3 +155,40 @@ export const RELATION_LABELS: ReadonlyArray<{ min: number; label: string }> = [
   { min: -45, label: 'Desconfiado' },
   { min: -100, label: 'Inimigo' },
 ];
+
+// ─── Mandato, obras e conquistas ──────────────────────────────────────────
+
+/** Galeria de conquistas: guardada fora do save (sobrevive ao fim da carreira). */
+export const ACHIEVEMENTS_STORAGE_KEY = 'presidente-simulator:achievements:v1';
+
+/** Cadeiras fixas do Congresso (a Câmara Municipal e a Assembleia dependem do lugar). */
+export const CHAMBER_OF_DEPUTIES_SEATS = 513;
+export const SENATE_SEATS = 81;
+
+/** Casa legislativa de cada cargo, para as manchetes e o painel do mandato. */
+export const LEGISLATIVE_HOUSES: Readonly<Record<string, { name: string; short: string }>> = {
+  vereador: { name: 'Câmara Municipal', short: 'Câmara Municipal' },
+  'deputado-estadual': { name: 'Assembleia Legislativa', short: 'Assembleia' },
+  'deputado-federal': { name: 'Câmara dos Deputados', short: 'Câmara' },
+  senador: { name: 'Senado Federal', short: 'Senado' },
+};
+
+export const BILL_STAGE_LABELS: Readonly<Record<string, string>> = {
+  comissao: 'Na comissão',
+  plenario: 'Pronto para o plenário',
+};
+
+export const FLOOR_VOTE_LABELS: Readonly<Record<string, string>> = {
+  sim: 'Votar sim',
+  nao: 'Votar não',
+  abstencao: 'Se abster',
+};
+
+export const ACHIEVEMENT_TIER_LABELS: Readonly<Record<string, string>> = {
+  bronze: 'Bronze',
+  prata: 'Prata',
+  ouro: 'Ouro',
+};
+
+/** Flag do ex-presidente (libera ações e eventos da vida depois do Planalto). */
+export const EX_PRESIDENT_FLAG = 'ex-presidente';

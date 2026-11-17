@@ -23,8 +23,10 @@ import { deriveSeed, generateName } from '../cast';
 import { createRng } from '../random';
 import { characterTarget } from './characters';
 import { arePartiesAllied, findCity, findOffice, findParty, getCharacter, hasMunicipalElections, referenceSeats, shortName } from './helpers';
+import { titularFactor } from './post';
 import { hasRunoff } from './rounds';
 import { electorateFit, electorateLean } from './world';
+import { worksFactor } from './works';
 
 /** Turnos em que a legenda garantida por um convite de troca de partido vale. */
 const GUARANTEED_NOMINATION_TURNS = 3;
@@ -145,6 +147,15 @@ const rejectionFactor = (state: CareerState): CandidacyFactor | null => {
   return gap > 0 ? { key: 'rejeicao', label: 'Rejeição (reputação baixa)', points: -gap * perPoint } : null;
 };
 
+/** Reeleição no Legislativo: leis aprovadas no mandato mostram serviço. */
+const lawsFactor = (state: CareerState, office: CareerOffice): CandidacyFactor | null => {
+  const { position } = state;
+  if (office.branch !== 'legislativo' || position?.kind !== 'office' || position.id !== office.id) return null;
+  const laws = state.legislature.billHistory.filter((record) => record.outcome === 'lei' && record.officeId === office.id && record.closedTurn >= position.startTurn).length;
+  const { lawStrength, lawStrengthMax } = CAREER.legislature;
+  return laws > 0 ? { key: 'leis', label: `Leis aprovadas no mandato (${laws})`, points: Math.min(lawStrengthMax, laws * lawStrength) } : null;
+};
+
 const governingFactor = (state: CareerState, office: CareerOffice, incumbent: boolean): CandidacyFactor | null =>
   office.branch === 'executivo' && !incumbent && state.partyId !== null && state.governments[office.level].partyId === state.partyId
     ? { key: 'governo', label: 'Seu partido governa', points: CAREER.election.governingPartyBonus }
@@ -164,7 +175,14 @@ const scaled = (factor: CandidacyFactor, scale: number): CandidacyFactor => ({ .
 /** Força do jogador para um cargo (sem estratégia de campanha), com os fatores. `scale` < 1 na chapa de vice. */
 const playerStrength = (state: CareerState, content: CareerContent, office: CareerOffice, scale: number): CandidacyFactor[] => {
   const incumbency = incumbencyFactor(state, office);
-  const extras = [incumbency, governingFactor(state, office, incumbency !== null), rejectionFactor(state)].filter(
+  const extras = [
+    incumbency,
+    worksFactor(state, office),
+    lawsFactor(state, office),
+    governingFactor(state, office, incumbency !== null),
+    titularFactor(state, content, office),
+    rejectionFactor(state),
+  ].filter(
     (entry): entry is CandidacyFactor => entry !== null,
   );
   return [

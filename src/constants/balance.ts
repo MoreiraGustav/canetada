@@ -905,6 +905,190 @@ export const CAREER = {
     /** Semestres antes da eleição em que as pesquisas saem. */
     horizon: 2,
   },
+  /** Mandato no Legislativo: projetos de lei, votações em plenário e emendas. */
+  legislature: {
+    /** Projetos em tramitação ao mesmo tempo. */
+    maxBills: 2,
+    /** Projeto rejeitado, vetado ou arquivado pode voltar depois de N semestres. */
+    billRetryTurns: 4,
+    /**
+     * Comissão → plenário, por semestre: base + articulação + influência acima de 40 +
+     * relação com o governo daquele nível − polêmica do tema.
+     */
+    committeeBase: 0.35,
+    committeePerPush: 0.15,
+    committeePerInfluence: 0.006,
+    committeeInfluenceReference: 40,
+    committeeGovernment: { own: 0.15, ally: 0.05, opposition: -0.12 },
+    committeePerControversy: 0.012,
+    committeeMinChance: 0.1,
+    committeeMaxChance: 0.9,
+    /** Semestres parado na comissão até o projeto ser engavetado. */
+    maxCommitteeTurns: 4,
+    /**
+     * Plenário: apoio (%) = 50 + governo + (opinião pública − 50) × peso + articulação +
+     * (influência − 50) × peso − polêmica, com ruído uniforme de ± `floorNoise`.
+     */
+    floorGovernment: { own: 8, ally: 4, opposition: -6 },
+    floorPopularityWeight: 0.3,
+    floorPerPush: 4,
+    floorInfluenceWeight: 0.12,
+    floorInfluenceReference: 50,
+    floorNoise: 10,
+    /** Ausentes em cada votação (fração da Casa). */
+    absentShare: 0.05,
+    /** Chefe do Executivo de oposição veta a lei aprovada com esta chance. */
+    vetoChance: 0.35,
+    /** Ganho de quem aprova uma lei (somado ao do tema), e o custo da derrota e do veto. */
+    lawImpact: { reputation: 1.5, partyInfluence: 1 },
+    rejectedImpact: { reputation: -1, partyInfluence: -1 },
+    vetoImpact: { reputation: 1 },
+    /** Reeleição: força por lei aprovada no mandato (até o máximo). */
+    lawStrength: 1,
+    lawStrengthMax: 2,
+    /** Votações em plenário: uma por semestre. */
+    vote: {
+      /** Seguir o partido é o esperado (ganha pouco); contrariar custa caro com a liderança e o padrinho. */
+      withParty: { partyInfluence: 0.5, relations: { padrinho: 1 } },
+      againstParty: { partyInfluence: -2, relations: { padrinho: -4 } },
+      abstention: { reputation: -1, partyInfluence: -0.5 },
+      /** Popularidade por ponto de opinião pública a favor da posição escolhida (acima de 50). */
+      publicPerPoint: 0.04,
+      /** No Congresso, parte do efeito vai para o reconhecimento nacional. */
+      nationalShare: 0.5,
+      /** Votar com (ou contra) a própria ideologia: base fiel. */
+      coherence: 1,
+      /** Proposta do governo tem a base aliada a favor (pontos de apoio). */
+      governmentSupport: 10,
+      publicWeight: 0.2,
+      noise: 12,
+      history: 12,
+      /** Semestres até a mesma votação voltar à pauta. */
+      cooldown: 8,
+    },
+  },
+  /** Emendas individuais por ano (R$). */
+  amendments: {
+    /** Câmara e Senado: valores aproximados das emendas individuais da LOA de 2025. */
+    federalDeputy: 38_000_000,
+    senator: 70_000_000,
+    /**
+     * Assembleias e Câmaras Municipais (emendas impositivas): fração da receita do estado ou
+     * do município dividida entre as cadeiras.
+     */
+    stateShare: 0.005,
+    cityShare: 0.012,
+    /** Governo de oposição segura os pagamentos: o efeito da emenda encolhe. */
+    oppositionFactor: 0.6,
+  },
+  /** Orçamento de prefeituras e governos estaduais (estimado pelo eleitorado). */
+  budget: {
+    /** Receita anual por eleitor apto (R$), com piso para as cidades pequenas. */
+    cityPerVoter: 6_000,
+    cityFloor: 25_000_000,
+    statePerVoter: 8_000,
+    /** 1 ponto de contas = esta fração da receita anual. */
+    pointShare: 0.005,
+    /** Margem para obras por semestre, em pontos de contas (o que passar disso pesa no caixa). */
+    investmentPoints: 4,
+  },
+  /** Obras com prazo. */
+  works: {
+    maxActive: 3,
+    /** Contas abaixo de `CAREER.admin.contasCrisis`: chance de a obra parar no semestre. */
+    stalledChance: 0.5,
+    /** Aprovação perdida por semestre por obra atrasada. */
+    lateApprovalPenalty: 1,
+    /** Entrega atrasada rende só esta fração da aprovação. */
+    lateDeliveryFactor: 0.6,
+    /** Mesma obra só pode ser lançada de novo depois de N semestres. */
+    relaunchTurns: 4,
+    /** Obras a partir deste custo entram na trajetória (grandes obras). */
+    landmarkCost: 14,
+    /** Reeleição: força por obra entregue no mandato (até o máximo) e por obra atrasada. */
+    deliveredStrength: 0.75,
+    deliveredStrengthMax: 3,
+    lateStrength: -1.5,
+  },
+  /** Vida depois do Planalto (o jogo presidencial devolve a carreira). */
+  postPresidency: {
+    /** Ex-presidente: todo o país sabe quem é. */
+    nationalRecognition: 95,
+    /** Reputação por ponto de aprovação final acima (ou abaixo) de `approvalReference`. */
+    approvalReference: 40,
+    reputationPerApproval: 0.3,
+    scandalReputation: -8,
+    impeachmentReputation: -15,
+    /** Impeachment: inabilitação por 8 anos (Constituição, art. 52, parágrafo único). */
+    impeachmentIneligibleSemesters: 16,
+    /** Com aprovação boa, vira a liderança máxima do partido; ruim, o partido se afasta. */
+    partyLeaderApproval: 45,
+    partyLeaderInfluence: 85,
+    partyFallout: -15,
+    electoralBaseFloor: 55,
+    /** A popularidade local se aproxima da aprovação final (fração). */
+    localPopularityBlend: 0.5,
+    /** Sucessor do mesmo partido: chance logística pela aprovação final. */
+    successionCenter: 45,
+    successionSpread: 8,
+  },
+  /** Herdeiro(a) político(a): parte do capital passa adiante. */
+  heir: {
+    inheritance: {
+      filho: { localPopularity: 0.3, nationalRecognition: 0.25, electoralBase: 0.35, partyInfluence: 0.15 },
+      afilhado: { localPopularity: 0.15, nationalRecognition: 0.1, electoralBase: 0.3, partyInfluence: 0.3 },
+    },
+    /** O sobrenome carrega parte da reputação (boa ou ruim). */
+    reputationInheritance: { filho: 0.3, afilhado: 0.1 },
+    /** Teto de cada indicador herdado no começo. */
+    maxStart: 60,
+    relation: { filho: 85, afilhado: 70 },
+    /** Força de quem passa o bastão (vira padrinho): base + hierarquia do maior cargo. */
+    parentStrengthBase: 40,
+    parentStrengthPerRank: 5,
+    /** O adversário da família passa adiante com parte da hostilidade. */
+    adversaryRelationKept: 0.5,
+    minAge: 18,
+    maxAge: 45,
+    defaultAge: 25,
+  },
+  /** Cargo de confiança e vice: missões do chefe (ou do titular) e a confiança dele. */
+  post: {
+    initialTrust: 50,
+    /** Missão ignorada no semestre: confiança perdida. */
+    skippedMissionTrust: -5,
+    /** Mesma missão volta depois de N semestres. */
+    missionCooldown: 4,
+    /** Confiança alta: o chefe indica você (exigência de influência menor nos próximos cargos) e o cargo rende mais. */
+    highTrust: 70,
+    referralInfluence: 10,
+    highTrustPerkFactor: 0.5,
+    /** Confiança baixa: chance de exoneração por semestre. */
+    lowTrust: 25,
+    dismissalChance: 0.4,
+    /** Vice não é exonerado: com confiança baixa, o titular esvazia o seu espaço no governo (chance por semestre e custo). */
+    sidelineChance: 0.4,
+    sidelineImpact: { partyInfluence: -3, localPopularity: -1 },
+    /**
+     * Vice que disputa a cadeira do titular: com confiança alta, o titular apoia a sucessão;
+     * com confiança baixa, apoia outro nome. Pontos de força (a mesma ordem do "partido no poder").
+     */
+    successorSupport: 3,
+  },
+  /**
+   * Recurso contra condenação (Ficha Limpa): a inelegibilidade vale já e o tribunal superior
+   * julga depois. Chance = base do caso + (influência − referência) × peso (advogados e apoio político).
+   */
+  appeal: {
+    decisionTurns: 3,
+    influenceReference: 50,
+    perInfluence: 0.003,
+    defaultChance: 0.3,
+    minChance: 0.1,
+    maxChance: 0.6,
+    overturnImpact: { reputation: 6, electoralBase: 2 },
+    upheldImpact: { reputation: -2 },
+  },
   legacy: {
     /** Pontos de legado por ano no cargo, multiplicados pelo `rank`. */
     pointsPerRankYear: 10,
@@ -912,5 +1096,11 @@ export const CAREER = {
     /** Pontos por ponto de reputação final acima (ou abaixo) de 50. */
     reputationPoints: 2,
     presidencyBonus: 1000,
+    lawPoints: 15,
+    workPoints: 8,
+    achievementPoints: 5,
+    /** Pontos por ponto de aprovação final no Planalto acima (ou abaixo) de 40; impeachment desconta. */
+    presidencyApprovalPoints: 8,
+    impeachmentPenalty: 400,
   },
 } as const;

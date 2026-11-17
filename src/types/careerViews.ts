@@ -2,7 +2,9 @@
  * Dados derivados do modo carreira prontos para a UI (expostos por
  * `stores/careerSelectors.ts`). Componentes recebem estes objetos via props.
  */
+import type { Achievement } from './achievements';
 import type { Party } from './candidates';
+import type { AmendmentTarget, BillPlan, BillStage, CareerBill, CareerMission, FloorVote, FloorVoteChoice, PublicWorkTemplate } from './careerMandate';
 import type {
   AdminIndicatorKey,
   CampaignChoices,
@@ -66,6 +68,12 @@ export interface CareerProfileView {
   dateLabel: string;
   /** "Inelegível até 2º sem. 2036" (ou null). */
   ineligibleLabel: string | null;
+  /** "2ª geração · filha de Fulana" (ou null na 1ª geração). */
+  dynastyLabel: string | null;
+  /** "Ex-presidenta" / "Ex-presidente" (null para quem nunca passou pelo Planalto). */
+  exPresidentLabel: string | null;
+  /** Situação na Justiça: acusações em andamento e recurso esperando julgamento. */
+  legalLabels: string[];
 }
 
 export interface CareerElectionCountdownView {
@@ -95,6 +103,8 @@ export interface CareerActionView {
   /** Semestres de espera (0 = disponível). */
   cooldownLeft: number;
   selected: boolean;
+  /** Custo em reais (programas de gestão), ou null. */
+  costLabel?: string | null;
 }
 
 export interface CareerAdminIndicatorView {
@@ -159,10 +169,23 @@ export interface CareerEventOptionView {
   effectLabel: string | null;
 }
 
+/** Etapa já vivida de um caso na Justiça ("como chegamos aqui"). */
+export interface CareerCaseStepView {
+  key: string;
+  caseName: string;
+  dateLabel: string;
+  /** O que a etapa significa. */
+  text: string;
+  /** A escolha ou o desfecho que a causou (vazio em saves antigos). */
+  note: string;
+}
+
 export interface CareerEventView {
   event: CareerEvent;
   /** Descrição com os marcadores preenchidos. */
   description: string;
+  /** História dos casos na Justiça ligados ao evento (vazio fora dos escândalos). */
+  backstory: CareerCaseStepView[];
   categoryLabel: string;
   dateLabel: string;
   options: CareerEventOptionView[];
@@ -180,6 +203,30 @@ export interface CareerReportView {
   dateLabel: string;
   news: CareerNews[];
   deltas: CareerDeltaView[];
+  /** Votação em plenário do semestre. */
+  vote: CareerVoteResultView | null;
+  /** Projetos que terminaram a tramitação e obras entregues ou inacabadas. */
+  outcomes: CareerOutcomeView[];
+  achievements: Achievement[];
+}
+
+export interface CareerVoteResultView {
+  title: string;
+  icon: string;
+  house: string;
+  /** "Você votou não (contra o partido)". */
+  choiceLabel: string;
+  followedParty: boolean;
+  passed: boolean;
+  yes: number;
+  no: number;
+}
+
+export interface CareerOutcomeView {
+  key: string;
+  icon: string;
+  text: string;
+  tone: Tone;
 }
 
 export interface CandidacyView {
@@ -228,6 +275,227 @@ export interface CareerLegacyView {
   highestAppointment: CareerAppointment | null;
   timeline: CareerTimelineView[];
   elections: Array<{ record: CareerElectionRecord; office: CareerOffice | null; dateLabel: string }>;
+  achievements: AchievementView[];
+  dynasty: CareerDynastyView | null;
+  /** Ex-presidente que ainda pode voltar à carreira (idade abaixo da aposentadoria). */
+  canResume: boolean;
+}
+
+// ─── Mandato legislativo ──────────────────────────────────────────────────
+
+export interface FloorVoteOptionView {
+  choice: FloorVoteChoice;
+  label: string;
+  /** Leituras curtas da escolha ("Segue o partido", "Agrada 70% da população"). */
+  notes: string[];
+  hints: ImpactHint[];
+  selected: boolean;
+}
+
+export interface FloorVoteView {
+  vote: FloorVote;
+  house: string;
+  partyLine: Exclude<FloorVoteChoice, 'abstencao'>;
+  partyAcronym: string;
+  /** "Proposta da prefeitura (aliada)", ou null fora das propostas do governo. */
+  governmentLabel: string | null;
+  /** Nenhuma escolha marcada: vale a orientação do partido. */
+  followingDefault: boolean;
+  options: FloorVoteOptionView[];
+}
+
+export interface CareerBillView {
+  bill: CareerBill;
+  /** Em tramitação: o estágio; disponível para apresentar: null. */
+  stage: BillStage | null;
+  stageLabel: string | null;
+  /** Chance de sair da comissão (ou de passar no plenário) no fim do semestre. */
+  chance: number;
+  chanceLabel: string;
+  /** "Apresentado no 1º sem. 2029". */
+  presentedLabel: string | null;
+  push: number;
+  blockedReason: string | null;
+  /** Iniciativa planejada para este projeto no semestre. */
+  plan: BillPlan['kind'] | null;
+  hints: ImpactHint[];
+}
+
+export interface AmendmentOptionView {
+  target: AmendmentTarget;
+  hints: ImpactHint[];
+  riskChance: number | null;
+  selected: boolean;
+}
+
+export interface CareerMandateView {
+  /** "Vereadora · Câmara Municipal de Recife (39 cadeiras)". */
+  title: string;
+  house: string;
+  vote: FloorVoteView | null;
+  activeBills: CareerBillView[];
+  availableBills: CareerBillView[];
+  maxBills: number;
+  /** Já escolheu a iniciativa do semestre. */
+  billPlanned: boolean;
+  trancheLabel: string;
+  annualLabel: string;
+  /** O governo daquele nível é de oposição e segura os pagamentos. */
+  oppositionDelay: boolean;
+  amendments: AmendmentOptionView[];
+  laws: number;
+  votesWithParty: number;
+  votesAgainstParty: number;
+  amendmentsTotalLabel: string;
+}
+
+// ─── Cargo de confiança e vice ────────────────────────────────────────────
+
+export interface CareerMissionOptionView {
+  id: string;
+  label: string;
+  description: string;
+  hints: ImpactHint[];
+  /** Pontos de confiança do chefe (ou do titular). */
+  trust: number;
+  riskChance: number | null;
+  selected: boolean;
+}
+
+/** Textos da missão que mudam entre o cargo de nomeação (o chefe) e o vice (o titular). */
+export interface CareerMissionLabels {
+  /** "📋 Missão do chefe" ou "📋 Pedido do titular". */
+  kicker: string;
+  /** "Confiança do chefe" ou "Confiança do titular". */
+  trustTitle: string;
+  /** O que acontece sem escolha. */
+  skipNote: string;
+}
+
+export interface CareerPostView {
+  icon: string;
+  /** "Cargo de confiança" ou "Vice no governo". */
+  kicker: string;
+  /** "Secretária municipal". */
+  title: string;
+  /** "Quem manda: o prefeito Fulano (PT)" ou "Titular: Fulano (PT)". */
+  bossLabel: string;
+  /** Vice: a linha sucessória (null no cargo de nomeação). */
+  successionNote: string | null;
+  trust: number;
+  /** "Alta", "Média" ou "Baixa". */
+  trustLabel: string;
+  trustTone: Tone;
+  /** O que a confiança faz agora. */
+  trustNote: string;
+  labels: CareerMissionLabels;
+  mission: { mission: CareerMission; description: string; options: CareerMissionOptionView[] } | null;
+  missionsDone: number;
+}
+
+// ─── Obras e orçamento ────────────────────────────────────────────────────
+
+export interface CareerBudgetView {
+  revenueLabel: string;
+  investmentLabel: string;
+  committedLabel: string;
+  /** As parcelas passam da margem de investimento (o resto sai do caixa). */
+  overInvestment: boolean;
+  balanceLabel: string;
+  balanceTone: Tone;
+}
+
+export interface CareerWorkView {
+  template: PublicWorkTemplate;
+  progress: number;
+  duration: number;
+  /** "Prometida para o 2º sem. 2030". */
+  dueLabel: string;
+  late: boolean;
+  /** Entrega prevista antes da próxima eleição do cargo. */
+  beforeElection: boolean;
+  installmentLabel: string;
+}
+
+export interface CareerWorkOptionView {
+  template: PublicWorkTemplate;
+  costLabel: string;
+  installmentLabel: string;
+  /** "Entrega no 2º sem. 2030". */
+  dueLabel: string;
+  beforeElection: boolean;
+  blockedReason: string | null;
+  selected: boolean;
+  hints: ImpactHint[];
+  riskChance: number | null;
+}
+
+export interface CareerWorksView {
+  budget: CareerBudgetView;
+  active: CareerWorkView[];
+  catalog: CareerWorkOptionView[];
+  maxWorks: number;
+  delivered: number;
+  /** "Eleições municipais de 2032". */
+  nextElectionLabel: string;
+}
+
+// ─── Conquistas, dinastia e herdeiro ──────────────────────────────────────
+
+export interface AchievementView {
+  achievement: Achievement;
+  unlocked: boolean;
+  /** "Conquistada por Fulana em 10/11/2026" (galeria) ou "2º sem. 2032" (carreira). */
+  detail: string | null;
+  /** Conquista secreta ainda bloqueada: nome e descrição escondidos. */
+  hidden: boolean;
+  tierLabel: string;
+}
+
+export interface AchievementGalleryView {
+  items: AchievementView[];
+  unlocked: number;
+  total: number;
+}
+
+export interface CareerDynastyMemberView {
+  name: string;
+  portrait: Portrait;
+  /** Maior cargo ("Governadora") ou "Sem mandato". */
+  officeLabel: string;
+  legacyTitle: string;
+  legacyScore: number;
+  /** "2027–2068". */
+  yearsLabel: string;
+}
+
+export interface CareerDynastyView {
+  generation: number;
+  ancestors: CareerDynastyMemberView[];
+  familyScore: number | null;
+}
+
+export interface HeirMetricPreview {
+  key: CareerMetricKey;
+  label: string;
+  icon: string;
+  value: number;
+}
+
+export interface HeirSetupView {
+  parentName: string;
+  parentPortrait: Portrait;
+  partyAcronym: string;
+  cityName: string;
+  uf: string;
+  /** "1º semestre de 2061". */
+  startLabel: string;
+  startYear: number;
+  /** Geração do(a) herdeiro(a) (2 = filho de quem começou). */
+  generation: number;
+  legacyTitle: string;
+  economicIdeology: number;
+  socialIdeology: number;
 }
 
 // ─── Elenco e campanha ────────────────────────────────────────────────────

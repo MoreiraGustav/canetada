@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCareerEvent, useCareerProfile } from '@/stores/selectors';
 import { useGameStore } from '@/stores/useGameStore';
+import { CareerCaseBackstory } from '@/components/game/CareerCaseBackstory';
 import { CareerEventOptionCard } from '@/components/game/CareerEventOptionCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -46,6 +47,7 @@ export const CareerEventScreen = () => {
             <p className="mt-3 font-serif text-lg leading-relaxed text-ink-soft">{view.description}</p>
           </div>
         </div>
+        <CareerCaseBackstory steps={view.backstory} />
       </article>
 
       <section className="mt-8" aria-labelledby="career-event-options">

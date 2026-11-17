@@ -10,13 +10,15 @@ import {
   calculateCareerPresidentialElection,
   enterPresidency,
   findOffice,
+  leavePresidency,
   selectCampaignQuestions,
   successionElectionResult,
+  unlockAchievements,
 } from '@/engine';
-import type { CareerNews, CareerState, GameMode } from '@/types';
+import type { CareerNews, CareerState, GameMode, PresidencyOutcome } from '@/types';
 import { careerTurnToMonthTurn } from '@/utils/careerCalendar';
 import { resolveCampaignOptions } from './campaignOptions';
-import { careerContentOf, careerData, closeSemester, setCareer } from './careerFlow';
+import { careerContentOf, careerData, closeSemester, prependCareerNews, setCareer } from './careerFlow';
 import { getWorldContent } from './content';
 import { advanceSeed } from './gameData';
 import type { GameStoreApi } from './gameStoreTypes';
@@ -53,9 +55,9 @@ export const finishPresidentialRun = (api: GameStoreApi): void => {
     return;
   }
   const termYears = findOffice(content, PRESIDENT)?.termYears ?? 4;
-  const entered = enterPresidency(outcome.state, content, termYears);
+  const entered = unlockAchievements(enterPresidency(outcome.state, content, termYears), content);
   usePlayerStore.getState().hydrate({ election: outcome.election });
-  setCareer({ state: entered });
+  setCareer({ state: entered.state, news: prependCareerNews(careerData().news, entered.news) });
   api.commit({ phase: 'election-result', seed: advanceSeed(api.get().seed) });
 };
 
@@ -86,13 +88,15 @@ export const getCareerPresidencyParams = (state: CareerState | null, mode: GameM
   return { startTurn: careerTurnToMonthTurn(position.startTurn), termLength };
 };
 
-/** Fim do governo: o legado da carreira conta os anos de Presidência na escala de um mandato de 4 anos. */
-export const recordPresidencyLegacy = (monthsPlayed: number, termLength: number): void => {
-  const { state } = careerData();
-  if (!state) return;
+/**
+ * Fim do governo: a carreira fecha a Presidência no semestre certo (na escala de um mandato
+ * de 4 anos), registra a passagem e calcula o legado. Daqui a carreira pode continuar.
+ */
+export const recordPresidencyEnd = (outcome: PresidencyOutcome): void => {
+  const { state, news } = careerData();
+  if (!state || state.position?.id !== PRESIDENT) return;
   const content = careerContentOf(state);
-  const termYears = findOffice(content, PRESIDENT)?.termYears ?? 4;
-  const years = (monthsPlayed / Math.max(1, termLength)) * termYears;
-  setCareer({ legacy: calculateCareerLegacy(state, content, years) });
+  const left = leavePresidency(state, content, outcome);
+  setCareer({ state: left.state, legacy: calculateCareerLegacy(left.state, content), news: prependCareerNews(news, left.news) });
 };
 

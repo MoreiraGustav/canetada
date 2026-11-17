@@ -175,7 +175,7 @@ describe('eleições e posse', () => {
     const mayor: CareerState = {
       ...withMetrics(atTurn(createFixtureCareer({ startingAge: 40 }), GENERAL_2030), STRONG),
       position: { kind: 'office', id: 'prefeito', startTurn: 5, endTurn: 12, consecutiveTerms: 1 },
-      administration: { approval: 60, indicators: { saude: 50, educacao: 50, infraestrutura: 50, seguranca: 50, contas: 50 } },
+      administration: { approval: 60, indicators: { saude: 50, educacao: 50, infraestrutura: 50, seguranca: 50, contas: 50 }, works: [] },
     };
     const playerCity = { ...mayor, governments: { ...mayor.governments, municipal: { ...mayor.governments.municipal, partyId: mayor.partyId!, isPlayer: true } } };
     const defeated = runUntil(playerCity, 'governador', false).state;
@@ -238,7 +238,7 @@ describe('semestre: agenda, gestão e acontecimentos', () => {
     const mayor: CareerState = {
       ...createFixtureCareer(),
       position: { kind: 'office', id: 'prefeito', startTurn: 1, endTurn: 8, consecutiveTerms: 1 },
-      administration: { approval: 50, indicators: { saude: 80, educacao: 80, infraestrutura: 80, seguranca: 80, contas: 80 } },
+      administration: { approval: 50, indicators: { saude: 80, educacao: 80, infraestrutura: 80, seguranca: 80, contas: 80 }, works: [] },
     };
     const { state } = closeCareerSemester(mayor, CONTENT);
     expect(state.administration!.approval).toBeGreaterThan(50);
@@ -286,7 +286,7 @@ describe('legado', () => {
     const legacy = calculateCareerLegacy(state, CONTENT);
     expect(legacy.highestOfficeId).toBe('vereador');
     expect(legacy.yearsInOffice).toBe(4);
-    const president = calculateCareerLegacy({ ...state, position: { kind: 'office', id: 'presidente', startTurn: 13, endTurn: 20, consecutiveTerms: 1 } }, CONTENT, 4);
+    const president = calculateCareerLegacy({ ...state, position: { kind: 'office', id: 'presidente', startTurn: 13, endTurn: 20, consecutiveTerms: 1 } }, CONTENT);
     expect(president.highestOfficeId).toBe('presidente');
     expect(president.score).toBeGreaterThan(legacy.score + CAREER.legacy.presidencyBonus);
   });

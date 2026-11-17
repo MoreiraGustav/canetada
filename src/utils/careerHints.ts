@@ -9,7 +9,7 @@ import type { AdminIndicatorKey, CareerCharacterRole, CareerImpact, ImpactHint }
 const LIGHT_MAX = 2;
 const MODERATE_MAX = 5;
 const MAX_HINTS = 4;
-/** Relações mexem em escala maior (±4 a ±20): divididas por 3 para usar os mesmos limiares. */
+/** Relações e confiança mexem em escala maior (±4 a ±20): divididas por 3 para usar os mesmos limiares. */
 const RELATION_SCALE = 3;
 
 const intensityOf = (delta: number): ImpactHint['intensity'] => {
@@ -42,7 +42,9 @@ export const summarizeCareerImpact = (impact: CareerImpact): ImpactHint[] => {
   const relationHints = (Object.entries(impact.relations ?? {}) as Array<[CareerCharacterRole, number]>).flatMap(([role, delta]) =>
     delta ? [hint(`relacao-${role}`, CAREER_CHARACTER_INFO[role].shortLabel, delta / RELATION_SCALE)] : [],
   );
-  return [...metricHints, ...adminHints, ...approvalHint, ...relationHints]
+  // Confiança do titular (vice) ou do chefe (cargo de nomeação).
+  const trustHint = impact.trust ? [hint('confianca', 'Confiança', impact.trust / RELATION_SCALE)] : [];
+  return [...metricHints, ...adminHints, ...approvalHint, ...relationHints, ...trustHint]
     .sort((a, b) => b.intensity - a.intensity)
     .slice(0, MAX_HINTS)
     .sort((a, b) => TONE_ORDER[a.tone] - TONE_ORDER[b.tone]);

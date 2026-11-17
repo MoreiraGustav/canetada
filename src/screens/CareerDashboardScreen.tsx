@@ -8,6 +8,8 @@ import {
   useCareerMetrics,
   useCareerNews,
   useCareerProfile,
+  useCareerReminder,
+  useCareerWorks,
 } from '@/stores/selectors';
 import { useCareerStore } from '@/stores/useCareerStore';
 import { useGameStore } from '@/stores/useGameStore';
@@ -17,11 +19,14 @@ import { CareerAgendaPanel } from '@/components/game/CareerAgendaPanel';
 import { CareerCastPanel } from '@/components/game/CareerCastPanel';
 import { CareerDashboardTabs } from '@/components/game/CareerDashboardTabs';
 import { CareerGovernmentsCard } from '@/components/game/CareerGovernmentsCard';
+import { CareerMandatePanel } from '@/components/game/CareerMandatePanel';
+import { CareerPostPanel } from '@/components/game/CareerPostPanel';
 import { CareerMetricsPanel } from '@/components/game/CareerMetricsPanel';
 import { CareerNewsFeed } from '@/components/game/CareerNewsFeed';
 import { CareerPreCampaignCard } from '@/components/game/CareerPreCampaignCard';
 import { CareerProfileCard } from '@/components/game/CareerProfileCard';
 import { CareerRetireDialog } from '@/components/game/CareerRetireDialog';
+import { CareerWorksPanel } from '@/components/game/CareerWorksPanel';
 import { Button } from '@/components/ui/Button';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Masthead } from '@/components/ui/Masthead';
@@ -40,8 +45,11 @@ export const CareerDashboardScreen = () => {
   const news = useCareerNews(NEWS_SHOWN);
   const agenda = useCareerAgenda();
   const admin = useCareerAdmin();
-  const programChosen = useCareerStore((state) => state.plannedProgramId !== null);
-  const { toggleAction, toggleProgram } = useCareerStore(useShallow((state) => ({ toggleAction: state.toggleAction, toggleProgram: state.toggleProgram })));
+  const works = useCareerWorks();
+  const reminder = useCareerReminder();
+  const { toggleAction, toggleProgram, toggleWork } = useCareerStore(
+    useShallow((state) => ({ toggleAction: state.toggleAction, toggleProgram: state.toggleProgram, toggleWork: state.toggleWork })),
+  );
   const { goToMenu, endCareerSemester, retireCareer } = useGameStore(
     useShallow((state) => ({ goToMenu: state.goToMenu, endCareerSemester: state.endCareerSemester, retireCareer: state.retireCareer })),
   );
@@ -77,6 +85,9 @@ export const CareerDashboardScreen = () => {
           <CareerNewsFeed items={news} kicker={`📰 ${CAREER_NEWSPAPER_TITLE}`} />
           <CareerPreCampaignCard />
           {admin && <CareerAdminPanel view={admin} onToggleProgram={toggleProgram} />}
+          {works && <CareerWorksPanel view={works} onToggleWork={toggleWork} />}
+          <CareerMandatePanel />
+          <CareerPostPanel />
           <CareerAgendaPanel actions={agenda.actions} chosen={agenda.chosen} max={agenda.max} onToggle={toggleAction} />
           <CareerCastPanel />
           <CareerDashboardTabs />
@@ -86,7 +97,7 @@ export const CareerDashboardScreen = () => {
         dateLabel={profile.dateLabel}
         chosen={agenda.chosen}
         max={agenda.max}
-        programPending={admin !== null && !programChosen}
+        reminder={reminder}
         onAdvance={endCareerSemester}
       />
       <CareerRetireDialog open={retireOpen} name={profile.politicalName} onCancel={() => setRetireOpen(false)} onConfirm={retireCareer} />

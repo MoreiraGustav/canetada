@@ -44,8 +44,8 @@ const validChoices = (state: CareerState, pool: readonly CareerAction[], ids: re
 
 const applyOne = (state: CareerState, content: CareerContent, action: CareerAction, news: CareerNews[]): CareerState => {
   const rng = createRng(state.seed);
-  const impacted = setCareerFlags(applyCareerImpact(state, content, action.impact, action.name), action.flags);
-  const { state: risked, happened } = rollCareerRisk(impacted, content, action.risk, rng);
+  const impacted = setCareerFlags(applyCareerImpact(state, content, action.impact, action.name), action.flags, `Você fez "${action.name}"`);
+  const { state: risked, happened } = rollCareerRisk(impacted, content, action.risk, rng, `"${action.name}" saiu do roteiro`);
   const outcome = happened && action.risk ? action.risk : action;
   news.push(createCareerNews(state.turn, fillCareerText(outcome.headline, state, content), impactTone(outcome.impact), `acao-${action.id}`));
   return { ...risked, actionHistory: { ...risked.actionHistory, [action.id]: state.turn }, seed: rng.getSeed() };

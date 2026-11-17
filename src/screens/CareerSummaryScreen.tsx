@@ -1,6 +1,7 @@
 import { useCareerMetrics, useCareerProfile, useCareerReport } from '@/stores/selectors';
 import { useGameStore } from '@/stores/useGameStore';
 import { CareerMetricsPanel } from '@/components/game/CareerMetricsPanel';
+import { CareerSemesterHighlights } from '@/components/game/CareerSemesterHighlights';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { LoadingScreen } from '@/components/ui/LoadingScreen';
@@ -46,6 +47,7 @@ export const CareerSummaryScreen = () => {
               </li>
             ))}
           </ul>
+          <CareerSemesterHighlights report={report} />
         </section>
         <Card>
           <SectionHeading kicker="Saldo do semestre" title={profile.positionTitle} size="sm" />

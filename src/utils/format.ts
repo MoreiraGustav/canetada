@@ -61,12 +61,14 @@ export const formatPeople = (count: number): string => {
 };
 
 const SMALL_MILLIONS = 10_000_000;
+const BILLION = 1_000_000_000;
 
-/** Valor em reais em escala legível: 850.000 → "R$ 850 mil"; 3.240.000 → "R$ 3,2 mi"; 90.000.000 → "R$ 90 mi". */
+/** Valor em reais em escala legível: 850.000 → "R$ 850 mil"; 3.240.000 → "R$ 3,2 mi"; 90.000.000 → "R$ 90 mi"; 4,4 bilhões → "R$ 4,4 bi". */
 export const formatMoney = (reais: number): string => {
   const magnitude = Math.abs(reais);
   if (magnitude < THOUSAND) return `R$ ${formatNumber(magnitude)}`;
   if (magnitude < MILLION) return `R$ ${formatNumber(magnitude / THOUSAND)} mil`;
+  if (magnitude >= BILLION) return formatBillions(magnitude / BILLION);
   return `R$ ${formatNumber(magnitude / MILLION, magnitude < SMALL_MILLIONS ? 1 : 0)} mi`;
 };
 

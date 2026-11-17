@@ -4,6 +4,7 @@ import type { CareerAction } from '@/types';
  * Programas de gestão: um por semestre para quem governa uma prefeitura ou um
  * estado. Quase tudo melhora um serviço e cobra das contas; o ajuste fiscal e
  * as concessões fazem o caminho inverso. A gestão pesa na reeleição.
+ * As obras (com prazo e parcelas) ficam em `works.ts`.
  */
 export const CAREER_ADMIN_PROGRAMS: CareerAction[] = [
   // ── Prefeitura ──────────────────────────────────────────────────────────
@@ -41,21 +42,6 @@ export const CAREER_ADMIN_PROGRAMS: CareerAction[] = [
     },
     cooldown: 3,
     headline: 'Guarda municipal de {cidade} ganha reforço e patrulha os bairros',
-  },
-  {
-    id: 'obra-vitrine-municipal',
-    name: 'Grande obra de vitrine',
-    icon: '🏗️',
-    description: 'Viaduto ou parque marca a gestão, mas atrasos e desvios rondam.',
-    offices: ['prefeito'],
-    impact: { admin: { infraestrutura: 12, contas: -10 }, approval: 4, localPopularity: 3 },
-    risk: {
-      chance: 0.3,
-      impact: { reputation: -6, approval: -4 },
-      headline: 'Obra-símbolo de {cidade} atrasa e auditoria vê superfaturamento',
-    },
-    cooldown: 4,
-    headline: '{nome} lança grande obra que promete mudar a cara de {cidade}',
   },
   {
     id: 'congelar-tarifa',
@@ -120,16 +106,6 @@ export const CAREER_ADMIN_PROGRAMS: CareerAction[] = [
     headline: 'Gestão de {nome} assina concessão e promete obras sem dinheiro público',
   },
   {
-    id: 'habitacao-popular',
-    name: 'Habitação popular',
-    icon: '🏘️',
-    description: 'Casas novas rendem gratidão duradoura, mas custam caro.',
-    offices: ['prefeito', 'governador'],
-    impact: { admin: { infraestrutura: 4, contas: -8 }, approval: 3, electoralBase: 3 },
-    cooldown: 4,
-    headline: 'Gestão de {nome} entrega conjunto habitacional a milhares de famílias',
-  },
-  {
     id: 'programa-emprego',
     name: 'Programa de emprego e qualificação',
     icon: '👷',
@@ -141,16 +117,6 @@ export const CAREER_ADMIN_PROGRAMS: CareerAction[] = [
   },
 
   // ── Governo do estado ───────────────────────────────────────────────────
-  {
-    id: 'hospitais-regionais',
-    name: 'Hospitais regionais',
-    icon: '🏥',
-    description: 'Leva cirurgias ao interior, mas cada hospital pesa no caixa.',
-    offices: ['governador'],
-    impact: { admin: { saude: 10, contas: -8 }, approval: 3 },
-    cooldown: 3,
-    headline: '{estado}: {nome} inaugura hospitais regionais no interior',
-  },
   {
     id: 'reforco-policia-militar',
     name: 'Reforço da Polícia Militar',
@@ -167,16 +133,6 @@ export const CAREER_ADMIN_PROGRAMS: CareerAction[] = [
     headline: '{estado}: {nome} forma policiais e reforça o patrulhamento',
   },
   {
-    id: 'estradas-interior',
-    name: 'Estradas e obras no interior',
-    icon: '🛣️',
-    description: 'Prefeitos do interior agradecem, mas o caixa sente.',
-    offices: ['governador'],
-    impact: { admin: { infraestrutura: 9, contas: -7 }, approval: 2, electoralBase: 2 },
-    cooldown: 3,
-    headline: '{estado}: {nome} anuncia pacote de estradas e obras no interior',
-  },
-  {
     id: 'regularizacao-fundiaria',
     name: 'Regularização fundiária',
     icon: '📄',
@@ -190,20 +146,5 @@ export const CAREER_ADMIN_PROGRAMS: CareerAction[] = [
     },
     cooldown: 4,
     headline: '{estado}: {nome} entrega escrituras a milhares de famílias',
-  },
-  {
-    id: 'obra-vitrine-estadual',
-    name: 'Grande obra de vitrine',
-    icon: '🏗️',
-    description: 'Metrô ou ponte marca a gestão, mas atrasos e desvios rondam.',
-    offices: ['governador'],
-    impact: { admin: { infraestrutura: 12, contas: -10 }, approval: 4, nationalRecognition: 2 },
-    risk: {
-      chance: 0.3,
-      impact: { reputation: -6, approval: -4 },
-      headline: '{estado}: obra-símbolo atrasa e auditoria vê superfaturamento',
-    },
-    cooldown: 4,
-    headline: '{estado}: {nome} lança obra bilionária, marca da gestão',
   },
 ];

@@ -1,6 +1,8 @@
+export type * from './achievements';
 export type * from './campaign';
 export type * from './candidates';
 export type * from './career';
+export type * from './careerMandate';
 export type * from './cast';
 export type * from './conditions';
 export type * from './congress';

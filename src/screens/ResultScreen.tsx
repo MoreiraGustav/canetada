@@ -19,8 +19,15 @@ import { formatTurnLong } from '@/utils/calendar';
 /** Fase "resultado": desfecho, legado e pontuação final. */
 export const ResultScreen = () => {
   const { ending, score } = useGameResult();
-  const { stats, abandonGame, goToSetup, goToCareerSetup } = useGameStore(
-    useShallow((state) => ({ stats: state.stats, abandonGame: state.abandonGame, goToSetup: state.goToSetup, goToCareerSetup: state.goToCareerSetup })),
+  const { stats, abandonGame, goToSetup, goToCareerSetup, resumeCareer, goToHeirSetup } = useGameStore(
+    useShallow((state) => ({
+      stats: state.stats,
+      abandonGame: state.abandonGame,
+      goToSetup: state.goToSetup,
+      goToCareerSetup: state.goToCareerSetup,
+      resumeCareer: state.resumeCareer,
+      goToHeirSetup: state.goToHeirSetup,
+    })),
   );
   const career = useCareerLegacy();
   const goals = useGoalViews();
@@ -55,7 +62,7 @@ export const ResultScreen = () => {
         </div>
       </div>
 
-      {career && <CareerTrajectorySection view={career} />}
+      {career && <CareerTrajectorySection view={career} onResume={resumeCareer} onHeir={goToHeirSetup} />}
 
       <div className="mt-10 flex flex-col gap-3 border-t-4 border-double border-ink pt-6 sm:flex-row sm:justify-center">
         <Button size="lg" onClick={startNewGame}>

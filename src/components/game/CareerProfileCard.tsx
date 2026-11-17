@@ -40,6 +40,17 @@ export const CareerProfileCard = ({ profile, countdown }: CareerProfileCardProps
         · {profile.partyRank}
       </p>
     )}
+    {profile.dynastyLabel && <p className="mt-2 font-sans text-[11px] font-semibold text-ochre">👑 {profile.dynastyLabel}</p>}
+    {profile.exPresidentLabel && (
+      <Badge tone="info" className="mt-2">
+        🎖️ {profile.exPresidentLabel} da República
+      </Badge>
+    )}
+    {profile.legalLabels.map((label) => (
+      <p key={label} className="mt-2 border-l-2 border-accent pl-2 font-sans text-[11px] font-semibold leading-snug text-accent">
+        ⚖️ {label}
+      </p>
+    ))}
     {profile.ineligibleLabel && (
       <Badge tone="negative" className="mt-2">
         ⛔ {profile.ineligibleLabel}

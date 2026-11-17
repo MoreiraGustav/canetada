@@ -20,7 +20,7 @@ import {
   resolveRunoff,
   runCareerElection,
 } from '@/engine';
-import type { CareerAction, CareerCondition, CareerEffect, CareerOfficeId, CareerRole, CareerState, ProfessionId } from '@/types';
+import type { AchievementCriterion, CareerAction, CareerCondition, CareerEffect, CareerOfficeId, CareerRole, CareerState, ProfessionId } from '@/types';
 import { getElectionAt } from '@/utils/careerCalendar';
 import { CAREER_CONTENT } from './career';
 
@@ -39,6 +39,15 @@ const MAX_EVENT_DESCRIPTION = 220;
 const MAX_OPTION_LABEL = 75;
 const MAX_OPTION_DESCRIPTION = 150;
 const MIN_ACTIONS_PER_ROLE = 5;
+const MIN_BILLS_PER_HOUSE = 8;
+const MIN_VOTES_PER_HOUSE = 5;
+const MIN_AMENDMENT_TARGETS = 4;
+const MAX_ACHIEVEMENT_DESCRIPTION = 100;
+const MAX_CASE_STEP = 120;
+/** A missão volta depois de 4 semestres: com 4 por cargo, sempre há uma nova. */
+const MIN_MISSIONS_PER_POST = 4;
+const TERM_SEMESTERS = 8;
+const PERCENT = 100;
 /** Idades mínimas da Constituição (art. 14, § 3º, VI). */
 const CONSTITUTION_AGES: Record<string, number> = {
   vereador: 18,
@@ -64,6 +73,10 @@ const LONGEST: Record<string, string> = {
   padrinho: 'Heloísa Vasconcelos',
   rival: 'Bartolomeu Albuquerque',
   adversario: 'Maximiliano Figueiredo',
+  // Titular da chapa do vice (nome curto de quem governa o nível do cargo).
+  titular: 'Bartolomeu Albuquerque',
+  // Emendas: o maior valor de um semestre (senador: R$ 35 mi).
+  valor: 'R$ 999 mi',
 };
 const fill = (text: string): string => text.replace(/\{(\w+)\}/g, (match, key: string) => LONGEST[key] ?? match);
 const placeholders = (text: string): string[] => [...text.matchAll(/\{(\w+)\}/g)].map((match) => match[1]);
@@ -74,9 +87,11 @@ const flagsSet = (): Set<string> =>
   new Set([
     ...allActions().flatMap((action) => [...(action.flags ?? []), ...(action.risk?.flags ?? [])]),
     ...C.events.flatMap((event) => event.options.flatMap((option) => [...(option.flags ?? []), ...(option.risk?.flags ?? [])])),
-    // Marcadas pelo engine: legenda garantida no convite e pré-candidatura lançada.
+    ...C.amendmentTargets.flatMap((target) => target.risk?.flags ?? []),
+    // Marcadas pelo engine: legenda garantida no convite, pré-candidatura lançada e saída do Planalto.
     'legenda-garantida',
     'pre-candidatura',
+    'ex-presidente',
   ]);
 const conditionsOf = (conditions: readonly CareerCondition[] | undefined): CareerCondition[] =>
   (conditions ?? []).flatMap((condition) => (condition.kind === 'any' ? [condition, ...conditionsOf(condition.conditions)] : [condition]));
@@ -96,11 +111,95 @@ describe('conteúdo da carreira: integridade', () => {
   });
 
   it('IDs únicos em kebab-case', () => {
-    const groups = [C.professions, C.offices, C.appointments, allActions(), C.events, C.strategies, C.cities];
+    const groups = [C.professions, C.offices, C.appointments, allActions(), C.events, C.strategies, C.cities, C.bills, C.floorVotes, C.amendmentTargets, C.works, C.achievements, C.missions, C.cases];
     groups.forEach((group) => {
       const ids = group.map((entry) => entry.id);
       expect(duplicates(ids)).toEqual([]);
       ids.forEach((id) => expect(id).toMatch(KEBAB_CASE));
+    });
+  });
+
+  it('mandato: projetos, votações e emendas com textos curtos e conteúdo em todas as Casas', () => {
+    const levels = ['municipal', 'estadual', 'federal'] as const;
+    levels.forEach((level) => {
+      expect(C.bills.filter((bill) => bill.levels.includes(level)).length, level).toBeGreaterThanOrEqual(MIN_BILLS_PER_HOUSE);
+      expect(C.floorVotes.filter((vote) => vote.levels.includes(level)).length, level).toBeGreaterThanOrEqual(MIN_VOTES_PER_HOUSE);
+      expect(C.amendmentTargets.filter((target) => !target.levels || target.levels.includes(level)).length, level).toBeGreaterThanOrEqual(MIN_AMENDMENT_TARGETS);
+    });
+    [...C.bills, ...C.floorVotes].forEach((entry) => {
+      expect(entry.description.length, entry.id).toBeLessThanOrEqual(MAX_OPTION_DESCRIPTION);
+      expect(Math.abs(entry.economic), entry.id).toBeLessThanOrEqual(PERCENT);
+      expect(Math.abs(entry.social), entry.id).toBeLessThanOrEqual(PERCENT);
+    });
+    C.bills.forEach((bill) => expect(fill(bill.headline).length, bill.id).toBeLessThanOrEqual(MAX_HEADLINE));
+    C.amendmentTargets.forEach((target) => {
+      expect(target.description.length, target.id).toBeLessThanOrEqual(MAX_ACTION_DESCRIPTION);
+      [target.headline, target.risk?.headline ?? ''].forEach((headline) => {
+        expect(fill(headline).length, target.id).toBeLessThanOrEqual(MAX_HEADLINE);
+        placeholders(headline).forEach((key) => expect(LONGEST[key], `${target.id}: {${key}}`).toBeDefined());
+      });
+    });
+  });
+
+  it('obras: prefeito e governador com catálogo, textos curtos e prazos que cabem no mandato', () => {
+    EXECUTIVES.forEach((id) => expect(C.works.filter((work) => work.offices.includes(id)).length, id).toBeGreaterThanOrEqual(MIN_ACTIONS_PER_ROLE));
+    C.works.forEach((work) => {
+      expect(work.description.length, work.id).toBeLessThanOrEqual(MAX_ACTION_DESCRIPTION);
+      expect(work.duration, work.id).toBeLessThanOrEqual(TERM_SEMESTERS);
+      expect(work.cost, work.id).toBeGreaterThan(0);
+      work.offices.forEach((office) => expect(findOffice(C, office), work.id).toBeDefined());
+      [work.headline, work.risk?.headline ?? ''].forEach((headline) => {
+        expect(fill(headline).length, work.id).toBeLessThanOrEqual(MAX_HEADLINE);
+        placeholders(headline).forEach((key) => expect(LONGEST[key], `${work.id}: {${key}}`).toBeDefined());
+      });
+    });
+  });
+
+  it('conquistas: textos curtos e referências válidas', () => {
+    const offices = new Set(C.offices.map((office) => office.id));
+    const criteriaOf = (criterion: AchievementCriterion): AchievementCriterion[] => (criterion.kind === 'all' ? criterion.criteria.flatMap(criteriaOf) : [criterion]);
+    C.achievements.forEach((achievement) => {
+      expect(achievement.description.length, achievement.id).toBeLessThanOrEqual(MAX_ACHIEVEMENT_DESCRIPTION);
+      criteriaOf(achievement.criterion).forEach((criterion) => {
+        if (criterion.kind === 'office') criterion.offices.forEach((id) => expect(offices.has(id), achievement.id).toBe(true));
+      });
+    });
+    expect(C.achievements.some((achievement) => achievement.tier === 'ouro')).toBe(true);
+  });
+
+  it('casos na Justiça: etapas com flags que o conteúdo marca e eventos que apontam para casos existentes', () => {
+    const flags = flagsSet();
+    const caseIds = new Set(C.cases.map((entry) => entry.id));
+    C.cases.forEach((entry) => {
+      entry.steps.forEach((step) => {
+        expect(flags.has(step.flag), `${entry.id}: ${step.flag}`).toBe(true);
+        expect(step.text.length, `${entry.id}: ${step.flag}`).toBeLessThanOrEqual(MAX_CASE_STEP);
+      });
+      if (entry.charge) expect(entry.steps.some((step) => step.flag === entry.charge?.flag), entry.id).toBe(true);
+    });
+    C.events.forEach((event) => (event.cases ?? []).forEach((id) => expect(caseIds.has(id), `${event.id}: ${id}`).toBe(true)));
+    // Toda condenação que leva à Ficha Limpa pode ir a recurso.
+    const conviction = C.events.find((event) => event.id === 'condenacao-ficha-limpa');
+    expect(conviction?.options.some((option) => option.effect?.kind === 'appeal')).toBe(true);
+  });
+
+  it('missões: todo cargo de nomeação e de vice tem missões suficientes, com textos curtos', () => {
+    const posts = [...C.appointments.map((appointment) => appointment.id), ...C.offices.filter((office) => office.headOffice).map((office) => office.id)];
+    expect(posts).toEqual(expect.arrayContaining(['vice-prefeito', 'vice-governador', 'vice-presidente']));
+    posts.forEach((id) => expect(C.missions.filter((mission) => mission.posts.includes(id)).length, id).toBeGreaterThanOrEqual(MIN_MISSIONS_PER_POST));
+    expect(duplicates(C.missions.map((mission) => mission.id))).toEqual([]);
+    C.missions.forEach((mission) => {
+      mission.posts.forEach((id) => expect(posts.includes(id), `${mission.id}: ${id}`).toBe(true));
+      expect(fill(mission.description).length, mission.id).toBeLessThanOrEqual(MAX_OPTION_DESCRIPTION);
+      expect(mission.options.length, mission.id).toBeGreaterThanOrEqual(2);
+      mission.options.forEach((option) => {
+        expect(option.label.length, `${mission.id}/${option.id}`).toBeLessThanOrEqual(MAX_OPTION_LABEL);
+        expect(option.description.length, `${mission.id}/${option.id}`).toBeLessThanOrEqual(MAX_OPTION_DESCRIPTION);
+        [option.headline, option.risk?.headline ?? ''].forEach((headline) => {
+          expect(fill(headline).length, `${mission.id}/${option.id}`).toBeLessThanOrEqual(MAX_HEADLINE);
+          placeholders(headline).forEach((key) => expect(LONGEST[key], `${mission.id}: {${key}}`).toBeDefined());
+        });
+      });
     });
   });
 

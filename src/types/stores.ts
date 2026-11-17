@@ -1,5 +1,6 @@
 import type { CampaignAnswer, ElectionResult, PlayerPromise, ReelectionResult } from './campaign';
 import type { CareerElectionRecord, CareerLegacy, CareerNews, CareerOfficeId, CareerReport, CareerState } from './career';
+import type { BillPlan, FloorVoteChoice } from './careerMandate';
 import type { PoliticalCast } from './cast';
 import type { PlayerCandidate } from './candidates';
 import type { CongressState } from './congress';
@@ -92,6 +93,16 @@ export interface CareerData {
   plannedActionIds: string[];
   /** Programa de gestão escolhido para o semestre (prefeitos e governadores). */
   plannedProgramId: string | null;
+  /** Voto na votação do semestre (null = seguir o partido). */
+  plannedVote: FloorVoteChoice | null;
+  /** Iniciativa do semestre: projeto novo ou articulação. */
+  plannedBill: BillPlan | null;
+  /** Destino das emendas do semestre. */
+  plannedAmendmentId: string | null;
+  /** Obra lançada no semestre (prefeitos e governadores). */
+  plannedWorkId: string | null;
+  /** Como cumprir a missão do chefe (cargo de nomeação). */
+  plannedMissionOptionId: string | null;
   currentEventId: string | null;
   /** Estado no início do semestre (para o balanço). */
   semesterStart: CareerState | null;

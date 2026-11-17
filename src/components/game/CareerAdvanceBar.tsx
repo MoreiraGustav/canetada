@@ -5,13 +5,13 @@ interface CareerAdvanceBarProps {
   dateLabel: string;
   chosen: number;
   max: number;
-  /** Governa e ainda não escolheu o programa de gestão do semestre (lembrete, não bloqueia). */
-  programPending: boolean;
+  /** Escolha do semestre que ainda falta (lembrete, não bloqueia). */
+  reminder: string | null;
   onAdvance: () => void;
 }
 
 /** Barra fixa no rodapé com "Encerrar semestre" e o lembrete das vagas da agenda. */
-export const CareerAdvanceBar = ({ dateLabel, chosen, max, programPending, onAdvance }: CareerAdvanceBarProps) => {
+export const CareerAdvanceBar = ({ dateLabel, chosen, max, reminder, onAdvance }: CareerAdvanceBarProps) => {
   const free = max - chosen;
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t-4 border-double border-ink bg-paper/95 backdrop-blur-sm">
@@ -26,7 +26,7 @@ export const CareerAdvanceBar = ({ dateLabel, chosen, max, programPending, onAdv
               Agenda de <strong className="text-ink">{dateLabel}</strong> pronta.
             </>
           )}{' '}
-          {programPending ? 'Falta escolher o programa de gestão.' : 'O jogo é salvo automaticamente.'}
+          {reminder ?? 'O jogo é salvo automaticamente.'}
         </p>
         <Button variant="accent" size="lg" onClick={onAdvance} className="shrink-0">
           Encerrar semestre <span aria-hidden="true">▶</span>

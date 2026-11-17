@@ -24,14 +24,17 @@ import {
   findOffice,
   resolveRunoff,
   runPrimary,
+  applyMandatePlan,
 } from '@/engine';
 import type { CampaignChoices, CareerElectionRecord, CareerNews, CareerOfficeId, CareerState } from '@/types';
 import { beginSemester, careerContentOf, careerData, closeSemester, endCareer, prependCareerNews, setCareer } from './careerFlow';
+import { resumeCareerAfterPresidency, startHeirCareer } from './careerLegacyFlow';
 import { enterPresidencyBySuccession, startPresidentialRun } from './careerPresidency';
 import { getCareerContent } from './content';
 import { createInitialGameData, generateSeed } from './gameData';
 import type { GameStoreActions, GameStoreApi } from './gameStoreTypes';
 import { resetDomainStores } from './persistence';
+import { usePlayerStore } from './usePlayerStore';
 
 type CareerActions = Pick<
   GameStoreActions,
@@ -51,6 +54,10 @@ type CareerActions = Pick<
   | 'declarePreCandidacy'
   | 'skipElection'
   | 'retireCareer'
+  | 'resumeCareer'
+  | 'goToHeirSetup'
+  | 'leaveHeirSetup'
+  | 'startHeirCareer'
 >;
 
 const PRESIDENT = 'presidente';
@@ -90,9 +97,18 @@ const chooseCareerParty = (api: GameStoreApi, partyId: string): void => {
 const endCareerSemester = (api: GameStoreApi): void => {
   const data = careerData();
   if (!data.state) return;
-  const agenda = applyCareerAgenda(data.state, careerContentOf(data.state), data.plannedActionIds, data.plannedProgramId);
-  const drawn = drawCareerEvent(agenda.state, careerContentOf(agenda.state));
-  setCareer({ state: drawn.state, semesterNews: [...data.semesterNews, ...agenda.news], currentEventId: drawn.eventId });
+  const content = careerContentOf(data.state);
+  const agenda = applyCareerAgenda(data.state, content, data.plannedActionIds, data.plannedProgramId);
+  const plan = {
+    vote: data.plannedVote,
+    bill: data.plannedBill,
+    amendmentId: data.plannedAmendmentId,
+    workId: data.plannedWorkId,
+    missionOptionId: data.plannedMissionOptionId,
+  };
+  const mandate = applyMandatePlan(agenda.state, content, plan);
+  const drawn = drawCareerEvent(mandate.state, content);
+  setCareer({ state: drawn.state, semesterNews: [...data.semesterNews, ...agenda.news, ...mandate.news], currentEventId: drawn.eventId });
   if (drawn.eventId) {
     api.commit({ phase: 'career-event' });
     return;
@@ -215,4 +231,9 @@ export const createCareerActions = (api: GameStoreApi): CareerActions => ({
     const { state } = careerData();
     if (state) endCareer(api, state, 'anuncia a aposentadoria da vida pública');
   },
+  resumeCareer: () => resumeCareerAfterPresidency(api),
+  goToHeirSetup: () => api.set({ phase: 'career-heir' }),
+  // A Presidência termina na tela de resultado do jogo presidencial; a aposentadoria, no legado da carreira.
+  leaveHeirSetup: () => api.set({ phase: usePlayerStore.getState().election ? 'result' : 'career-result' }),
+  startHeirCareer: (input) => startHeirCareer(api, input),
 });

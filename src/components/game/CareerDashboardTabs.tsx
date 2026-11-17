@@ -2,16 +2,18 @@ import { useState } from 'react';
 import type { ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Tabs } from '@/components/ui/Tabs';
+import { CareerAchievementsTab } from './CareerAchievementsTab';
 import { CareerLadderTab } from './CareerLadderTab';
 import { CareerPositionsTab } from './CareerPositionsTab';
 import { CareerTimelineTab } from './CareerTimelineTab';
 
-type CareerTabId = 'positions' | 'ladder' | 'timeline';
+type CareerTabId = 'positions' | 'ladder' | 'timeline' | 'achievements';
 
 const TAB_ITEMS: ReadonlyArray<{ id: CareerTabId; label: string; icon: string }> = [
   { id: 'positions', label: 'Cargos e partido', icon: '🗂️' },
   { id: 'ladder', label: 'Plano de carreira', icon: '🪜' },
   { id: 'timeline', label: 'Trajetória', icon: '📜' },
+  { id: 'achievements', label: 'Conquistas', icon: '🏆' },
 ];
 
 /** Painel de cada aba (lookup por ID; só a aba ativa assina as stores). */
@@ -19,9 +21,10 @@ const TAB_PANELS: Record<CareerTabId, ComponentType> = {
   positions: CareerPositionsTab,
   ladder: CareerLadderTab,
   timeline: CareerTimelineTab,
+  achievements: CareerAchievementsTab,
 };
 
-/** Área secundária do painel da carreira: cargos e partido, plano de carreira e trajetória. */
+/** Área secundária do painel da carreira: cargos e partido, plano de carreira, trajetória e conquistas. */
 export const CareerDashboardTabs = () => {
   const [active, setActive] = useState<CareerTabId>('positions');
   const Panel = TAB_PANELS[active];

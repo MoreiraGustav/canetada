@@ -4,8 +4,11 @@
  */
 import { CAREER } from '@/constants/balance';
 import type {
+  BillRecord,
   CareerAppointment,
   CareerCharacter,
+  CareerOfficeId,
+  WorkRecord,
   CareerCharacterRole,
   CareerCity,
   CareerContent,
@@ -117,9 +120,30 @@ export const closestOtherParty = (state: CareerState, content: CareerContent): P
     .filter((party) => party.id !== state.partyId)
     .sort((a, b) => ideologyDistance(a, state.profile) - ideologyDistance(b, state.profile))[0];
 
+/**
+ * Fim do mandato: projetos em tramitação são arquivados, obras em andamento ficam
+ * inacabadas (passam ao sucessor) e a votação pendente sai da pauta.
+ */
+const archiveMandate = (state: CareerState, position: CareerPosition, lastTurn: number): Pick<CareerState, 'legislature' | 'worksHistory'> => {
+  const officeId = position.id as CareerOfficeId;
+  const bills = state.legislature.bills.map((entry): BillRecord => ({
+    billId: entry.billId,
+    officeId: entry.officeId,
+    presentedTurn: entry.presentedTurn,
+    closedTurn: lastTurn,
+    outcome: 'arquivado',
+    tally: null,
+  }));
+  const works = (state.administration?.works ?? []).map((work): WorkRecord => ({ templateId: work.templateId, officeId, startTurn: work.startTurn, closedTurn: lastTurn, outcome: 'inacabada', late: 0 }));
+  return {
+    legislature: { ...state.legislature, floorVoteId: null, bills: [], billHistory: [...state.legislature.billHistory, ...bills] },
+    worksHistory: [...state.worksHistory, ...works],
+  };
+};
+
 /** Encerra a posição atual (vai para o histórico, com o último semestre exercido). */
 export const closePosition = (state: CareerState, lastTurn: number = state.turn): CareerState => {
   if (!state.position) return state;
   const closed: CareerPosition = { ...state.position, endTurn: Math.max(state.position.startTurn, lastTurn) };
-  return { ...state, position: null, administration: null, pastPositions: [...state.pastPositions, closed] };
+  return { ...state, ...archiveMandate(state, state.position, closed.endTurn ?? lastTurn), position: null, administration: null, post: null, pastPositions: [...state.pastPositions, closed] };
 };

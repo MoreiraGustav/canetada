@@ -1,13 +1,14 @@
 /**
  * Peças do fluxo do modo carreira compartilhadas pelas ações da store:
- * início e fim de semestre, jornal e legado.
+ * início e fim de semestre, jornal, legado e a galeria de conquistas.
  */
 import { MAX_CAREER_NEWS } from '@/constants/career';
-import { buildCareerReport, calculateCareerLegacy, closeCareerSemester, hasReachedRetirement, listCandidacies } from '@/engine';
+import { buildCareerReport, calculateCareerLegacy, closeCareerSemester, hasReachedRetirement, listCandidacies, openCareerSemester } from '@/engine';
 import type { CareerContent, CareerData, CareerNews, CareerState } from '@/types';
 import { getElectionAt } from '@/utils/careerCalendar';
 import { getCareerContent } from './content';
 import type { GameStoreApi } from './gameStoreTypes';
+import { useAchievementsStore } from './useAchievementsStore';
 import { useCareerStore } from './useCareerStore';
 
 /** Conteúdo do mundo do personagem (partidos reais ou fictícios). */
@@ -15,7 +16,25 @@ export const careerContentOf = (state: CareerState): CareerContent => getCareerC
 
 export const careerData = (): CareerData => useCareerStore.getState();
 
-export const setCareer = (partial: Partial<CareerData>): void => useCareerStore.getState().hydrate(partial);
+/** Atualiza a carreira e guarda na galeria as conquistas novas. */
+export const setCareer = (partial: Partial<CareerData>): void => {
+  useCareerStore.getState().hydrate(partial);
+  if (partial.state) useAchievementsStore.getState().syncFromCareer(partial.state);
+};
+
+/** Escolhas do semestre zeradas (agenda, programa e mandato). */
+export const EMPTY_SEMESTER_PLAN: Pick<
+  CareerData,
+  'plannedActionIds' | 'plannedProgramId' | 'plannedVote' | 'plannedBill' | 'plannedAmendmentId' | 'plannedWorkId' | 'plannedMissionOptionId'
+> = {
+  plannedActionIds: [],
+  plannedProgramId: null,
+  plannedVote: null,
+  plannedBill: null,
+  plannedAmendmentId: null,
+  plannedWorkId: null,
+  plannedMissionOptionId: null,
+};
 
 /** Jornal: mais recentes primeiro, limitado. */
 export const prependCareerNews = (archive: readonly CareerNews[], news: readonly CareerNews[]): CareerNews[] =>
@@ -29,18 +48,19 @@ export const endCareer = (api: GameStoreApi, state: CareerState, reason: string)
   api.commit({ phase: 'career-result' });
 };
 
-/** Começa um semestre: guarda o ponto de partida e abre a convenção (ano de eleição) ou a agenda. */
-export const beginSemester = (api: GameStoreApi, state: CareerState): void => {
-  if (hasReachedRetirement(state)) {
-    endCareer(api, state, 'se despede da vida pública');
+/** Começa um semestre: sorteia a votação do mandato, guarda o ponto de partida e abre a convenção (ano de eleição) ou a agenda. */
+export const beginSemester = (api: GameStoreApi, current: CareerState): void => {
+  if (hasReachedRetirement(current)) {
+    endCareer(api, current, 'se despede da vida pública');
     return;
   }
-  setCareer({ state, semesterStart: state, semesterNews: [], plannedActionIds: [], plannedProgramId: null, currentEventId: null, lastElection: null });
+  const state = openCareerSemester(current, careerContentOf(current));
+  setCareer({ state, semesterStart: state, semesterNews: [], currentEventId: null, lastElection: null, ...EMPTY_SEMESTER_PLAN });
   const election = getElectionAt(state.turn) !== null && listCandidacies(state, careerContentOf(state)).length > 0;
   api.commit({ phase: election ? 'career-election' : 'career-turn' });
 };
 
-/** Fecha o semestre (ganhos do cargo, esquecimento, gestão), monta o balanço e publica o jornal. */
+/** Fecha o semestre (ganhos do cargo, esquecimento, gestão, obras, projetos), monta o balanço e publica o jornal. */
 export const closeSemester = (state: CareerState, extraNews: readonly CareerNews[], eventId: string | null, optionId: string | null): void => {
   const data = careerData();
   const closed = closeCareerSemester(state, careerContentOf(state));
@@ -51,7 +71,6 @@ export const closeSemester = (state: CareerState, extraNews: readonly CareerNews
     news: prependCareerNews(data.news, news),
     semesterNews: [],
     currentEventId: null,
-    plannedActionIds: [],
-    plannedProgramId: null,
+    ...EMPTY_SEMESTER_PLAN,
   });
 };

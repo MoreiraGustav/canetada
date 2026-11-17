@@ -11,6 +11,7 @@ import { closePosition, closestOtherParty, currentOffice, findOffice } from './h
 import { administrationFor, applyCareerImpact, impactTone, rollCareerRisk, setCareerFlags } from './impacts';
 import { ensureCareerCast, retireCharacter } from './characters';
 import { vacatePosition } from './positions';
+import { becomeIneligible, fileAppeal } from './justice';
 import { joinParty, leaveAppointment, takeAppointment } from './setup';
 import { createCareerNews, fillCareerText, getPositionTitle } from './text';
 
@@ -77,15 +78,6 @@ const loseOffice = (state: CareerState, content: CareerContent): EffectResult =>
   };
 };
 
-const becomeIneligible = (state: CareerState, semesters: number): EffectResult => {
-  const until = Math.max(state.ineligibleUntil ?? 0, state.turn + semesters);
-  const text = `Justiça torna ${state.profile.politicalName} inelegível por ${semesters / 2} anos`;
-  return {
-    state: { ...state, ineligibleUntil: until, timeline: [...state.timeline, { turn: state.turn, kind: 'inelegivel', text }] },
-    news: [createCareerNews(state.turn, text, 'negative', 'inelegivel')],
-  };
-};
-
 const switchToClosestParty = (state: CareerState, content: CareerContent): EffectResult => {
   const party = closestOtherParty(state, content);
   return party ? joinParty(state, content, party.id, true) : { state, news: [] };
@@ -99,6 +91,7 @@ const EFFECTS: { [K in CareerEffect['kind']]: (state: CareerState, content: Care
   ineligible: (state, _content, effect) => becomeIneligible(state, effect.semesters),
   'lose-office': (state, content) => loseOffice(state, content),
   'retire-character': (state, content, effect) => ({ state: ensureCareerCast(retireCharacter(state, effect.role), content), news: [] }),
+  appeal: (state, content, effect) => fileAppeal(state, content, effect.semesters),
 };
 
 export const applyCareerEffect = (state: CareerState, content: CareerContent, effect: CareerEffect): EffectResult =>
@@ -115,8 +108,9 @@ export const resolveCareerEvent = (
   const option = event?.options.find((entry) => entry.id === optionId);
   if (!event || !option) return { state, news: [] };
   const rng = createRng(state.seed);
-  const impacted = setCareerFlags(applyCareerImpact(state, content, option.impact, event.title), option.flags);
-  const { state: risked, happened } = rollCareerRisk(impacted, content, option.risk, rng);
+  const choice = `Você escolheu "${fillCareerText(option.label, state, content)}" (${event.title})`;
+  const impacted = setCareerFlags(applyCareerImpact(state, content, option.impact, event.title), option.flags, choice);
+  const { state: risked, happened } = rollCareerRisk(impacted, content, option.risk, rng, choice);
   const outcome = happened && option.risk ? option.risk : option;
   const news = [createCareerNews(state.turn, fillCareerText(outcome.headline, state, content), impactTone(outcome.impact), `evento-${event.id}`)];
   const seeded = { ...risked, seed: rng.getSeed() };

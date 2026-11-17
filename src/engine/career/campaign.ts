@@ -143,7 +143,7 @@ export const rollCampaignRisks = (
     (acc, decision) => {
       const risk = chosenOption(decision, choices).risk;
       if (!risk || rng.next() >= risk.chance) return acc;
-      const next = setCareerFlags(applyCareerImpact(acc.state, content, risk.impact, decision.title), risk.flags);
+      const next = setCareerFlags(applyCareerImpact(acc.state, content, risk.impact, decision.title), risk.flags, fillCareerText(risk.headline, state, content));
       return {
         state: next,
         strengthLoss: acc.strengthLoss + risk.strength,
@@ -174,7 +174,10 @@ export const applyCampaignMarks = (
   const news: CareerNews[] = [];
   const strategyRisk = strategy?.risk;
   const riskHappened = strategyRisk !== undefined && rng.next() < strategyRisk.chance;
-  const risked = riskHappened && strategyRisk ? setCareerFlags(applyCareerImpact(toned, content, strategyRisk.impact), strategyRisk.flags) : toned;
+  const risked =
+    riskHappened && strategyRisk
+      ? setCareerFlags(applyCareerImpact(toned, content, strategyRisk.impact), strategyRisk.flags, fillCareerText(strategyRisk.headline, state, content))
+      : toned;
   if (riskHappened && strategyRisk) news.push(createCareerNews(state.turn, fillCareerText(strategyRisk.headline, state, content), 'negative', 'campanha-tom'));
   const rejected = plan.debtShare > 0 && rng.next() < plan.debtShare * CAREER.campaign.debtRiskPerShare;
   if (!rejected) return { state: risked, news };

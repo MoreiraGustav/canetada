@@ -40,6 +40,7 @@ export const CareerActionCard = ({ view, full, onToggle }: CareerActionCardProps
         {view.selected && <span className="font-sans text-[11px] font-bold text-positive">✓</span>}
       </span>
       <span className="font-serif text-sm leading-snug text-ink-soft">{action.description}</span>
+      {view.costLabel && <span className="font-sans text-[11px] font-semibold text-ink">{view.costLabel}</span>}
       <ImpactHintList hints={view.hints} />
       <OutcomeRiskBadge chance={view.riskChance} className="self-start" />
       {status && <span className="mt-auto font-sans text-[11px] font-semibold uppercase tracking-wide text-ink-muted">{status}</span>}

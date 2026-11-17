@@ -17,7 +17,6 @@ import type { CareerSetupInput, ProfessionId } from '@/types';
 import { CAREER_DEFAULT_START_AGE, CAREER_NEWSPAPER_TITLE } from '@/constants/career';
 
 const STEPS = 6;
-const DEFAULT_STATE_ID = 'sp';
 const MAX_PORTRAIT_SEED = 2 ** 31 - 1;
 
 const randomPortraitSeed = (): number => Math.floor(Math.random() * MAX_PORTRAIT_SEED) + 1;
@@ -33,7 +32,8 @@ const createInitialDraft = (): CareerSetupInput => {
     professionId: getCareerProfessions()[0]?.id ?? 'advogado',
     economicIdeology: 0,
     socialIdeology: 0,
-    baseCityId: (cities.find((city) => city.stateId === DEFAULT_STATE_ID) ?? cities[0])?.id ?? '',
+    // A maior cidade do país (a primeira da busca) vem marcada.
+    baseCityId: [...cities].sort((a, b) => b.voters - a.voters)[0]?.id ?? '',
     difficulty: 'normal',
     presidencyMode: 'standard',
     world: 'real',
