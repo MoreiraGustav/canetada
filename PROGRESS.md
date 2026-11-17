@@ -1,20 +1,20 @@
 # Progresso — Presidente Simulator
 
-> Atualizado em **09/11/2026**. Para retomar, peça: *"continue o simulador a partir do PROGRESS.md"*.
+> Atualizado em **17/11/2026**. Para retomar, peça: *"continue o simulador a partir do PROGRESS.md"*.
 > Contrato de APIs entre engine/data/stores/ui: **`docs/SPEC.md`**.
 
 ## Estado atual
 
 O jogo está **completo e jogável** de ponta a ponta: menu → setup (Brasil fictício ou real) → candidato → campanha → eleição (apuração no mapa) → metas → (turno → evento → resumo [→ sessão no Congresso])* → reeleição (apuração no mapa) → 2º mandato → resultado.
 
-**Modo carreira:** menu → criação do personagem → filiação → (semestre: agenda → acontecimento → balanço | convenção → apuração)* → aposentadoria (legado) — ou, vencendo a Presidência, debate → noite da eleição → metas → jogo presidencial → resultado com a trajetória.
+**Modo carreira:** menu → criação do personagem → filiação → (semestre: agenda + mandato → acontecimento → balanço | convenção → apuração)* → aposentadoria (legado) — ou, vencendo a Presidência, debate → noite da eleição → metas → jogo presidencial → resultado com a trajetória → de volta à carreira como ex-presidente. No fim, dá para passar o bastão a um(a) herdeiro(a).
 
 - `npm run typecheck`: limpo
-- `npm test`: 294 testes em 25 arquivos, todos passando
+- `npm test`: 362 testes em 32 arquivos, todos passando
   - engine com fixtures próprias em `src/engine/__fixtures__/`
   - integridade e simulação do conteúdo real em `src/data/content.test.ts` e `src/data/careerContent.test.ts`
 - `npm run lint`: limpo
-- `npm run build`: ok, todos os chunks abaixo de 500 kB (vendors, mapa/estados, elenco, eventos, carreira e conteúdo separados em `vite.config.ts`; o maior, `content`, tem ~329 kB; `career` ~235 kB, com os 5.571 municípios)
+- `npm run build`: ok, todos os chunks abaixo de 500 kB (vendors, mapa/estados, elenco, eventos, carreira e conteúdo separados em `vite.config.ts`; o maior, `charts`, tem ~365 kB; `content` ~329 kB e `career` ~318 kB, com os 5.571 municípios)
 - `npm run dev`: abre em `http://localhost:5173`
 
 ## Feito ✅
@@ -174,7 +174,7 @@ Diagnóstico (24 partidas por estratégia, Mandato Completo): a economia em si n
 Pedido: montar um político do zero (nome, nome de urna, idade, profissão, perfil, cidade), filiar-se, trabalhar em gabinetes e secretarias, crescer no partido e disputar de vereador a presidente conforme idade e indicadores; a gestão pesa menos, mas ajuda na reeleição.
 
 - **Turno = semestre** desde o 1º semestre de 2027; municipais em 2028/2032…, gerais em 2030/2034… Aposentadoria aos 85 ou quando o jogador quiser.
-- **Personagem:** 11 profissões (pontos iniciais, uma ação própria e a trajetória no Planalto), rosto ilustrado (sexo + sorteio), ideologia e base eleitoral em qualquer um dos 5.571 municípios (busca por estado e nome). Brasília e Fernando de Noronha não têm Câmara Municipal: sem prefeito nem vereador.
+- **Personagem:** 11 profissões (pontos iniciais, uma ação própria e a trajetória no Planalto), rosto ilustrado (sexo + sorteio), ideologia e base eleitoral em qualquer um dos 5.571 municípios (busca só pelo nome, em todo o país, com resultados "Cidade - UF"; a sigla no fim filtra o estado, como em "São José SC"; `utils/citySearch.ts`). Brasília e Fernando de Noronha não têm Câmara Municipal: sem prefeito nem vereador.
 - **Indicadores (0–100):** influência partidária, popularidade local, reconhecimento nacional, base eleitoral, reputação. Ganhos com retornos decrescentes (`CAREER.saturation`), deriva e custo de manutenção acima de 40, reputação ruim se recupera devagar. Influência cresce mais rápido em partido pequeno e afinado com a ideologia.
 - **Partidos reais ou fictícios** (escolha na criação; padrão: reais): os 28 partidos que disputaram a Câmara em 2026, com número de urna e bancada conferidos nos dados abertos do TSE (513 eleitos; o antigo "Outros" virou PRD 5, Solidariedade 2 e Rede 1; o PMB agora é Democrata). O número do candidato segue a Lei 9.504/97: partido (2 dígitos) para Executivo, 3 para senador, 4 para deputado federal e 5 para estadual e vereador. Pessoas continuam sempre inventadas, e nenhum texto de escândalo cita a legenda.
 - **Partido:** filiação obrigatória; troca custa 60% da influência e reputação. Com mandato proporcional, só na janela partidária. Posição no partido é um rótulo pela influência (filiado → cacique).
@@ -214,6 +214,62 @@ Pedido: itens 1 e 2 das recomendações. Personagens que acompanham a carreira i
   - A apuração mostra a prévia perdida, o 1º turno e o 2º turno.
 - **Testes:** `engine/careerCast.test.ts` (elenco, troca de partido, prévia, trégua, 2º turno, dinheiro e pesquisas); integridade das decisões de campanha em `data/careerContent.test.ts`.
 
+## Rodada de feedback (10/11) — mandato ativo, gestão concreta, conquistas, pós-Presidência e herdeiro
+
+Pedido: itens 5, 6, 7 e 8 das recomendações para a carreira. Tipos em `types/careerMandate.ts` e `types/achievements.ts`; testes em `engine/careerMandate.test.ts` e `engine/careerDynasty.test.ts`.
+
+- **Mandato legislativo** (vereador, deputados, senador; painel "📜 Mandato"):
+  - **Votação do semestre** (`legislature.ts`, `data/career/floorVotes.ts`, 18 votações): sorteada no início do semestre (`openCareerSemester`). O partido orienta pela relação com o governo (nas propostas dele) e pela ideologia; a tela mostra a orientação, a opinião pública e a coerência de cada voto. Sem escolha, vota com o partido. Contrariar o partido custa influência e relação com o padrinho; acompanhar a rua rende popularidade (no Congresso, parte vira reconhecimento nacional). Placar com as cadeiras reais (Câmara Municipal do TSE, Assembleia pela CF, 513, 81). Propostas do governo só entram em pauta quando combinam com quem governa.
+  - **Projetos de lei** (`bills.ts`, `data/career/bills.ts`, 22 temas): uma iniciativa por semestre (apresentar ou articular), até 2 em tramitação. Comissão (chance por articulação, influência, governo e polêmica; engavetado depois de 4 semestres) → plenário (apoio com ruído) → sanção (o Executivo de oposição veta 35% das vezes). Lei aprovada entra na trajetória e pesa na reeleição (+1 por lei, até +2). O fim do mandato arquiva o que estava tramitando (`closePosition`).
+  - **Emendas** (`amendments.ts`, 6 destinos): um destino por semestre, com valor em reais (R$ 38 mi/ano por deputado federal e R$ 70 mi por senador, LOA 2025; Assembleias 0,5% e Câmaras Municipais 1,2% da receita, divididos pelas cadeiras). Governo de oposição segura o pagamento (efeito ×0,6). ONG e emenda Pix têm risco e marcam `emendas-suspeitas`.
+  - Saíram da agenda "Apresentar projeto de lei" e "Destinar emendas", e dos eventos "Votação que divide a sua base" e "Seu projeto entra na pauta" (viraram mecânica).
+- **Gestão concreta** (prefeito e governador):
+  - **Orçamento em reais** (`budget.ts`): receita por eleitor (R$ 6 mil no município, com piso de R$ 25 mi; R$ 8 mil no estado). 1 ponto de contas = 0,5% da receita, então todo programa mostra o custo ("Custa R$ 258 mi", "Repõe R$ 515 mi no caixa") e o caixa aparece como superávit ou déficit.
+  - **Obras com prazo** (`works.ts`, `data/career/works.ts`, 10 municipais e 8 estaduais): uma por semestre, até 3 ao mesmo tempo. A margem de investimento cobre 4 pontos de parcelas por semestre; o resto sai do caixa. Obras atrasam (chuva, licitação), param sem dinheiro (contas < 30), custam aprovação quando passam do prazo e são inauguradas com risco de auditoria. Metrô e corredor de ônibus exigem eleitorado mínimo. Obras inauguradas no mandato contam na reeleição (+0,75 cada, até +3; atrasadas −1,5). Quem sai do cargo deixa as obras inacabadas para o sucessor. As obras grandes da lista de programas viraram obras.
+- **Conquistas** (`achievements.ts`, `data/career/achievements.ts`, 34 em bronze, prata e ouro, algumas secretas): critérios por cargo (com idade), contadores derivados da carreira (`careerStats`), indicadores, relação, aprovação da gestão, "invicto" e combinações. São conferidas no fim do semestre, na posse e na saída do Planalto, e viram notícia e destaque no balanço. Aba "🏆 Conquistas" no painel e galeria no menu, persistida fora do save (`useAchievementsStore`, chave `presidente-simulator:achievements:v1`).
+- **Pós-Presidência** (`postPresidency.ts`): o fim do jogo presidencial chama `leavePresidency` (meses jogados na escala de 4 anos por mandato; dois mandatos = 16 semestres). O ex-presidente fica com reconhecimento nacional 95, reputação pela aprovação final e pelos escândalos revelados, e influência de líder do partido (aprovação ≥ 45) ou em queda. Impeachment = inelegível por 8 anos (CF, art. 52). O governo federal passa ao vice, à oposição ou a um sucessor (chance pela aprovação); prefeitura e estado são sorteados de novo. O resultado presidencial ganhou "Voltar à carreira", e a agenda ganhou 4 ações e 3 eventos de ex-presidente. O legado conta cada passagem pelo Planalto pela aprovação final (impeachment desconta).
+- **Herdeiro(a)** (`heir.ts`, tela `CareerHeirScreen`): no fim da carreira (ou depois do Planalto), "Passar o bastão". Filho(a) herda o sobrenome (popularidade, base, parte da reputação); afilhado(a), a rede no partido. Começa no semestre seguinte, na mesma cidade e partido, já filiado(a). Quem passou o bastão vira o padrinho (não disputa mais eleições) e o adversário da família continua em cena. A família (`CareerState.dynasty`) aparece na ficha ("2ª geração · filha de…") e no resultado, com o legado somado.
+- **Saves antigos** ganham os campos novos na carga (`withCareerDefaults`) e, no meio do semestre, a votação do semestre.
+- **Calibração** (90 carreiras de 45 anos com um jogador guloso, comparadas ao código anterior com o mesmo jogador): a maior parte da diferença veio de a agenda perder "projeto de lei" e "emendas" (o jogador guloso passa a escolher ações de influência). Ajustes: votar com o partido rende pouco (+0,5 de influência, +1 com o padrinho), emendas e leis moderadas, obras pequenas custam mais que a margem. Resultado: deputado federal por volta dos 37 anos, senador dos 49 e governador dos 61 (33% chegam a governador até os 60); 34% chegam a 50% de chance no Planalto, por volta dos 52–56 anos. A reeleição de prefeito e governador ficou com a mesma aprovação mediana (~51%) e a mesma chance mostrada (~73%) de antes.
+- **Playtest no navegador:** vereadora (votação, projeto, emendas, balanço com placar), prefeita (orçamento, obras, inauguração, conquista), aposentadoria → herdeira, fim de governo → volta como ex-presidenta, galeria do menu e um save antigo de senador abrindo com o painel novo. O save do usuário foi guardado antes e restaurado depois.
+
+## Rodada de feedback (10/11, parte 2) — "fui condenado do nada", "recorri e não vi o resultado" e "cargos de nomeação sem ação"
+
+- **Casos na Justiça** (`data/career/cases.ts`, `engine/career/justice.ts`): as cadeias de escândalo (propina, caixa 2, emendas, rachadinha, laranja) têm etapas com explicação. Cada flag guarda o que a marcou (`CareerState.flagNotes`: "Você escolheu…", "Arrecadar doações saiu do roteiro: …"), e os eventos de escândalo mostram "📎 Como chegamos aqui", com data, explicação e a escolha que levou a cada etapa. A ficha mostra "⚖️ Réu: …" enquanto a acusação está aberta. Diagnóstico: a condenação era o fim de uma cadeia (às vezes iniciada por um risco de ação comum, como "Arrecadar doações para o partido") e a tela não dizia qual era o caso.
+- **Recurso de verdade** (efeito `appeal`): pela Ficha Limpa, a inelegibilidade vale já, mas o tribunal superior julga o recurso 3 semestres depois. A chance de anular vem do caso (25% propina, 35% caixa 2, 30% emendas) mais a influência no partido (10–60%). O resultado vira notícia, entra na trajetória e no balanço ("Recurso aceito…" ou "Recurso negado…"); anulada, a inelegibilidade cai. A ficha mostra o recurso pendente com a data e a chance. Saves antigos condenados ganham o julgamento (`migrateLegacyConviction`). Antes, "Recorrer" só aplicava os 8 anos.
+- **Cargo de confiança** (`data/career/missions.ts`, 16 missões; `engine/career/post.ts`; painel "🗂️ Cargo de confiança"): a cada semestre, quem tem cargo de nomeação recebe uma missão do chefe (audiência pública, licitação travada, votos para o deputado, meta da pasta, greve, convocação no Congresso…), com 2–3 jeitos de cumprir. Cada jeito mexe na carreira e na **confiança do chefe** (0–100). Com 70 ou mais, o chefe indica você (cargos de nomeação exigem 10 de influência a menos) e o cargo rende 50% a mais; abaixo de 25, há 40% de chance de exoneração por semestre. Ignorar a missão custa 5 de confiança. Conquista nova: "Braço direito" (8 missões diferentes). Calibração: com as missões, chegar ao Senado ou ao governo até os 60 fica ~5 p.p. mais provável para o jogador guloso.
+
+## Rodada de feedback (11/11) — "os cargos de vice estão sem ação"
+
+Diagnóstico: o vice tinha só 3 ações genéricas na agenda e 3 eventos; sem painel próprio, não havia o que decidir no semestre. O vice passou a usar o mesmo mecanismo do cargo de confiança, com regras próprias.
+
+- **Painel "🤝 Vice no governo"** (`CareerPostPanel`, view em `stores/careerPostSelectors.ts`): mostra o titular (o cabeça da chapa, que governa o nível do cargo), a linha sucessória ("se o titular sair, você assume como prefeita…"), a **confiança do titular** (0–100) e o **pedido do titular** do semestre.
+- **Pedidos do titular** (`data/career/vice.ts`, 15, cinco por vice; `CareerMission.appointments` virou `posts`, que aceita cargos de vice):
+  - vice-prefeito: prefeito(a) em exercício nas férias, Defesa Civil na chuva, votos na Câmara, mutirão nos bairros e uma secretaria sem secretário;
+  - vice-governador: governador(a) em exercício, ronda pelos municípios, fábrica disputada com o estado vizinho, rebelião no presídio e base na Assembleia;
+  - vice-presidente: presidente em exercício, missão ao exterior, conselho de governo, ponte com o Congresso e um ministério sem ministro.
+  - A interinidade é o pedido que mais divide: "só despachar" agrada o titular, e assinar o decreto parado ou aparecer na TV rende votos e custa confiança.
+- **Regras do vice** (`engine/career/post.ts`, `CAREER.post`):
+  - não há exoneração, porque o mandato é da chapa;
+  - com confiança ≥ 70, o cargo rende +50%, e na disputa pela cadeira do titular (vice-prefeito → prefeito…) entra o fator "Apoio de Fulano (titular)", com +3 de força;
+  - abaixo de 25, há 40% de chance por semestre de o titular **esvaziar** o vice (−3 de influência, −1 de popularidade), e na disputa o titular "apoia outro nome" (−3);
+  - o vice reeleito entra na chapa de outro titular, e a confiança recomeça.
+- **Confiança como impacto e condição:** `CareerImpact.trust` e a condição `trust` valem para o vice e para o cargo de nomeação.
+  - As 3 ações de vice passaram a mexer na confiança: representar +4, articular a sucessão −6 (−10 se der errado) e agenda própria −4 (−8). As dicas mostram "Confiança".
+  - "O titular deixa você de lado" só aparece com confiança abaixo de 50 e mexe nela.
+  - Dois eventos novos: "O titular aponta você como sucessor" (≥ 70) e "O titular rompe com você" (< 25, com reconciliação, oposição interna ou silêncio).
+  - Marcador novo: `{titular}`.
+- **Testes:** `engine/careerVice.test.ts` (pedido do semestre, confiança, esvaziamento sem exoneração, perks, apoio/veto na candidatura, impacto/condição e reeleição) e a integridade das missões de vice em `data/careerContent.test.ts`. 362 testes passando.
+- **Playtest no navegador**, com save editado para vice-prefeita em São Paulo:
+  - painel com titular, linha sucessória e pedido;
+  - lembrete na barra;
+  - dicas de confiança nas ações;
+  - balanço com a manchete do pedido;
+  - confiança somando certo (50 + 4 − 6 + 4 = 52);
+  - estado de confiança baixa com o aviso;
+  - interinidade "Prefeito(a) em exercício".
+  - O teste usou a porta 5199, com o save dela guardado antes e restaurado depois.
+
 ## Decisões de design tomadas no engine
 
 - **Aprovação:** cada setor converge 20%/mês para um equilíbrio formado por:
@@ -240,17 +296,18 @@ Pedido: itens 1 e 2 das recomendações. Personagens que acompanham a carreira i
 
 ## Pendências e ideias
 
-- **Carreira depois do Planalto:** a Presidência encerra a carreira. Voltar à carreira como ex-presidente (Senado, por exemplo) exigiria restaurar o estado da carreira depois do `result`.
 - **Vice-presidente que assume** vai direto às metas, sem uma tela própria de posse; o mandato é a fração restante na escala do modo escolhido.
 - **Carreira no Brasil real:** usa os partidos reais, mas as pessoas (inclusive padrinho, rival e adversário) são sempre inventadas: pessoas reais não podem virar personagens de escândalo nem rivais.
-- **Próximas recomendações para a carreira** (o jogador escolheu fazer 1 e 2): (3) força real dos partidos por cidade/estado e federações; (4) mapa de votos por município na apuração; (5) mandato legislativo ativo (projetos, votações, emendas para a base); (6) gestão concreta (obras com prazo, orçamento da prefeitura); (7) conquistas; (8) pós-Presidência e herdeiro político; (9) gráfico da trajetória dos indicadores.
+- **Próximas recomendações para a carreira** (feitas: 1, 2, 5, 6, 7 e 8): (3) força real dos partidos por cidade/estado e federações; (4) mapa de votos por município na apuração; (9) gráfico da trajetória dos indicadores.
+- **Mandato e obras:** a orientação do partido nas votações é derivada (relação com o governo + ideologia); não há bancadas por partido nas Câmaras e Assembleias. O orçamento é estimado por eleitor (não usa a receita real de cada município).
+- **Conquistas:** a galeria fica neste navegador; o jogo presidencial avulso não tem conquistas (só o modo carreira).
 - **Dados eleitorais:** `data/career/cities.ts` é gerado dos dados abertos do TSE (detalhe da votação 2026 e consulta de vagas 2024, só eleição ordinária) e da API de localidades do IBGE. Atualizar depois das eleições municipais de 2028 (vagas) e das próximas gerais (eleitorado).
 
 - **Animações em aba oculta:** com a aba do navegador oculta, o Framer Motion pausa e as transições de tela só completam quando a aba volta a ficar visível. Comportamento normal do navegador, sem impacto para quem está jogando.
 - **Repetição no Mandato Completo:** o 2º mandato do modo Completo ainda repete ~2/3 das decisões (são ~170 vagas de decisão). Mais conteúdo, sobretudo repetível com variações, reduziria isso.
 - **Placar do populista:** a estratégia gulosa ainda pontua mais que a aleatória no legado. Se quiser punir mais o populismo, aumentar o peso de eventos de crise fiscal (gatilhos por dívida/déficit) ou o componente econômico do score.
 - **Cores do Recharts** em `constants/theme.ts` espelham `tailwind.config.js` à mão (agora também usadas no mapa e no plenário).
-- **Chunk `content`** em ~497 kB: novos dados grandes devem ir para um grupo próprio em `vite.config.ts` (como `brazil`).
+- **Chunks grandes:** `charts` (~365 kB), `content` (~329 kB) e `career` (~318 kB). Novos dados grandes devem ir para um grupo próprio em `vite.config.ts` (como `brazil`).
 - **Viagens e eventos regionais:** desastres naturais ainda não têm estado; ligar eventos a UFs permitiria "visita de solidariedade" com bônus extra.
 - **Brasil real desatualiza:** bancadas, candidatos e fotos refletem 22/10/2026 (antes do 2º turno de 25/10). Revisar quando a política real mudar.
 - **Popularidade por estado:** é estimada a cada mês (não persiste); se quiser estados com memória própria, guardar um humor por UF no estado da simulação.

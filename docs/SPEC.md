@@ -296,7 +296,8 @@ Stores (Zustand 5, `useShallow` de `zustand/react/shallow`):
 ---------------------------------------------------------------------------------------------------
 ## 5. MODO CARREIRA
 
-Tipos em `src/types/career.ts` (estado e conteúdo) e `src/types/careerViews.ts` (views da UI).
+Tipos em `src/types/career.ts` (estado e conteúdo), `src/types/careerMandate.ts` (projetos, votações, emendas, obras e orçamento),
+`src/types/achievements.ts` (conquistas) e `src/types/careerViews.ts` (views da UI).
 Um turno da carreira é um **semestre** (turno 1 = 1º semestre de 2027). Eleições no 2º semestre dos anos
 pares: municipais em 2028, 2032…; gerais em 2030, 2034… (`utils/careerCalendar.ts`).
 
@@ -312,9 +313,19 @@ pares: municipais em 2028, 2032…; gerais em 2030, 2034… (`utils/careerCalend
   do personagem (`CareerState.world`).
 - `campaign.ts`: `CAMPAIGN_DECISIONS` (chapa e debate no majoritário, dobradinha e sabatina no proporcional, dinheiro em todos;
   `headOnly` some para vices; `spendShare` = fração do teto) e `RUNOFF_OPTIONS` (decisão entre os turnos). `castEvents.ts`: eventos do elenco.
-- Manchetes aceitam `{nome}`, `{cidade}`, `{uf}`, `{estado}`, `{partido}`, `{cargo}`, `{padrinho}`, `{rival}`, `{adversario}` (≤ 85 caracteres preenchidas).
-- Impactos aceitam `relations` (por papel do elenco); condições `relation` e `character` (presente, com mandato); efeito `retire-character`.
+- Manchetes aceitam `{nome}`, `{cidade}`, `{uf}`, `{estado}`, `{partido}`, `{cargo}`, `{padrinho}`, `{rival}`, `{adversario}` e `{titular}` (quem governa o nível
+  do cargo atual: o cabeça da chapa do vice) (≤ 85 caracteres preenchidas).
+- Impactos aceitam `relations` (por papel do elenco) e `trust` (confiança do chefe ou do titular); condições `relation`, `character` (presente,
+  com mandato) e `trust`; efeito `retire-character`.
 - Pessoas sempre inventadas; textos de escândalo não citam `{partido}`. Onde `councilSeats` = 0 (Brasília, Fernando de Noronha) não há eleição municipal.
+- Mandato: `bills.ts` (`CareerBill`: níveis, ideologia, popularidade, polêmica, impacto da lei), `floorVotes.ts` (`FloorVote`: posição do "sim",
+  `publicSupport`, `government`), `amendments.ts` (`AmendmentTarget`; manchetes aceitam `{valor}`), `works.ts` (`PublicWorkTemplate`: custo em
+  pontos de contas, prazo em semestres, `delivery`, `delayChance`, `risk`, `minElectorate`).
+- `cases.ts` (`CareerCase`: etapas por flag, acusação e chance do recurso; eventos apontam com `cases`) e `missions.ts` (`CareerMission`:
+  `posts` = cargos de nomeação ou de vice, opções com `trust` e risco). `vice.ts`: `VICE_MISSIONS` (pedidos do titular aos três vices) e
+  `VICE_EVENTS` (sucessão e rompimento, pela confiança do titular).
+- `achievements.ts` (`Achievement`: critério `office` (com `maxAge`), `stat` (`CareerStatKey`), `metric`, `relation`, `admin-approval`, `unbeaten`, `all`;
+  `tier`, `secret`). `exPresident.ts`: ações e eventos com a flag `ex-presidente`.
 
 ### Engine (`src/engine/career/`, exportado por `@/engine`)
 - `setup`: `createCareer`, `joinParty` (troca: sobra 40% da influência, −4 de reputação; convite garante a legenda),
@@ -347,7 +358,29 @@ pares: municipais em 2028, 2032…; gerais em 2030, 2034… (`utils/careerCalend
   adversário, como num turno único), `runoffChanceFromLead` (vantagem do 1º turno + efeito da escolha contra ruído uniforme: sem a
   escolha, a eleição toda fica na chance mostrada), `firstRoundOutcome`, `decisiveShare`.
 - `polls`: `declarePreCandidacy`, `stepPolls` (uma pesquisa por semestre até `CAREER.polls.horizon` antes da eleição), `pollFor`.
-- `legacy`: `calculateCareerLegacy` (anos × hierarquia, eleições vencidas, reputação e bônus da Presidência).
+- `legacy`: `calculateCareerLegacy(state, content)` (anos × hierarquia, eleições vencidas, leis, obras, conquistas, reputação e cada passagem pelo
+  Planalto pela aprovação final; `familyScore` soma os antepassados).
+- `legislature`: `createLegislature`, `openCareerSemester` (sorteia a votação do semestre para quem está no Legislativo), `partyLineFor`,
+  `naturalSideFor`, `voteImpacts`, `castFloorVote` (sem escolha = orientação do partido), `chamberSeats`, `houseName`.
+- `bills`: `billBlockReason`, `presentBill`, `pushBill`, `committeeChance`, `expectedFloorSupport`, `floorPassChance`, `stepBills` (comissão →
+  plenário → sanção ou veto; engaveta após `maxCommitteeTurns`). `closePosition` arquiva projetos e deixa obras inacabadas.
+- `amendments`: `annualAmendments`, `amendmentTranche` (metade do ano), `getAmendmentTargets`, `amendmentFactor` (oposição segura), `sendAmendments`.
+- `budget`: `cityRevenue`, `stateRevenue`, `contasPointValue` (1 ponto = `CAREER.budget.pointShare` da receita), `careerBudget`.
+- `works`: `getWorkCatalog`, `workBlockReason`, `startWork`, `stepWorks` (parcelas acima da margem saem do caixa; atraso, obra parada,
+  inauguração com risco), `worksFactor` (reeleição). `mandate`: `applyMandatePlan(state, content, { vote, bill, amendmentId, workId })`.
+- `achievements`: `careerStats`, `meetsCriterion`, `unlockAchievements` (no fim de `closeCareerSemester`, na posse e em `leavePresidency`).
+- `justice`: `caseBackstory` (etapas já vividas dos casos de `cases.ts`, com `flagNotes`), `pendingCharges`, `appealChance`, `becomeIneligible`,
+  `fileAppeal` (efeito `appeal`: inelegível já + recurso julgado em `CAREER.appeal.decisionTurns`), `stepAppeal`, `appealVerdictAt`, `migrateLegacyConviction`.
+  `setCareerFlags(state, flags, note)` e `rollCareerRisk(..., source)` guardam o que marcou cada flag.
+- `post`: cargo de nomeação ou de vice (`CareerState.post`: confiança do chefe ou do titular e missão do semestre; `missionLog`): `currentPostId`,
+  `currentViceOffice`, `viceTitular`, `drawMission`, `resolveMission`, `stepPost` (perks extras com confiança alta; com confiança baixa,
+  exoneração na nomeação e esvaziamento no vice), `referralDiscount` (usado em `checkAppointment`), `titularFactor` (fator `apoio-titular` na
+  candidatura do vice à cadeira do titular: ±`CAREER.post.successorSupport`). `openCareerSemester` (em `mandate`) sorteia a votação e a missão.
+  A posse zera `post` (o vice reeleito entra na chapa de outro titular).
+- `postPresidency`: `presidencySemesters`, `leavePresidency(state, content, PresidencyOutcome)` (fecha a Presidência, ajusta indicadores,
+  impeachment = 16 semestres inelegível, novo governo federal, flag `ex-presidente`).
+- `heir`: `heirStartTurn`, `heirMetrics`, `nextDynasty`, `createHeirCareer(parent, content, HeirInput, legacy, seed)` (quem passou o bastão vira
+  padrinho com `retiredFromPolitics`; o adversário continua). `setup`: `withCareerDefaults` (saves antigos).
 - Balanceamento em `CAREER` (`constants/balance.ts`); calendário, idades, vagas e rótulos em `constants/career.ts`.
 
 ### Presidência a partir da carreira
@@ -355,16 +388,21 @@ pares: municipais em 2028, 2032…; gerais em 2030, 2034… (`utils/careerCalend
   absoluto desde jan/2027). `getGameTurn(state)` conta a partir da posse e vale para `minTurn` e `{ kind: 'turn' }`.
 - Fluxo: convenção → `campaign` (debate presidencial) → `finishCampaign` (ramo da carreira) → `election-result` → `goals`
   → jogo presidencial → `result` (com o legado da trajetória). Vice que assume vai direto a `goals`, com o resto do mandato.
+- Fim do governo: `finishGame` chama `recordPresidencyEnd(PresidencyOutcome)` → `leavePresidency` e o legado. Do `result`, `resumeCareer` volta à
+  carreira (zera as stores do jogo presidencial e começa o semestre seguinte) e `goToHeirSetup` abre `career-heir`.
 
 ### Stores
 - `useCareerStore` (`CareerData`): estado da carreira, agenda planejada, acontecimento, balanço, última eleição, jornal,
   `presidentialRun`, `legacy`, `campaignOfficeId` (campanha em montagem) e `pendingRunoff` (eleição parada no 2º turno). Salvo junto no
-  mesmo save (`SaveFile.career`).
+  mesmo save (`SaveFile.career`). Plano do mandato: `plannedVote`, `plannedBill`, `plannedAmendmentId`, `plannedWorkId`, `plannedMissionOptionId` (`setVote`,
+  `toggleBill`, `toggleAmendment`, `toggleWork`, `setMissionOption`), aplicado em `endCareerSemester` por `applyMandatePlan`.
+- `useAchievementsStore`: galeria persistida fora do save (`ACHIEVEMENTS_STORAGE_KEY`); `setCareer` sincroniza as conquistas novas.
 - Fluxo da eleição: `career-election` (convenção, `chooseCandidacy`) → `career-campaign` (`runCampaign(choices)`) → `career-runoff`
   (`chooseRunoff`, só com 2º turno) → `career-election-result`. A Presidência passa pela prévia e vai ao debate.
 - Ações na `useGameStore` (`stores/careerActions.ts`): `goToCareerSetup`, `startCareer`, `chooseCareerParty`,
   `switchCareerParty`, `takeCareerAppointment`, `leaveCareerAppointment`, `endCareerSemester`, `resolveCareerEvent`,
-  `advanceCareer`, `runForOffice`, `skipElection`, `retireCareer`.
+  `advanceCareer`, `runForOffice`, `skipElection`, `retireCareer`, `resumeCareer`, `goToHeirSetup`, `leaveHeirSetup`, `startHeirCareer`.
 - Fases: `career-setup`, `career-party`, `career-turn`, `career-event`, `career-summary`, `career-election`,
-  `career-election-result`, `career-result`.
-- Selectors: `careerSelectors.ts`, `careerTurnSelectors.ts`, `careerElectionSelectors.ts` (todos reexportados por `selectors.ts`).
+  `career-election-result`, `career-result`, `career-heir`.
+- Selectors: `careerSelectors.ts`, `careerTurnSelectors.ts`, `careerElectionSelectors.ts`, `careerMandateSelectors.ts`, `careerWorksSelectors.ts` e
+  `careerAchievementSelectors.ts` (todos reexportados por `selectors.ts`).
